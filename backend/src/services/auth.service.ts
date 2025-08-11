@@ -1,6 +1,7 @@
 import { supabase } from '../config/database'
 import { hashPassword, comparePassword, generateTemporaryPassword, generateResetToken } from '../utils/password'
 import { generateTokens, TokenPayload } from '../utils/jwt'
+import { EmailService } from './email.service'
 import { v4 as uuidv4 } from 'uuid'
 
 export interface RegisterData {
@@ -27,6 +28,11 @@ export interface AuthResult {
 }
 
 export class AuthService {
+  private emailService: EmailService
+
+  constructor() {
+    this.emailService = new EmailService()
+  }
   async registerWithEmail(data: RegisterData): Promise<AuthResult> {
     try {
       const { email, fullName, password } = data
@@ -81,6 +87,12 @@ export class AuthService {
           verification_token: verificationToken,
           expires_at: expiresAt
         })
+
+      await this.emailService.sendEmailVerificationEmail(
+        newUser.email,
+        newUser.full_name,
+        verificationToken
+      )
 
       return {
         success: true,
@@ -246,6 +258,12 @@ export class AuthService {
           expires_at: expiresAt
         })
 
+      await this.emailService.sendPasswordResetEmail(
+        email,
+        user.full_name,
+        resetToken
+      )
+
       return {
         success: true,
         message: 'Reset link sent to email',
@@ -341,6 +359,12 @@ export class AuthService {
           verification_token: verificationToken,
           expires_at: expiresAt
         })
+
+      await this.emailService.sendEmailVerificationEmail(
+        email,
+        user.full_name,
+        verificationToken
+      )
 
       return {
         success: true,
