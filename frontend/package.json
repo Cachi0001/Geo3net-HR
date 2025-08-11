@@ -1,7 +1,7 @@
 {
-  "name": "hr-frontend",
+  "name": "go3net-hr-frontend",
   "version": "1.0.0",
-  "description": "HR Management System Frontend",
+  "description": "Go3net HR Management System Frontend",
   "private": true,
   "dependencies": {
     "react": "^18.2.0",

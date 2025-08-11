@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }))
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
-    message: 'HR Management System API is running',
+    message: 'Go3net HR Management System API is running',
     timestamp: new Date().toISOString()
   })
 })
