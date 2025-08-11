@@ -4,6 +4,8 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import dotenv from 'dotenv'
 import { testConnection } from './config/database'
+import authRoutes from './routes/auth.routes'
+import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 
 dotenv.config()
 
@@ -23,6 +25,11 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   })
 })
+
+app.use('/api/auth', authRoutes)
+
+app.use(notFoundHandler)
+app.use(errorHandler)
 
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`)
