@@ -74,10 +74,10 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
     try {
       await resetPassword(token, formData.password)
       setIsSubmitted(true)
-      showToast('Password reset successfully!', 'success')
+      showToast('success', 'Password reset successfully!')
       onSuccess?.()
     } catch (error: any) {
-      showToast(error.message || 'Failed to reset password. Please try again.', 'error')
+      showToast('error', error.message || 'Failed to reset password. Please try again.')
     } finally {
       setIsLoading(false)
     }

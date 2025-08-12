@@ -56,10 +56,10 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
     try {
       await forgotPassword(email)
       setIsSubmitted(true)
-      showToast('Password reset email sent successfully!', 'success')
+      showToast('success', 'Password reset email sent successfully!')
       onSuccess?.()
     } catch (error: any) {
-      showToast(error.message || 'Failed to send reset email. Please try again.', 'error')
+      showToast('error', error.message || 'Failed to send reset email. Please try again.')
     } finally {
       setIsLoading(false)
     }

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Button, Input, Card } from '../../common'
 import { useAuth } from '../../../hooks/useAuth'
 import { useToast } from '../../../hooks/useToast'
+import { startGoogleOneTap } from '../../../utils/google'
 import './LoginForm.css'
 
 export interface LoginFormProps {
@@ -65,10 +66,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
     
     try {
       await login(formData.email, formData.password)
-      showToast('Login successful!', 'success')
+      showToast('success', 'Login successful!')
       onSuccess?.()
     } catch (error: any) {
-      showToast(error.message || 'Login failed. Please try again.', 'error')
+      showToast('error', error.message || 'Login failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -78,11 +79,13 @@ const LoginForm: React.FC<LoginFormProps> = ({
     setIsLoading(true)
     
     try {
-      await loginWithGoogle()
-      showToast('Login successful!', 'success')
+      await startGoogleOneTap(async (credential) => {
+        await loginWithGoogle(credential)
+      })
+      showToast('success', 'Login successful!')
       onSuccess?.()
     } catch (error: any) {
-      showToast(error.message || 'Google login failed. Please try again.', 'error')
+      showToast('error', error.message || 'Google login failed. Please try again.')
     } finally {
       setIsLoading(false)
     }

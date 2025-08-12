@@ -1,11 +1,11 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from './hooks/useAuth'
 import { useLoading } from './hooks/useLoading'
 import Layout from './components/common/Layout/Layout'
 import LoadingSpinner from './components/common/LoadingSpinner/LoadingSpinner'
 import Toast from './components/common/Toast/Toast'
 
+import LandingPage from './pages/landing/LandingPage'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
@@ -18,35 +18,8 @@ import TasksPage from './pages/tasks/TasksPage'
 import TimeTrackingPage from './pages/timeTracking/TimeTrackingPage'
 import ProfilePage from './pages/profile/ProfilePage'
 
-// Protected Route component
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth()
-  
-  if (loading) {
-    return <LoadingSpinner />
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" replace />
-  }
-  
-  return <Layout>{children}</Layout>
-}
-
-// Public Route component (redirect if authenticated)
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth()
-  
-  if (loading) {
-    return <LoadingSpinner />
-  }
-  
-  if (user) {
-    return <Navigate to="/dashboard" replace />
-  }
-  
-  return <>{children}</>
-}
+import ProtectedRoute from './components/auth/ProtectedRoute/ProtectedRoute'
+import PublicRoute from './components/auth/PublicRoute/PublicRoute'
 
 const App: React.FC = () => {
   const { isLoading } = useLoading()
@@ -82,33 +55,48 @@ const App: React.FC = () => {
         {/* Protected routes */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
-            <DashboardPage />
+            <Layout>
+              <DashboardPage />
+            </Layout>
           </ProtectedRoute>
         } />
         <Route path="/employees" element={
           <ProtectedRoute>
-            <EmployeesPage />
+            <Layout>
+              <EmployeesPage />
+            </Layout>
           </ProtectedRoute>
         } />
         <Route path="/tasks" element={
           <ProtectedRoute>
-            <TasksPage />
+            <Layout>
+              <TasksPage />
+            </Layout>
           </ProtectedRoute>
         } />
         <Route path="/time-tracking" element={
           <ProtectedRoute>
-            <TimeTrackingPage />
+            <Layout>
+              <TimeTrackingPage />
+            </Layout>
           </ProtectedRoute>
         } />
         <Route path="/profile" element={
           <ProtectedRoute>
-            <ProfilePage />
+            <Layout>
+              <ProfilePage />
+            </Layout>
           </ProtectedRoute>
         } />
         
-        {/* Default redirect */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* Landing route */}
+        <Route path="/" element={
+          <PublicRoute>
+            <LandingPage />
+          </PublicRoute>
+        } />
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   )

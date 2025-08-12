@@ -1,0 +1,175 @@
+/* CTA Section Styles */
+.cta {
+  padding: var(--spacing-16) 0;
+  background: linear-gradient(135deg, 
+    var(--color-primary-600) 0%, 
+    var(--color-primary-800) 50%,
+    var(--color-success-600) 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+.cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('https://images.unsplash.com/photo-1462556791646-c201b8241a94?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTAwNDR8MHwxfHNlYXJjaHwxMHx8YWJzdHJhY3QlMjBnZW9tZXRyaWMlMjB0ZWNobm9sb2d5JTIwZ3JhZGllbnR8ZW58MHwwfHxibHVlfDE3NTUwMzE0MjF8MA&ixlib=rb-4.1.0&q=85');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.1;
+  z-index: 0;
+}
+
+.cta__container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-4);
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.cta__title {
+  font-family: 'Space Grotesk', var(--font-family-primary);
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-white);
+  margin-bottom: var(--spacing-4);
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.cta__subtitle {
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-6);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cta__features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-8);
+}
+
+.cta__feature {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: var(--border-radius-2xl);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--color-white);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.cta__feature-icon {
+  font-size: 20px;
+}
+
+.cta__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+}
+
+.cta__primary-btn {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--color-primary-600);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px);
+  border-radius: var(--border-radius-2xl);
+  padding: var(--spacing-4) var(--spacing-8);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  text-transform: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: glow 3s ease-in-out infinite;
+  min-width: 220px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  text-decoration: none;
+}
+
+.cta__primary-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+}
+
+.cta__secondary-btn {
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  color: var(--color-white);
+  background: transparent;
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-4) var(--spacing-6);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  text-transform: none;
+  min-width: 180px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  text-decoration: none;
+}
+
+.cta__secondary-btn:hover {
+  border-color: var(--color-white);
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.cta__hint {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: var(--font-size-base);
+}
+
+@keyframes glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); 
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(255, 255, 255, 0.6); 
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 640px) {
+  .cta__container {
+    padding: 0 var(--spacing-6);
+  }
+  
+  .cta__features {
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  .cta__actions {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 1024px) {
+  .cta__container {
+    padding: 0 var(--spacing-8);
+  }
+}

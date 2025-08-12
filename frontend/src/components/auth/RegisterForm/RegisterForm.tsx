@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Button, Input, Card } from '../../common'
 import { useAuth } from '../../../hooks/useAuth'
 import { useToast } from '../../../hooks/useToast'
+import { startGoogleOneTap } from '../../../utils/google'
 import './RegisterForm.css'
 
 export interface RegisterFormProps {
@@ -93,16 +94,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     setIsLoading(true)
     
     try {
-      await register({
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        email: formData.email,
-        password: formData.password,
-      })
-      showToast('Registration successful! Please check your email to verify your account.', 'success')
+      const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`
+      await register(formData.email, fullName, formData.password)
+      showToast('success', 'Registration successful! Please check your email to verify your account.')
       onSuccess?.()
     } catch (error: any) {
-      showToast(error.message || 'Registration failed. Please try again.', 'error')
+      showToast('error', error.message || 'Registration failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -112,11 +109,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     setIsLoading(true)
     
     try {
-      await loginWithGoogle()
-      showToast('Registration successful!', 'success')
+      await startGoogleOneTap(async (credential) => {
+        await loginWithGoogle(credential)
+      })
+      showToast('success', 'Registration successful!')
       onSuccess?.()
     } catch (error: any) {
-      showToast(error.message || 'Google registration failed. Please try again.', 'error')
+      showToast('error', error.message || 'Google registration failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
