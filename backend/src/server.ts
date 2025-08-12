@@ -1,16 +1,19 @@
+import dotenv from 'dotenv'
+
+// Load environment variables first
+dotenv.config()
+
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
-import dotenv from 'dotenv'
 import { testConnection } from './config/database'
 import authRoutes from './routes/auth.routes'
 import roleRoutes from './routes/role.routes'
 import { employeeRoutes } from './routes/employee.routes'
 import { timeTrackingRoutes } from './routes/timeTracking.routes'
+import taskRoutes from './routes/task.routes'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
-
-dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -33,6 +36,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/roles', roleRoutes)
 app.use('/api/employees', employeeRoutes)
 app.use('/api/time-tracking', timeTrackingRoutes)
+app.use('/api/tasks', taskRoutes)
 
 app.use(notFoundHandler)
 app.use(errorHandler)
