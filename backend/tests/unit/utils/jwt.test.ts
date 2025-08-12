@@ -22,12 +22,12 @@ describe('JWT Utils', () => {
     // Test access token generation
     // Access tokens are short-lived (1 hour) for API authentication
     describe('generateAccessToken', () => {
-        
+
         // Verify access token is properly formatted JWT
         // JWT tokens have 3 parts separated by dots: header.payload.signature
         it('should generate a valid access token', () => {
             const token = generateAccessToken(mockPayload)
-            
+
             // Token should be a string
             expect(typeof token).toBe('string')
             // JWT format: 3 parts separated by dots
@@ -35,15 +35,10 @@ describe('JWT Utils', () => {
         })
     })
 
-    // Test refresh token generation
-    // Refresh tokens are long-lived (7 days) for obtaining new access tokens
     describe('generateRefreshToken', () => {
-        
-        // Verify refresh token is properly formatted JWT
-        // Same format as access token but different expiration
         it('should generate a valid refresh token', () => {
             const token = generateRefreshToken(mockPayload)
-            
+
             // Token should be a string
             expect(typeof token).toBe('string')
             // JWT format: 3 parts separated by dots
@@ -54,12 +49,12 @@ describe('JWT Utils', () => {
     // Test token pair generation
     // Returns both access and refresh tokens for complete authentication
     describe('generateTokens', () => {
-        
+
         // Verify both tokens are generated with metadata
         // Used during login to provide complete token set
         it('should generate both access and refresh tokens', () => {
             const tokens = generateTokens(mockPayload)
-            
+
             // Should return object with both token types
             expect(tokens).toHaveProperty('accessToken')
             expect(tokens).toHaveProperty('refreshToken')
@@ -72,13 +67,13 @@ describe('JWT Utils', () => {
     // Test token verification and decoding
     // Critical for validating incoming API requests
     describe('verifyToken', () => {
-        
+
         // Verify valid tokens are properly decoded
         // Used by authentication middleware to validate requests
         it('should verify a valid token', () => {
             const token = generateAccessToken(mockPayload)
             const decoded = verifyToken(token)
-            
+
             // Decoded payload should match original data
             expect(decoded.userId).toBe(mockPayload.userId)
             expect(decoded.email).toBe(mockPayload.email)
@@ -96,13 +91,13 @@ describe('JWT Utils', () => {
     // Test token decoding without verification
     // Used for extracting data from tokens without validating signature
     describe('decodeToken', () => {
-        
+
         // Verify valid tokens can be decoded without verification
         // Useful for extracting user info before full validation
         it('should decode a valid token without verification', () => {
             const token = generateAccessToken(mockPayload)
             const decoded = decodeToken(token)
-            
+
             // Should extract payload data without signature verification
             expect(decoded?.userId).toBe(mockPayload.userId)
             expect(decoded?.email).toBe(mockPayload.email)
@@ -113,7 +108,7 @@ describe('JWT Utils', () => {
         // Graceful handling of malformed tokens
         it('should return null for invalid token', () => {
             const decoded = decodeToken('invalid-token')
-            
+
             // Invalid token should return null, not throw error
             expect(decoded).toBeNull()
         })

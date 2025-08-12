@@ -2,6 +2,7 @@ import { supabase } from '../config/database'
 import { hashPassword, comparePassword, generateTemporaryPassword, generateResetToken } from '../utils/password'
 import { generateTokens, TokenPayload } from '../utils/jwt'
 import { EmailService } from './email.service'
+import { RoleService } from './role.service'
 import { v4 as uuidv4 } from 'uuid'
 
 export interface RegisterData {
@@ -29,9 +30,11 @@ export interface AuthResult {
 
 export class AuthService {
   private emailService: EmailService
+  private roleService: RoleService
 
   constructor() {
     this.emailService = new EmailService()
+    this.roleService = new RoleService()
   }
   async registerWithEmail(data: RegisterData): Promise<AuthResult> {
     try {
@@ -69,13 +72,7 @@ export class AuthService {
 
       if (error) throw error
 
-      await supabase
-        .from('user_roles')
-        .insert({
-          user_id: newUser.id,
-          role_name: 'employee',
-          is_active: true
-        })
+      await this.roleService.assignDefaultRole(newUser.id)
 
       const verificationToken = generateResetToken()
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
@@ -210,14 +207,7 @@ export class AuthService {
 
       if (error) throw error
 
-      await supabase
-        .from('user_roles')
-        .insert({
-          user_id: newUser.id,
-          role_name: 'employee',
-          assigned_by: createdBy,
-          is_active: true
-        })
+      await this.roleService.assignRole(newUser.id, 'employee', createdBy)
 
       return {
         success: true,

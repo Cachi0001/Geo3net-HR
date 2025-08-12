@@ -12,8 +12,8 @@ describe('EmailService', () => {
       sendMail: jest.fn()
     } as any
 
-    ;(nodemailer.createTransport as jest.Mock).mockReturnValue(mockTransporter)
-    
+      ; (nodemailer.createTransport as jest.Mock).mockReturnValue(mockTransporter)
+
     process.env.EMAIL_HOST = 'smtp.test.com'
     process.env.EMAIL_PORT = '587'
     process.env.EMAIL_USER = 'test@test.com'
@@ -176,7 +176,7 @@ describe('EmailService', () => {
 
     it('should use default port if not provided', () => {
       delete process.env.EMAIL_PORT
-      
+
       new EmailService()
 
       expect(nodemailer.createTransport).toHaveBeenCalledWith(

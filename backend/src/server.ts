@@ -5,6 +5,9 @@ import morgan from 'morgan'
 import dotenv from 'dotenv'
 import { testConnection } from './config/database'
 import authRoutes from './routes/auth.routes'
+import roleRoutes from './routes/role.routes'
+import { employeeRoutes } from './routes/employee.routes'
+import { timeTrackingRoutes } from './routes/timeTracking.routes'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 
 dotenv.config()
@@ -27,6 +30,9 @@ app.get('/health', (req, res) => {
 })
 
 app.use('/api/auth', authRoutes)
+app.use('/api/roles', roleRoutes)
+app.use('/api/employees', employeeRoutes)
+app.use('/api/time-tracking', timeTrackingRoutes)
 
 app.use(notFoundHandler)
 app.use(errorHandler)

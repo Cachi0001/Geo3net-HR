@@ -5,10 +5,18 @@ import { EmailService } from '../../../src/services/email.service'
 jest.mock('../../../src/config/database')
 jest.mock('../../../src/services/email.service')
 
+const mockEmailService = {
+  sendPasswordResetEmail: jest.fn(),
+  sendEmailVerificationEmail: jest.fn(),
+  sendWelcomeEmail: jest.fn(),
+  sendEmail: jest.fn()
+}
+
+;(EmailService as jest.MockedClass<typeof EmailService>).mockImplementation(() => mockEmailService as any)
+
 describe('AuthService - Password Reset', () => {
   let authService: AuthService
   let mockSupabase: jest.Mocked<typeof supabase>
-  let mockEmailService: jest.Mocked<EmailService>
 
   beforeAll(() => {
     process.env.SUPABASE_URL = 'https://test.supabase.co'
@@ -17,11 +25,9 @@ describe('AuthService - Password Reset', () => {
   })
 
   beforeEach(() => {
+    jest.clearAllMocks()
     authService = new AuthService()
     mockSupabase = supabase as jest.Mocked<typeof supabase>
-    mockEmailService = (authService as any).emailService as jest.Mocked<EmailService>
-    
-    jest.clearAllMocks()
   })
 
   describe('forgotPassword', () => {
@@ -32,7 +38,8 @@ describe('AuthService - Password Reset', () => {
     }
 
     it('should generate reset token and send email for existing user', async () => {
-      mockSupabase.from.mockReturnValue({
+      // Mock the user lookup
+      mockSupabase.from.mockReturnValueOnce({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
             single: jest.fn().mockResolvedValue({
@@ -43,6 +50,7 @@ describe('AuthService - Password Reset', () => {
         })
       } as any)
 
+      // Mock the token insert
       mockSupabase.from.mockReturnValueOnce({
         insert: jest.fn().mockResolvedValue({
           data: null,
