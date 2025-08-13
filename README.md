@@ -1,233 +1,278 @@
 # Go3net HR Management System
 
-A comprehensive HR Management System built with Express.js backend and React frontend, featuring employee management, recruitment, payroll, performance tracking, check-in/checkout, and task management capabilities.
+A comprehensive HR management system built with Express.js backend and React frontend, featuring role-based access control, employee management, time tracking, and task management.
 
-## Features
+## 🚀 Features
 
-### Core HR Modules
-- **Employee Management** - Complete employee records and organizational structure
-- **Authentication System** - Google OAuth and email/password with role-based access control
-- **Check-in/Checkout** - Time tracking with GPS location and mobile support
-- **Task Management** - Assignment, tracking, and collaboration tools
-- **Recruitment** - Job postings, applications, and interview scheduling
-- **Payroll** - Salary processing, deductions, and benefits administration
-- **Performance Management** - Reviews, goals, and development tracking
-- **Self-Service Portal** - Employee dashboard for personal information and requests
+- **Role-Based Access Control** - Super Admin, HR Admin, Manager, HR Staff, Employee roles
+- **Employee Management** - Complete employee lifecycle management
+- **Time Tracking** - Check-in/check-out with GPS location support
+- **Task Management** - Assign and track tasks across teams
+- **Authentication** - Email/password and Google OAuth support
+- **Email Verification** - Secure account activation process
+- **Mobile-Responsive** - Optimized for all device sizes
+- **System Initialization** - Automated setup with super admin creation
 
-### Technical Features
-- Mobile-responsive design with structured CSS architecture
-- Push notifications for real-time updates
-- Role-based permissions (Super Admin, HR Admin, Manager, HR Staff, Employee)
-- Comprehensive audit logging and security
-- Modular architecture for easy feature expansion
-
-## Technology Stack
+## 🏗️ Tech Stack
 
 ### Backend
-- **Framework**: Express.js with TypeScript
-- **Database**: Supabase PostgreSQL
-- **Authentication**: JWT tokens + Google OAuth
-- **Testing**: Jest with Supertest
-- **Architecture**: Layered (Controllers → Services → Repositories)
+- **Express.js** with TypeScript
+- **Supabase** (PostgreSQL database)
+- **JWT** Authentication with refresh tokens
+- **Bcrypt** for password hashing
+- **Joi** for request validation
+- **Nodemailer** for email services
 
 ### Frontend
-- **Framework**: React with TypeScript
-- **Styling**: Structured CSS with mobile-specific files
-- **State Management**: Context API
-- **Testing**: Jest + React Testing Library
+- **React** with TypeScript
+- **CSS Modules** with design system
+- **Context API** for state management
+- **React Router** for navigation
+- **Mobile-first** responsive design
 
-## Project Structure
+## 📋 Prerequisites
 
-```
-├── backend/
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── services/
-│   │   ├── repositories/
-│   │   ├── models/
-│   │   ├── middleware/
-│   │   ├── utils/
-│   │   └── config/
-│   ├── database/
-│   └── tests/
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── common/
-│   │   │   └── modules/
-│   │   ├── styles/
-│   │   │   ├── components/
-│   │   │   └── mobile/
-│   │   ├── hooks/
-│   │   ├── services/
-│   │   └── utils/
-│   └── public/
-└── README.md
-```
-
-## Getting Started
-
-### Prerequisites
 - Node.js (v18 or higher)
 - npm or yarn
 - Supabase account
+- Email service (for verification emails)
 
-### Backend Setup
+## 🛠️ Installation & Setup
 
-1. Navigate to backend directory:
+### 1. Clone the Repository
 ```bash
-cd backend
+git clone <repository-url>
+cd go3net-hr-management
 ```
 
-2. Install dependencies:
+### 2. Backend Setup
 ```bash
+cd backend
 npm install
 ```
 
-3. Create environment file:
-```bash
-cp .env.example .env
-```
-
-4. Configure environment variables:
+Create `.env` file in backend directory:
 ```env
+# Database
 SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-JWT_SECRET=your_jwt_secret
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+# JWT Secrets
+JWT_SECRET=your_jwt_secret_key
+JWT_REFRESH_SECRET=your_jwt_refresh_secret_key
+
+# Server
+PORT=5000
+NODE_ENV=development
+
+# Email Configuration (for verification emails)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
 ```
 
-5. Set up database schema:
+### 3. Frontend Setup
 ```bash
-npm run migrate
+cd ../frontend
+npm install
 ```
 
-6. Start development server:
+Create `.env` file in frontend directory:
+```env
+REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
+```
+
+### 4. Database Setup
+Run the database schema setup in your Supabase SQL editor:
 ```bash
+# The schema is in backend/database/schema.sql
+```
+
+### 5. System Initialization
+
+**IMPORTANT**: Before starting the application, you need to initialize the system with a super admin account.
+
+```bash
+cd backend
+npm run init-system
+```
+
+This will:
+- Create the first super admin account
+- Generate secure credentials
+- Display the login information
+
+**Save the generated credentials securely!**
+
+### 6. Start Development Servers
+
+Backend:
+```bash
+cd backend
 npm run dev
 ```
 
-### Frontend Setup
-
-1. Navigate to frontend directory:
+Frontend (in another terminal):
 ```bash
 cd frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Start development server:
-```bash
 npm start
 ```
 
-## Database Schema
+## 🔐 Authentication Flow
 
-The system uses a comprehensive PostgreSQL schema with the following core tables:
+### System Hierarchy
+1. **Super Admin** - System administrator (created during initialization)
+2. **HR Admin** - Full HR management access
+3. **Manager** - Team management and oversight
+4. **HR Staff** - HR operations and recruitment
+5. **Employee** - Basic employee access
 
-- **users** - Employee records and authentication
-- **departments** - Organizational departments
-- **positions** - Job positions and roles
-- **user_roles** - Role-based access control
-- **check_in_records** - Time tracking and attendance
-- **tasks** - Task management and assignment
-- **task_comments** - Task collaboration
-- **password_reset_tokens** - Password recovery
+### Registration Process
+1. User registers with email/password
+2. System sends verification email
+3. User clicks verification link
+4. Account is activated
+5. User can log in
 
-## Authentication & Authorization
+### Email Verification
+- All new accounts require email verification
+- Verification links expire in 24 hours
+- Users can request new verification emails
+- Unverified accounts cannot log in
 
-### User Registration Flow
-1. User registers with email/password or Google OAuth
-2. System assigns default "employee" role
-3. User completes mandatory profile fields
-4. HR admin can upgrade roles as needed
+## 📱 Usage
 
-### Admin-Created Accounts
-1. HR admin creates employee record
-2. System generates temporary password and sends invitation
-3. Employee receives email with login credentials
-4. Employee logs in and completes profile setup
+### First Time Setup
+1. Run system initialization: `npm run init-system`
+2. Save the super admin credentials
+3. Start the application
+4. Log in with super admin credentials
+5. Create HR admin accounts
+6. Begin setting up your organization
 
-### Role Hierarchy
-- **Super Admin** - Full system access
-- **HR Admin** - Complete HR management
-- **Manager** - Team management and oversight
-- **HR Staff** - HR operations and recruitment
-- **Employee** - Self-service and assigned tasks
+### Creating Users
+- **Super Admin** can create HR Admin accounts
+- **HR Admin** can create all other user types
+- **Managers** can create employee accounts in their teams
+- Regular registration is available for employees (with email verification)
 
-## API Endpoints
+### Key Features
+- **Dashboard** - Personalized overview for each role
+- **Employee Directory** - Search and filter employees
+- **Time Tracking** - GPS-enabled check-in/check-out
+- **Task Management** - Create, assign, and track tasks
+- **Profile Management** - Complete employee profiles
 
-### Authentication
-- `POST /auth/register` - User registration
-- `POST /auth/login` - User login
-- `POST /auth/google` - Google OAuth
-- `POST /auth/forgot-password` - Password reset request
-- `POST /auth/reset-password` - Password reset
+## 🧪 Testing
 
-### Employee Management
-- `GET /employees` - List employees
-- `POST /employees` - Create employee
-- `PUT /employees/:id` - Update employee
-- `GET /employees/:id` - Get employee details
-
-### Check-in/Checkout
-- `POST /checkin` - Check in
-- `POST /checkout` - Check out
-- `GET /attendance/:userId` - Get attendance records
-
-### Task Management
-- `GET /tasks` - List tasks
-- `POST /tasks` - Create task
-- `PUT /tasks/:id` - Update task
-- `POST /tasks/:id/comments` - Add comment
-
-## Testing
-
-### Backend Testing
+Backend tests:
 ```bash
 cd backend
-npm test
-npm run test:coverage
+npm test                # Run all tests
+npm run test:watch      # Watch mode
+npm run test:coverage   # Coverage report
 ```
 
-### Frontend Testing
+Frontend tests:
 ```bash
 cd frontend
-npm test
-npm run test:coverage
+npm test                # Run all tests
+npm run test:coverage   # Coverage report
 ```
 
-## Development Guidelines
+## 📚 API Documentation
 
-### Code Standards
-- Maximum 300 lines per file
-- Comprehensive test coverage required
-- Structured CSS with mobile-specific files
-- TypeScript for type safety
+### System Endpoints
+- `GET /api/system/status` - Check system initialization status
+- `POST /api/system/initialize` - Initialize system (creates super admin)
 
-### Architecture Principles
-- Separation of concerns
-- Dependency injection
-- Repository pattern for data access
-- Service layer for business logic
-- Reusable components and utilities
+### Authentication Endpoints
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `POST /api/auth/logout` - Logout user
+- `POST /api/auth/forgot-password` - Request password reset
+- `POST /api/auth/reset-password` - Reset password
+- `GET /api/auth/verify-email/:token` - Verify email address
 
-## Contributing
+### Employee Endpoints
+- `GET /api/employees` - Get all employees (with filters)
+- `POST /api/employees` - Create new employee
+- `GET /api/employees/:id` - Get employee by ID
+- `PUT /api/employees/:id` - Update employee
+- `DELETE /api/employees/:id` - Delete employee
 
-1. Follow the established folder structure
-2. Write tests for all new functionality
-3. Ensure mobile responsiveness
-4. Maintain code quality standards
-5. Update documentation as needed
+### Time Tracking Endpoints
+- `POST /api/time-tracking/checkin` - Check in
+- `POST /api/time-tracking/checkout` - Check out
+- `GET /api/time-tracking/history` - Get time tracking history
 
-## License
+### Task Management Endpoints
+- `GET /api/tasks` - Get all tasks
+- `POST /api/tasks` - Create new task
+- `PUT /api/tasks/:id` - Update task
+- `DELETE /api/tasks/:id` - Delete task
 
-This project is proprietary software developed for Go3net.
+## 🚀 Deployment
 
-## Support
+### Backend Deployment
+1. Build the project: `npm run build`
+2. Set production environment variables
+3. Deploy to your preferred platform (Heroku, AWS, Railway, etc.)
+4. Run system initialization on production
 
-For technical support or questions, please contact the development team.
+### Frontend Deployment
+1. Update API URL in environment variables
+2. Build the project: `npm run build`
+3. Deploy the `build` folder to hosting service (Netlify, Vercel, etc.)
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**System not initialized:**
+- Run `npm run init-system` in the backend directory
+- Check database connection
+- Verify environment variables
+
+**Email verification not working:**
+- Check email service configuration
+- Verify SMTP settings
+- Check spam folder
+
+**Authentication errors:**
+- Verify JWT secrets are set
+- Check token expiration
+- Clear browser storage
+
+**Database connection issues:**
+- Verify Supabase credentials
+- Check network connectivity
+- Review database schema
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes
+4. Add tests for new functionality
+5. Commit your changes: `git commit -m 'Add amazing feature'`
+6. Push to the branch: `git push origin feature/amazing-feature`
+7. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the documentation
+- Review the troubleshooting section
+
+---
+
+**Made with ❤️ by the Go3net Team**

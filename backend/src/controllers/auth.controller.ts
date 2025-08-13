@@ -54,11 +54,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       password
     })
 
-    if (!result.success) {
-      throw new ValidationError(result.message || 'Registration failed')
-    }
-
-    return ResponseHandler.created(res, 'Registration successful. Please verify your email.', {
+    return ResponseHandler.created(res, 'Account created successfully! Please check your email and click the verification link to activate your account.', {
       user: result.user
     })
   } catch (error) {
@@ -77,13 +73,6 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const { email, password } = value
 
     const result = await authService.loginWithEmail({ email, password })
-
-    if (!result.success) {
-      if (result.requiresEmailVerification) {
-        throw new EmailVerificationError(result.message)
-      }
-      throw new AuthenticationError(result.message || 'Invalid credentials')
-    }
 
     return ResponseHandler.success(res, 'Login successful', {
       user: result.user,
@@ -104,32 +93,33 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
 
     const { googleToken, fullName, email } = value
 
-    const result = await authService.registerWithEmail({
-      email,
-      fullName,
-      password: 'google-oauth-user',
-      googleId: googleToken
-    })
-
-    if (!result.success) {
-      const loginResult = await authService.loginWithEmail({
+    try {
+      // Try to register first
+      const result = await authService.registerWithEmail({
         email,
-        password: 'google-oauth-user'
+        fullName,
+        password: 'google-oauth-user',
+        googleId: googleToken
       })
-      
-      if (!loginResult.success) {
-        throw new AuthenticationError(loginResult.message || 'Google authentication failed')
+
+      return ResponseHandler.created(res, 'Google registration successful', {
+        user: result.user
+      })
+    } catch (error: any) {
+      // If registration fails (user exists), try login
+      if (error.statusCode === 409) {
+        const loginResult = await authService.loginWithEmail({
+          email,
+          password: 'google-oauth-user'
+        })
+
+        return ResponseHandler.success(res, 'Google login successful', {
+          user: loginResult.user,
+          tokens: loginResult.tokens
+        })
       }
-
-      return ResponseHandler.success(res, 'Google login successful', {
-        user: loginResult.user,
-        tokens: loginResult.tokens
-      })
+      throw error
     }
-
-    return ResponseHandler.created(res, 'Google registration successful', {
-      user: result.user
-    })
   } catch (error) {
     next(error)
   }
@@ -144,9 +134,11 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     }
 
     const { email } = value
-    const result = await authService.forgotPassword(email)
+    const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] as string
+    
+    await authService.forgotPassword(email, ipAddress)
 
-    return ResponseHandler.success(res, result.message || 'Password reset email sent')
+    return ResponseHandler.success(res, 'If email exists, reset link will be sent')
   } catch (error) {
     next(error)
   }
@@ -167,13 +159,9 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
       throw new ValidationError('Password does not meet requirements', passwordValidation.errors)
     }
 
-    const result = await authService.resetPassword(token, newPassword)
+    await authService.resetPassword(token, newPassword)
 
-    if (!result.success) {
-      throw new ValidationError(result.message || 'Password reset failed')
-    }
-
-    return ResponseHandler.success(res, result.message || 'Password reset successful')
+    return ResponseHandler.success(res, 'Password reset successful')
   } catch (error) {
     next(error)
   }
@@ -187,13 +175,9 @@ export const verifyEmail = async (req: Request, res: Response, next: NextFunctio
       throw new ValidationError('Verification token is required')
     }
 
-    const result = await authService.verifyEmail(token)
+    await authService.verifyEmail(token)
 
-    if (!result.success) {
-      throw new ValidationError(result.message || 'Email verification failed')
-    }
-
-    return ResponseHandler.success(res, result.message || 'Email verified successfully')
+    return ResponseHandler.success(res, 'Email verified successfully')
   } catch (error) {
     next(error)
   }
@@ -210,9 +194,9 @@ export const resendVerification = async (req: Request, res: Response, next: Next
     }
 
     const { email } = value
-    const result = await authService.resendEmailVerification(email)
+    await authService.resendEmailVerification(email)
 
-    return ResponseHandler.success(res, result.message || 'Verification email sent')
+    return ResponseHandler.success(res, 'Verification email sent')
   } catch (error) {
     next(error)
   }

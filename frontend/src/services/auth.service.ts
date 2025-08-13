@@ -24,7 +24,7 @@ interface ForgotPasswordRequest {
 
 interface ResetPasswordRequest {
   token: string
-  password: string
+  newPassword: string
 }
 
 interface ChangePasswordRequest {
@@ -42,9 +42,25 @@ class AuthService {
     return apiService.post<AuthResponse>('/auth/google', { token })
   }
 
-  async register(email: string, fullName: string, password: string): Promise<AuthResponse> {
+  async register(email: string, fullName: string, password: string): Promise<{ user: User; message: string }> {
     const data: RegisterRequest = { email, fullName, password }
-    return apiService.post<AuthResponse>('/auth/register', data)
+    return apiService.post<{ user: User; message: string }>('/auth/register', data)
+  }
+
+  async getSystemStatus(): Promise<{
+    needsInitialization: boolean
+    totalUsers: number
+    roleDistribution: Record<string, number>
+    systemReady: boolean
+  }> {
+    return apiService.get('/system/status')
+  }
+
+  async initializeSystem(): Promise<{
+    superAdminCreated: boolean
+    credentials?: { email: string; password: string }
+  }> {
+    return apiService.post('/system/initialize')
   }
 
   async logout(): Promise<void> {
@@ -57,7 +73,7 @@ class AuthService {
   }
 
   async resetPassword(token: string, password: string): Promise<void> {
-    const data: ResetPasswordRequest = { token, password }
+    const data: ResetPasswordRequest = { token, newPassword: password }
     return apiService.post('/auth/reset-password', data)
   }
 

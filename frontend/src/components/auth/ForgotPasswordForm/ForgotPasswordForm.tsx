@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Button, Input, Card } from '../../common'
 import { useAuth } from '../../../hooks/useAuth'
 import { useToast } from '../../../hooks/useToast'
+import { usePasswordResetRateLimit } from '../../../hooks/usePasswordResetRateLimit'
 import './ForgotPasswordForm.css'
 
 export interface ForgotPasswordFormProps {
@@ -20,11 +21,17 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
   
   const { forgotPassword } = useAuth()
   const { showToast } = useToast()
+  const { 
+    isLimited, 
+    remainingAttempts, 
+    remainingTime, 
+    recordAttempt,
+    maxAttempts 
+  } = usePasswordResetRateLimit()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value)
     
-    // Clear error when user starts typing
     if (error) {
       setError('')
     }
@@ -51,15 +58,27 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
       return
     }
 
+    if (isLimited) {
+      showToast('error', `Too many attempts. Please try again in ${remainingTime}.`)
+      return
+    }
+
     setIsLoading(true)
     
     try {
       await forgotPassword(email)
+      recordAttempt() // Record successful attempt
       setIsSubmitted(true)
       showToast('success', 'Password reset email sent successfully!')
       onSuccess?.()
     } catch (error: any) {
-      showToast('error', error.message || 'Failed to send reset email. Please try again.')
+      recordAttempt() // Record failed attempt
+      
+      if (error.message?.includes('Too many password reset attempts')) {
+        showToast('error', error.message)
+      } else {
+        showToast('error', error.message || 'Failed to send reset email. Please try again.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -135,6 +154,39 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
         </p>
       </div>
 
+      {/* Rate Limit Warning */}
+      {(remainingAttempts < maxAttempts && remainingAttempts > 0) && (
+        <div className="forgot-password-rate-limit-warning">
+          <div style={{ 
+            backgroundColor: '#fff3cd', 
+            border: '1px solid #ffeaa7', 
+            borderRadius: '8px', 
+            padding: '12px 16px', 
+            marginBottom: '20px',
+            color: '#856404'
+          }}>
+            <strong>⚠️ Rate Limit Notice:</strong> You have {remainingAttempts} password reset attempt{remainingAttempts !== 1 ? 's' : ''} remaining in the next 24 hours.
+          </div>
+        </div>
+      )}
+
+      {isLimited && (
+        <div className="forgot-password-rate-limit-error">
+          <div style={{ 
+            backgroundColor: '#f8d7da', 
+            border: '1px solid #f5c6cb', 
+            borderRadius: '8px', 
+            padding: '16px', 
+            marginBottom: '20px',
+            color: '#721c24'
+          }}>
+            <strong>🚫 Rate Limit Exceeded</strong><br />
+            You've reached the maximum number of password reset attempts (5) in 24 hours.<br />
+            Please try again in <strong>{remainingTime}</strong>.
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="forgot-password-form">
         <div className="forgot-password-form-fields">
           <Input
@@ -159,7 +211,7 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
             size="lg"
             fullWidth
             loading={isLoading}
-            disabled={isLoading || !email}
+            disabled={isLoading || !email || isLimited}
           >
             Send Reset Link
           </Button>

@@ -16,3 +16,5 @@ export type { ProtectedRouteProps } from './ProtectedRoute/ProtectedRoute'
 
 export { default as RoleGuard } from './RoleGuard/RoleGuard'
 export type { RoleGuardProps } from './RoleGuard/RoleGuard'
+
+export { default as EmailVerification } from './EmailVerification/EmailVerification'

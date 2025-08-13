@@ -1,0 +1,428 @@
+/* Organizational Chart */
+.organizational-chart {
+  padding: var(--spacing-6);
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.org-chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+/* Header */
+.org-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.org-chart-title h1 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-1) 0;
+  line-height: var(--line-height-tight);
+}
+
+.org-chart-title p {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: var(--line-height-normal);
+}
+
+.org-chart-stats {
+  display: flex;
+  gap: var(--spacing-6);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.stat-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-600);
+}
+
+.stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* Controls */
+.org-chart-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-4);
+}
+
+.view-toggle {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+/* Content */
+.org-chart-content {
+  min-height: 400px;
+}
+
+/* Departments View */
+.departments-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.department-card {
+  padding: var(--spacing-5);
+}
+
+.department-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-4);
+  padding-bottom: var(--spacing-3);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.department-header h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: var(--line-height-tight);
+}
+
+.employee-count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  background-color: var(--color-secondary-100);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--border-radius-full);
+  font-weight: var(--font-weight-medium);
+}
+
+.department-employees {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.department-employee {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  border-radius: var(--border-radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.department-employee:hover {
+  background-color: var(--color-secondary-50);
+}
+
+.no-employees {
+  text-align: center;
+  padding: var(--spacing-6);
+  color: var(--color-text-tertiary);
+}
+
+.no-employees p {
+  margin: 0;
+  font-style: italic;
+}
+
+/* Hierarchy View */
+.hierarchy-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.org-node {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.employee-node {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-4);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.employee-node:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.employee-node-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.expand-button {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: var(--spacing-1);
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-fast);
+  margin-left: auto;
+}
+
+.expand-button:hover {
+  background-color: var(--color-secondary-100);
+  color: var(--color-text-secondary);
+}
+
+.expand-button svg {
+  transition: transform var(--transition-fast);
+}
+
+.direct-reports-count {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-top: var(--spacing-2);
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.direct-reports {
+  margin-left: var(--spacing-4);
+  padding-left: var(--spacing-4);
+  border-left: 2px solid var(--color-border-light);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.no-hierarchy {
+  text-align: center;
+  padding: var(--spacing-12);
+  color: var(--color-text-tertiary);
+}
+
+.no-hierarchy p {
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.no-hierarchy p:last-child {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+/* Employee Avatar */
+.employee-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.employee-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.employee-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-primary-500);
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+}
+
+/* Employee Info */
+.employee-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.employee-info h4 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-1) 0;
+  line-height: var(--line-height-tight);
+}
+
+.employee-position {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-1) 0;
+  line-height: var(--line-height-normal);
+}
+
+.employee-department {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-1) 0;
+  line-height: var(--line-height-normal);
+}
+
+.employee-role {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary-600);
+  background-color: var(--color-primary-50);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--border-radius-sm);
+  font-weight: var(--font-weight-medium);
+  text-transform: capitalize;
+}
+
+/* Mobile Responsive */
+@media (max-width: 1024px) {
+  .departments-view {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .organizational-chart {
+    padding: var(--spacing-4);
+    gap: var(--spacing-4);
+  }
+  
+  .org-chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-4);
+  }
+  
+  .org-chart-stats {
+    gap: var(--spacing-4);
+  }
+  
+  .org-chart-controls {
+    flex-direction: column;
+    gap: var(--spacing-3);
+    align-items: stretch;
+  }
+  
+  .view-toggle {
+    justify-content: center;
+  }
+  
+  .departments-view {
+    grid-template-columns: 1fr;
+  }
+  
+  .department-employee {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-2);
+  }
+  
+  .employee-node-content {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-3);
+  }
+  
+  .expand-button {
+    margin: 0;
+  }
+  
+  .direct-reports {
+    margin-left: 0;
+    padding-left: var(--spacing-3);
+    border-left-width: 1px;
+  }
+}
+
+@media (max-width: 480px) {
+  .organizational-chart {
+    padding: var(--spacing-3);
+  }
+  
+  .org-chart-title h1 {
+    font-size: var(--font-size-xl);
+  }
+  
+  .org-chart-stats {
+    gap: var(--spacing-3);
+  }
+  
+  .stat-value {
+    font-size: var(--font-size-xl);
+  }
+  
+  .department-card,
+  .employee-node {
+    padding: var(--spacing-3);
+  }
+  
+  .employee-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .employee-avatar-placeholder {
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+  .employee-count {
+    background-color: var(--color-secondary-700);
+    color: var(--color-text-secondary);
+  }
+  
+  .department-employee:hover {
+    background-color: var(--color-secondary-800);
+  }
+  
+  .employee-node {
+    background-color: var(--color-secondary-800);
+    border-color: var(--color-secondary-600);
+  }
+  
+  .expand-button:hover {
+    background-color: var(--color-secondary-700);
+  }
+  
+  .direct-reports-count {
+    border-top-color: var(--color-secondary-600);
+  }
+  
+  .direct-reports {
+    border-left-color: var(--color-secondary-600);
+  }
+  
+  .employee-role {
+    background-color: var(--color-primary-900);
+    color: var(--color-primary-300);
+  }
+  
+  .stat-value {
+    color: var(--color-primary-400);
+  }
+}

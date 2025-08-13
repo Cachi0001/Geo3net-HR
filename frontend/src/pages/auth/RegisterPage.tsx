@@ -49,7 +49,7 @@ const RegisterPage: React.FC = () => {
       return
     }
     try {
-      await register(email, fullName, password)
+      await register({ firstName: fullName.split(' ')[0] || '', lastName: fullName.split(' ').slice(1).join(' ') || '', email, password })
       showSuccess('Account created successfully')
       navigate(to, { replace: true })
     } catch (err: any) {

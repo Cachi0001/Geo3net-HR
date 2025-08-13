@@ -1,0 +1,135 @@
+/* Time Tracking Page Styles */
+.time-tracking-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-6);
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: var(--spacing-8);
+}
+
+.page-header h1 {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.page-header p {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-8);
+    padding: var(--spacing-1);
+    background-color: var(--color-background-secondary);
+    border-radius: var(--border-radius-lg);
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.tab-button {
+    min-width: 150px;
+    border-radius: var(--border-radius-md);
+    font-weight: var(--font-weight-semibold);
+    transition: all var(--transition-base);
+}
+
+.tab-button:hover {
+    transform: translateY(-1px);
+}
+
+/* Tab Content */
+.tab-content {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .time-tracking-page {
+        padding: var(--spacing-4);
+    }
+
+    .page-header h1 {
+        font-size: var(--font-size-2xl);
+    }
+
+    .page-header p {
+        font-size: var(--font-size-base);
+    }
+
+    .tab-navigation {
+        width: 100%;
+        margin-bottom: var(--spacing-6);
+    }
+
+    .tab-button {
+        flex: 1;
+        min-width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .time-tracking-page {
+        padding: var(--spacing-2);
+    }
+
+    .tab-navigation {
+        flex-direction: column;
+        gap: var(--spacing-1);
+    }
+
+    .tab-button {
+        width: 100%;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .tab-navigation {
+        background-color: var(--color-secondary-700);
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .tab-button:hover {
+        transform: none;
+    }
+
+    .tab-content {
+        animation: none;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .tab-navigation {
+        border: 2px solid var(--color-border-strong);
+    }
+
+    .tab-button {
+        border: 1px solid var(--color-border-medium);
+    }
+}

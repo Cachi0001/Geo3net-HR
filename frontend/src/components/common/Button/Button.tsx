@@ -9,20 +9,19 @@ interface BaseButtonProps {
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
   className?: string
+  children?: React.ReactNode
 }
 
-type ButtonAsButton = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> &
-  BaseButtonProps & {
+type ButtonAsButton = BaseButtonProps & 
+  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, keyof BaseButtonProps> & {
     as?: 'button'
     href?: never
-    children?: React.ReactNode
   }
 
-type ButtonAsAnchor = Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'children'> &
-  BaseButtonProps & {
+type ButtonAsAnchor = BaseButtonProps & 
+  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, keyof BaseButtonProps> & {
     as: 'a'
     href: string
-    children?: React.ReactNode
   }
 
 export type ButtonProps = ButtonAsButton | ButtonAsAnchor

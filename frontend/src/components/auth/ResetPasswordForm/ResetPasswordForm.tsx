@@ -27,15 +27,14 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
-  
+
   const { resetPassword } = useAuth()
   const { showToast } = useToast()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    
-    // Clear error when user starts typing
+
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -64,13 +63,13 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) {
       return
     }
 
     setIsLoading(true)
-    
+
     try {
       await resetPassword(token, formData.password)
       setIsSubmitted(true)
@@ -112,13 +111,13 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
               />
             </svg>
           </div>
-          
+
           <h1 className="reset-password-success-title">Password Reset Complete</h1>
-          
+
           <p className="reset-password-success-message">
             Your password has been successfully reset. You can now sign in with your new password.
           </p>
-          
+
           <div className="reset-password-success-actions">
             <Button
               type="button"

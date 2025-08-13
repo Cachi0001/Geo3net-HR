@@ -1,5 +1,4 @@
 export const colors = {
-  // Primary brand colors (Go3net-inspired bright blue)
   primary: {
     50: '#e6f3ff',
     100: '#b3d9ff',
@@ -13,7 +12,6 @@ export const colors = {
     900: '#00141a',
   },
   
-  // Secondary colors (Go3net-inspired dark blue/black)
   secondary: {
     50: '#f8f9fa',
     100: '#e9ecef',
@@ -27,7 +25,6 @@ export const colors = {
     900: '#0d1117',
   },
   
-  // Status colors (Go3net-inspired green accent)
   success: {
     50: '#f0fff4',
     100: '#c6f6d5',
@@ -80,18 +77,15 @@ export const colors = {
     900: '#0c4a6e',
   },
   
-  // Neutral colors
   white: '#ffffff',
   black: '#000000',
   
-  // Background colors
   background: {
     primary: '#ffffff',
     secondary: '#f8fafc',
     tertiary: '#f1f5f9',
   },
   
-  // Text colors
   text: {
     primary: '#1e293b',
     secondary: '#475569',
@@ -99,7 +93,6 @@ export const colors = {
     inverse: '#ffffff',
   },
   
-  // Border colors
   border: {
     light: '#e2e8f0',
     medium: '#cbd5e1',

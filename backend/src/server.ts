@@ -13,6 +13,7 @@ import roleRoutes from './routes/role.routes'
 import { employeeRoutes } from './routes/employee.routes'
 import { timeTrackingRoutes } from './routes/timeTracking.routes'
 import taskRoutes from './routes/task.routes'
+import { systemRoutes } from './routes/system.routes'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -32,6 +33,7 @@ app.get('/health', (req, res) => {
   })
 })
 
+app.use('/api/system', systemRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/roles', roleRoutes)
 app.use('/api/employees', employeeRoutes)

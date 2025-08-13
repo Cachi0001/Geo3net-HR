@@ -17,7 +17,7 @@ interface AuthContextType {
   loading: boolean
   login: (email: string, password: string) => Promise<void>
   loginWithGoogle: (token: string) => Promise<void>
-  register: (email: string, fullName: string, password: string) => Promise<void>
+  register: (data: { firstName: string; lastName: string; email: string; password: string }) => Promise<{ user: User; message: string }>
   logout: () => Promise<void>
   forgotPassword: (email: string) => Promise<void>
   resetPassword: (token: string, password: string) => Promise<void>
@@ -89,13 +89,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [])
 
-  const register = useCallback(async (email: string, fullName: string, password: string) => {
+  const register = useCallback(async (data: { firstName: string; lastName: string; email: string; password: string }) => {
     setLoading(true)
     try {
-      const response = await authService.register(email, fullName, password)
-      localStorage.setItem('accessToken', response.accessToken)
-      localStorage.setItem('refreshToken', response.refreshToken)
-      setUser(response.user)
+      const fullName = `${data.firstName} ${data.lastName}`
+      const response = await authService.register(data.email, fullName, data.password)
+      // Don't auto-login after registration - user needs to verify email first
+      return response
     } finally {
       setLoading(false)
     }

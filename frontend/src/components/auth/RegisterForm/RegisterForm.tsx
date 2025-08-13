@@ -94,12 +94,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     setIsLoading(true)
     
     try {
-      const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`
-      await register(formData.email, fullName, formData.password)
-      showToast('success', 'Registration successful! Please check your email to verify your account.')
+      const result = await register({
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email,
+        password: formData.password,
+      })
+      
+      showToast('success', result.message)
       onSuccess?.()
     } catch (error: any) {
-      showToast('error', error.message || 'Registration failed. Please try again.')
+      showToast(error.message || 'Registration failed. Please try again.', 'error')
     } finally {
       setIsLoading(false)
     }
