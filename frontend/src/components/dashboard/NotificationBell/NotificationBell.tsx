@@ -1,46 +1,65 @@
-import React, { useState } from 'react'
-import { Button } from '../../common'
-import './NotificationBell.css'
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useNotifications } from '../../../hooks/useNotifications';
+import { Button } from '../../common';
+import './NotificationBell.css';
 
-interface NotificationBellProps {
-  className?: string
-}
+const NotificationBell: React.FC = () => {
+  const { notifications, stats, loadNotifications, loadStats } = useNotifications();
+  const [isOpen, setIsOpen] = useState(false);
 
-const NotificationBell: React.FC<NotificationBellProps> = ({ className }) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [unreadCount] = useState(0)
+  useEffect(() => {
+    // Load initial data when the component mounts
+    loadNotifications(10); // Load latest 10 notifications
+    loadStats();
+  }, [loadNotifications, loadStats]);
+
+  const unreadCount = stats?.unread || 0;
 
   return (
-    <div className={`notification-bell ${className || ''}`}>
+    <div className="notification-bell">
       <button
         className="bell-button"
         onClick={() => setIsOpen(!isOpen)}
-        aria-label="Notifications"
+        aria-label={`Notifications (${unreadCount} unread)`}
       >
         <div className="bell-icon">🔔</div>
         {unreadCount > 0 && (
-          <span className="notification-badge">
-            {unreadCount}
-          </span>
+          <span className="notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
         )}
       </button>
 
       {isOpen && (
         <div className="notification-dropdown">
-          <div className="dropdown-header">
+          <header className="dropdown-header">
             <h3>Notifications</h3>
-          </div>
-          
+            {unreadCount > 0 && <Button variant="link" size="sm">Mark all as read</Button>}
+          </header>
+
           <div className="notification-list">
-            <div className="no-notifications">
-              <div className="no-notifications-icon">🔔</div>
-              <p>No notifications</p>
-            </div>
+            {notifications.length > 0 ? (
+              notifications.map(notification => (
+                <div key={notification.id} className={`notification-item ${!notification.read ? 'unread' : ''}`}>
+                  <p className="notification-message">{notification.message}</p>
+                  <span className="notification-timestamp">{new Date(notification.createdAt).toLocaleString()}</span>
+                </div>
+              ))
+            ) : (
+              <div className="no-notifications">
+                <p>You're all caught up!</p>
+              </div>
+            )}
           </div>
+
+          <footer className="dropdown-footer">
+            <Link to="/notifications" className="view-all-link">
+              View All Notifications
+            </Link>
+          </footer>
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default NotificationBell
+export default NotificationBell;

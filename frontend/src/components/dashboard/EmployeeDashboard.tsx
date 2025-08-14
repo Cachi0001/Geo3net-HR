@@ -4,6 +4,7 @@ import { timeTrackingService, TimeTrackingSummary } from '../../services/timeTra
 import MyTasksWidget from './widgets/MyTasksWidget';
 import TimeLogWidget from './widgets/TimeLogWidget';
 import QuickLinksWidget from './widgets/QuickLinksWidget';
+import './EmployeeDashboard.css'; // Import the new stylesheet
 
 const EmployeeDashboard: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -40,14 +41,14 @@ const EmployeeDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="employee-dashboard">
       {/* Main content area */}
-      <div className="lg:col-span-2 space-y-6">
+      <div className="employee-dashboard__main">
         <MyTasksWidget tasks={tasks} isLoading={tasksLoading} />
       </div>
 
       {/* Sidebar area */}
-      <div className="space-y-6">
+      <div className="employee-dashboard__sidebar">
         <TimeLogWidget summary={timeSummary} isLoading={timeSummaryLoading} />
         <QuickLinksWidget />
       </div>

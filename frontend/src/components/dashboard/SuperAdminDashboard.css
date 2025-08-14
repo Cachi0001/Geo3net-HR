@@ -1,0 +1,27 @@
+.super-admin-dashboard {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-6, 1.5rem);
+}
+
+.super-admin-dashboard__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6, 1.5rem);
+}
+
+.super-admin-dashboard__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6, 1.5rem);
+}
+
+@media (min-width: 1024px) {
+  .super-admin-dashboard {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .super-admin-dashboard__main {
+    grid-column: span 2 / span 2;
+  }
+}
