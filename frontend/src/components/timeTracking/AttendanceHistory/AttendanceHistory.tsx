@@ -47,7 +47,7 @@ const AttendanceHistory: React.FC = () => {
         apiCall(`/api/time-tracking/attendance?period=${selectedPeriod}`, 'GET'),
         apiCall(`/api/time-tracking/attendance/summary?period=${selectedPeriod}`, 'GET')
       ])
-      
+
       setRecords(recordsResponse.data || [])
       setSummary(summaryResponse.data)
     } catch (error: any) {
@@ -76,10 +76,10 @@ const AttendanceHistory: React.FC = () => {
 
   const formatDuration = (hours: number) => {
     if (hours === 0) return '0h'
-    
+
     const wholeHours = Math.floor(hours)
     const minutes = Math.round((hours - wholeHours) * 60)
-    
+
     if (wholeHours === 0) {
       return `${minutes}m`
     } else if (minutes === 0) {
@@ -253,8 +253,8 @@ const AttendanceHistory: React.FC = () => {
             <div className="calendar-icon">📅</div>
             <h3>Calendar View</h3>
             <p>Calendar view will be implemented in the next phase</p>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setSelectedView('list')}
             >
               Switch to List View

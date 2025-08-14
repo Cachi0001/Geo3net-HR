@@ -1,16 +1,16 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 import AttendanceHistory from '../../../components/timeTracking/AttendanceHistory/AttendanceHistory'
 import { useApiCall } from '../../../hooks/useApiCall'
 import { useToast } from '../../../hooks/useToast'
 
 // Mock hooks
-vi.mock('../../../hooks/useApiCall')
-vi.mock('../../../hooks/useToast')
+jest.mock('../../../hooks/useApiCall')
+jest.mock('../../../hooks/useToast')
 
-const mockApiCall = vi.fn()
-const mockShowToast = vi.fn()
+const mockApiCall = jest.fn()
+const mockShowToast = jest.fn()
 
 const mockAttendanceRecords = [
   {
@@ -54,7 +54,7 @@ const mockSummary = {
 
 describe('AttendanceHistory Component', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     
     ;(useApiCall as any).mockReturnValue({
       apiCall: mockApiCall

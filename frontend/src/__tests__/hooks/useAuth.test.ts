@@ -39,9 +39,7 @@ describe('useAuth', () => {
   it('should throw error when used outside AuthProvider', () => {
     const { result } = renderHook(() => useAuth())
     
-    expect(result.error).toEqual(
-      Error('useAuth must be used within an AuthProvider')
-    )
+    expect(() => result.current).toThrow('useAuth must be used within an AuthProvider')
   })
 
   it('should initialize with no user when no token exists', async () => {
@@ -153,8 +151,7 @@ describe('useAuth', () => {
         role: 'employee',
         profileComplete: false,
       },
-      accessToken: 'access-token',
-      refreshToken: 'refresh-token',
+      message: 'Registration successful'
     }
 
     mockAuthService.register.mockResolvedValue(mockRegisterResponse)
@@ -164,7 +161,12 @@ describe('useAuth', () => {
     })
 
     await act(async () => {
-      await result.current.register('test@example.com', 'Test User', 'password')
+      await result.current.register({
+        firstName: 'Test',
+        lastName: 'User',
+        email: 'test@example.com',
+        password: 'password'
+      })
     })
 
     expect(mockAuthService.register).toHaveBeenCalledWith('test@example.com', 'Test User', 'password')

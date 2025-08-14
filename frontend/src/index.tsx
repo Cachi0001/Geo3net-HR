@@ -5,6 +5,7 @@ import App from './App'
 import { ToastProvider } from './contexts/ToastContext'
 import { LoadingProvider } from './contexts/LoadingContext'
 import { AuthProvider } from './contexts/AuthContext'
+import { registerSW } from './utils/serviceWorker'
 import './styles/base/global.css'
 
 const root = ReactDOM.createRoot(
@@ -24,3 +25,6 @@ root.render(
     </BrowserRouter>
   </React.StrictMode>
 )
+
+// Register service worker for offline capabilities
+registerSW()

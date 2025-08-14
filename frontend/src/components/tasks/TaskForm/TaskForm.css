@@ -1,0 +1,443 @@
+/* Modern Go3net Branded Task Form Styles */
+.task-form {
+  background: linear-gradient(135deg, var(--color-white) 0%, #f8fafc 100%);
+  border-radius: var(--border-radius-xl);
+  box-shadow: 0 10px 40px rgba(0, 123, 255, 0.1);
+  border: 1px solid rgba(0, 123, 255, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
+.task-form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-go3net-blue) 0%, var(--color-go3net-green) 100%);
+}
+
+.task-form-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-12);
+  gap: var(--spacing-6);
+  background: linear-gradient(135deg, var(--color-white) 0%, var(--color-go3net-blue-50) 100%);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Form Header */
+.task-form-header {
+  padding: var(--spacing-6);
+  background: linear-gradient(135deg, var(--color-go3net-blue) 0%, #0056b3 100%);
+  color: var(--color-white);
+  position: relative;
+  overflow: hidden;
+}
+
+.task-form-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
+}
+
+.task-form-header h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+/* Form Content */
+.task-form-content {
+  padding: var(--spacing-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.form-group label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-go3net-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--spacing-2);
+}
+
+.form-group input,
+.form-textarea,
+.form-group select {
+  background: var(--color-white);
+  border: 2px solid var(--color-go3net-blue-200);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-4);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  transition: all var(--transition-base);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.05);
+}
+
+.form-group input:focus,
+.form-textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--color-go3net-blue);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+  line-height: var(--line-height-relaxed);
+}
+
+.form-group input.error,
+.form-textarea.error,
+.form-group select.error {
+  border-color: var(--color-error-500);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.error-message {
+  color: var(--color-error-600);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin-top: var(--spacing-1);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.error-message::before {
+  content: '⚠️';
+  font-size: var(--font-size-base);
+}
+
+/* Form Row */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-6);
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-4);
+  padding-top: var(--spacing-6);
+  border-top: 2px solid var(--color-go3net-blue-100);
+  margin-top: var(--spacing-4);
+}
+
+.form-actions .btn {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  padding: var(--spacing-4) var(--spacing-8);
+  border-radius: var(--border-radius-lg);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.form-actions .btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.form-actions .btn:hover::before {
+  left: 100%;
+}
+
+.form-actions .btn[type="submit"] {
+  background: linear-gradient(135deg, var(--color-go3net-blue) 0%, var(--color-go3net-green) 100%);
+  color: var(--color-white);
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+.form-actions .btn[type="submit"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+}
+
+.form-actions .btn[type="submit"]:disabled {
+  background: var(--color-secondary-400);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.form-actions .btn[type="button"] {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 2px solid var(--color-secondary-300);
+}
+
+.form-actions .btn[type="button"]:hover {
+  background: var(--color-secondary-50);
+  border-color: var(--color-secondary-400);
+  color: var(--color-text-primary);
+  transform: translateY(-1px);
+}
+
+/* Enhanced Input Styling */
+.form-group input[type="text"],
+.form-group input[type="date"] {
+  position: relative;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="date"]:focus {
+  background: linear-gradient(135deg, var(--color-white) 0%, var(--color-go3net-blue-50) 100%);
+}
+
+.form-group select {
+  cursor: pointer;
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,9 12,15 18,9"></polyline></svg>');
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: var(--spacing-10);
+  appearance: none;
+}
+
+.form-group select:focus {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18,15 12,9 6,15"></polyline></svg>');
+}
+
+/* Floating Label Effect */
+.form-group {
+  position: relative;
+}
+
+.form-group input:focus + label,
+.form-group input:not(:placeholder-shown) + label,
+.form-textarea:focus + label,
+.form-textarea:not(:placeholder-shown) + label {
+  transform: translateY(-8px) scale(0.85);
+  color: var(--color-go3net-blue);
+}
+
+/* Loading State */
+.form-actions .btn.loading {
+  position: relative;
+  color: transparent;
+}
+
+.form-actions .btn.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Form Animation */
+@keyframes formSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.task-form {
+  animation: formSlideIn 0.4s ease-out;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .task-form-content {
+    padding: var(--spacing-6);
+    gap: var(--spacing-5);
+  }
+
+  .task-form-header {
+    padding: var(--spacing-5);
+  }
+
+  .task-form-header h2 {
+    font-size: var(--font-size-xl);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-4);
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: var(--spacing-3);
+  }
+
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .task-form-content {
+    padding: var(--spacing-4);
+    gap: var(--spacing-4);
+  }
+
+  .task-form-header {
+    padding: var(--spacing-4);
+  }
+
+  .task-form-header h2 {
+    font-size: var(--font-size-lg);
+  }
+
+  .form-group input,
+  .form-textarea,
+  .form-group select {
+    padding: var(--spacing-3);
+    font-size: var(--font-size-sm);
+  }
+
+  .form-textarea {
+    min-height: 100px;
+  }
+
+  .form-actions .btn {
+    padding: var(--spacing-3) var(--spacing-6);
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .task-form {
+    background: linear-gradient(135deg, var(--color-secondary-800) 0%, var(--color-secondary-700) 100%);
+    border-color: var(--color-secondary-600);
+  }
+
+  .task-form-header {
+    background: linear-gradient(135deg, var(--color-go3net-blue) 0%, #1a365d 100%);
+  }
+
+  .form-group input,
+  .form-textarea,
+  .form-group select {
+    background: var(--color-secondary-700);
+    border-color: var(--color-secondary-600);
+    color: var(--color-white);
+  }
+
+  .form-group input:focus,
+  .form-textarea:focus,
+  .form-group select:focus {
+    background: var(--color-secondary-600);
+  }
+
+  .form-group label {
+    color: var(--color-go3net-blue-300);
+  }
+
+  .form-actions {
+    border-color: var(--color-secondary-600);
+  }
+
+  .form-actions .btn[type="button"] {
+    border-color: var(--color-secondary-500);
+    color: var(--color-secondary-300);
+  }
+
+  .form-actions .btn[type="button"]:hover {
+    background: var(--color-secondary-600);
+    color: var(--color-white);
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .task-form {
+    border-width: 3px;
+  }
+
+  .form-group input,
+  .form-textarea,
+  .form-group select {
+    border-width: 3px;
+  }
+
+  .form-actions .btn {
+    border-width: 3px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .task-form,
+  .form-actions .btn::before {
+    animation: none;
+  }
+
+  .form-group input:focus,
+  .form-textarea:focus,
+  .form-group select:focus,
+  .form-actions .btn:hover {
+    transform: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .task-form {
+    background: none;
+    box-shadow: none;
+    border: 1px solid var(--color-text-primary);
+  }
+
+  .task-form-header {
+    background: none;
+    color: var(--color-text-primary);
+  }
+
+  .form-actions {
+    display: none;
+  }
+}

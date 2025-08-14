@@ -1,21 +1,21 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 import CheckInOut from '../../../components/timeTracking/CheckInOut/CheckInOut'
 import { useAuth } from '../../../hooks/useAuth'
 import { useApiCall } from '../../../hooks/useApiCall'
 import { useToast } from '../../../hooks/useToast'
 
 // Mock hooks
-vi.mock('../../../hooks/useAuth')
-vi.mock('../../../hooks/useApiCall')
-vi.mock('../../../hooks/useToast')
+jest.mock('../../../hooks/useAuth')
+jest.mock('../../../hooks/useApiCall')
+jest.mock('../../../hooks/useToast')
 
 // Mock geolocation
 const mockGeolocation = {
-  getCurrentPosition: vi.fn(),
-  watchPosition: vi.fn(),
-  clearWatch: vi.fn()
+  getCurrentPosition: jest.fn(),
+  watchPosition: jest.fn(),
+  clearWatch: jest.fn()
 }
 
 Object.defineProperty(global.navigator, 'geolocation', {
@@ -30,12 +30,12 @@ const mockUser = {
   role: 'employee'
 }
 
-const mockApiCall = vi.fn()
-const mockShowToast = vi.fn()
+const mockApiCall = jest.fn()
+const mockShowToast = jest.fn()
 
 describe('CheckInOut Component', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
     
     ;(useAuth as any).mockReturnValue({
       user: mockUser
@@ -50,7 +50,7 @@ describe('CheckInOut Component', () => {
     })
 
     // Mock successful geolocation
-    mockGeolocation.getCurrentPosition.mockImplementation((success) => {
+    mockGeolocation.getCurrentPosition.mockImplementation((success: PositionCallback) => {
       success({
         coords: {
           latitude: 40.7128,
@@ -160,11 +160,11 @@ describe('CheckInOut Component', () => {
   })
 
   it('handles location permission denied', async () => {
-    mockGeolocation.getCurrentPosition.mockImplementation((success, error) => {
+    mockGeolocation.getCurrentPosition.mockImplementation((success: PositionCallback, error: PositionErrorCallback) => {
       error({
         code: 1, // PERMISSION_DENIED
         message: 'Permission denied'
-      })
+      } as GeolocationPositionError)
     })
 
     mockApiCall.mockResolvedValue({
@@ -218,11 +218,11 @@ describe('CheckInOut Component', () => {
   })
 
   it('disables check-in button when location is not available', async () => {
-    mockGeolocation.getCurrentPosition.mockImplementation((success, error) => {
+    mockGeolocation.getCurrentPosition.mockImplementation((success: PositionCallback, error: PositionErrorCallback) => {
       error({
         code: 2, // POSITION_UNAVAILABLE
         message: 'Position unavailable'
-      })
+      } as GeolocationPositionError)
     })
 
     mockApiCall.mockResolvedValue({
@@ -238,7 +238,7 @@ describe('CheckInOut Component', () => {
   })
 
   it('updates current time every second', async () => {
-    vi.useFakeTimers()
+    jest.useFakeTimers()
     
     mockApiCall.mockResolvedValue({
       data: { isCheckedIn: false, todayTotalHours: 0 }
@@ -250,13 +250,13 @@ describe('CheckInOut Component', () => {
     const initialTimeText = initialTime.textContent
 
     // Advance time by 1 second
-    vi.advanceTimersByTime(1000)
+    jest.advanceTimersByTime(1000)
 
     await waitFor(() => {
       const updatedTime = screen.getByText(/\d{1,2}:\d{2}:\d{2}/)
       expect(updatedTime.textContent).not.toBe(initialTimeText)
     })
 
-    vi.useRealTimers()
+    jest.useRealTimers()
   })
 })

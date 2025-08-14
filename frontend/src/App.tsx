@@ -16,6 +16,7 @@ import DashboardPage from './pages/dashboard/DashboardPage'
 import EmployeesPage from './pages/employees/EmployeesPage'
 import TasksPage from './pages/tasks/TasksPage'
 import TimeTrackingPage from './pages/timeTracking/TimeTrackingPage'
+import MobileTimeTrackingPage from './pages/timeTracking/MobileTimeTrackingPage'
 import ProfilePage from './pages/profile/ProfilePage'
 
 import ProtectedRoute from './components/auth/ProtectedRoute/ProtectedRoute'
@@ -79,6 +80,11 @@ const App: React.FC = () => {
             <Layout>
               <TimeTrackingPage />
             </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/mobile-time-tracking" element={
+          <ProtectedRoute>
+            <MobileTimeTrackingPage />
           </ProtectedRoute>
         } />
         <Route path="/profile" element={
