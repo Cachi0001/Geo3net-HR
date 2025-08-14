@@ -89,9 +89,7 @@ export class PermissionMiddleware {
     }
   }
 
-  /**
-   * Check resource-based permissions with scope
-   */
+  
   requireResourcePermission(options: PermissionOptions) {
     return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
       try {

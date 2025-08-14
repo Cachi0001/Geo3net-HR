@@ -1,0 +1,434 @@
+/* Go3net Branded Task Assignment Styles */
+.task-assignment {
+  background: linear-gradient(135deg, var(--color-white) 0%, var(--color-go3net-blue-50) 100%);
+  border: 2px solid var(--color-go3net-blue-200);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-xl);
+  animation: slideInUp 0.5s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.task-assignment::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-go3net-blue) 0%, var(--color-go3net-green) 100%);
+}
+
+.task-assignment-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-12);
+  gap: var(--spacing-4);
+  color: var(--color-go3net-blue);
+  background: linear-gradient(135deg, var(--color-go3net-blue-50) 0%, var(--color-white) 100%);
+  border: 2px solid var(--color-go3net-blue-200);
+  border-radius: var(--border-radius-xl);
+}
+
+.task-assignment-header {
+  padding: var(--spacing-6) var(--spacing-6) var(--spacing-4) var(--spacing-6);
+  border-bottom: 2px solid var(--color-go3net-blue-200);
+  background: linear-gradient(135deg, var(--color-go3net-blue-50) 0%, var(--color-white) 100%);
+  position: relative;
+}
+
+.task-assignment-header::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: var(--spacing-6);
+  width: 60px;
+  height: 2px;
+  background: var(--color-go3net-green);
+  border-radius: var(--border-radius-full);
+}
+
+.task-assignment-header h2 {
+  color: var(--color-go3net-blue);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-2) 0;
+  font-family: var(--font-family-heading);
+  text-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+}
+
+.bulk-info {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  margin: 0 0 var(--spacing-3) 0;
+  padding: var(--spacing-3);
+  background: linear-gradient(135deg, var(--color-go3net-green-50) 0%, var(--color-white) 100%);
+  border-radius: var(--border-radius-lg);
+  border-left: 4px solid var(--color-go3net-green);
+}
+
+.task-info {
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-4);
+  background: linear-gradient(135deg, var(--color-go3net-blue-50) 0%, rgba(255,255,255,0.8) 100%);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--color-go3net-blue-200);
+}
+
+.task-info h3 {
+  color: var(--color-go3net-blue);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.task-info p {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  margin: 0;
+  line-height: var(--line-height-relaxed);
+}
+
+.task-assignment-form {
+  padding: var(--spacing-6);
+}
+
+/* Form Groups */
+.form-group {
+  margin-bottom: var(--spacing-5);
+  animation: fadeInUp 0.4s ease-out;
+  animation-fill-mode: both;
+}
+
+.form-group:nth-child(1) { animation-delay: 0.1s; }
+.form-group:nth-child(2) { animation-delay: 0.2s; }
+.form-group:nth-child(3) { animation-delay: 0.3s; }
+.form-group:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-group label {
+  display: block;
+  color: var(--color-go3net-blue);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+}
+
+.form-group label::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 20px;
+  height: 2px;
+  background: var(--color-go3net-green);
+  border-radius: var(--border-radius-full);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-5);
+}
+
+/* Enhanced Form Inputs */
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: var(--spacing-4);
+  border: 2px solid var(--color-go3net-blue-200);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-base);
+  background: var(--color-white);
+  transition: all var(--transition-base);
+  position: relative;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--color-go3net-blue);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.form-textarea {
+  width: 100%;
+  padding: var(--spacing-4);
+  border: 2px solid var(--color-go3net-blue-200);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  background: var(--color-white);
+  transition: all var(--transition-base);
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--color-go3net-blue);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.form-textarea.error,
+.form-group input.error,
+.form-group select.error {
+  border-color: var(--color-error-500);
+  background: var(--color-error-50);
+}
+
+.error-message {
+  color: var(--color-error-600);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin-top: var(--spacing-2);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.error-message::before {
+  content: '⚠️';
+  font-size: var(--font-size-base);
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-4);
+  padding-top: var(--spacing-6);
+  border-top: 2px solid var(--color-go3net-blue-200);
+  margin-top: var(--spacing-6);
+  animation: slideInUp 0.6s ease-out;
+}
+
+.form-actions button {
+  padding: var(--spacing-3) var(--spacing-6);
+  border-radius: var(--border-radius-full);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+  min-width: 120px;
+}
+
+.form-actions button[type=\"submit\"] {
+  background: linear-gradient(135deg, var(--color-go3net-blue) 0%, var(--color-go3net-green) 100%);
+  border: none;
+  color: var(--color-white);
+  box-shadow: var(--shadow-lg);
+}
+
+.form-actions button[type=\"submit\"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s;
+}
+
+.form-actions button[type=\"submit\"]:hover::before {
+  left: 100%;
+}
+
+.form-actions button[type=\"submit\"]:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+.form-actions button[type=\"button\"] {
+  background: var(--color-white);
+  border: 2px solid var(--color-go3net-blue-200);
+  color: var(--color-go3net-blue);
+}
+
+.form-actions button[type=\"button\"]:hover {
+  background: var(--color-go3net-blue-50);
+  border-color: var(--color-go3net-blue);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.form-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Loading State */
+.form-actions button[loading] {
+  position: relative;
+  color: transparent;
+}
+
+.form-actions button[loading]::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid transparent;
+  border-top: 2px solid var(--color-white);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .task-assignment-form {
+    padding: var(--spacing-4);
+  }
+
+  .task-assignment-header {
+    padding: var(--spacing-4);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-3);
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: var(--spacing-3);
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .task-assignment-header h2 {
+    font-size: var(--font-size-xl);
+  }
+
+  .form-group {
+    margin-bottom: var(--spacing-4);
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-textarea {
+    padding: var(--spacing-3);
+  }
+
+  .task-info {
+    padding: var(--spacing-3);
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .task-assignment {
+    background: linear-gradient(135deg, var(--color-secondary-800) 0%, var(--color-secondary-700) 100%);
+    border-color: var(--color-go3net-blue-600);
+  }
+
+  .task-assignment-header {
+    background: linear-gradient(135deg, var(--color-secondary-700) 0%, var(--color-secondary-800) 100%);
+    border-color: var(--color-go3net-blue-600);
+  }
+
+  .task-assignment-header h2 {
+    color: var(--color-go3net-blue-300);
+  }
+
+  .task-info {
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.1) 0%, rgba(255,255,255,0.05) 100%);
+    border-color: var(--color-go3net-blue-600);
+  }
+
+  .task-info h3 {
+    color: var(--color-go3net-blue-300);
+  }
+
+  .task-info p {
+    color: var(--color-secondary-200);
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-textarea {
+    background: var(--color-secondary-700);
+    border-color: var(--color-go3net-blue-600);
+    color: var(--color-white);
+  }
+
+  .bulk-info {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(255,255,255,0.05) 100%);
+    border-color: var(--color-go3net-green-600);
+    color: var(--color-secondary-200);
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .task-assignment {
+    border-width: 3px;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-textarea {
+    border-width: 3px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .task-assignment,
+  .form-group,
+  .form-actions,
+  .form-actions button::before {
+    animation: none;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-textarea:focus,
+  .form-actions button:hover {
+    transform: none;
+  }
+}

@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useLoading } from './hooks/useLoading'
+import { notificationService } from './services/notification.service'
 import Layout from './components/common/Layout/Layout'
 import LoadingSpinner from './components/common/LoadingSpinner/LoadingSpinner'
 import Toast from './components/common/Toast/Toast'
@@ -24,6 +25,11 @@ import PublicRoute from './components/auth/PublicRoute/PublicRoute'
 
 const App: React.FC = () => {
   const { isLoading } = useLoading()
+
+  // Initialize notification service
+  useEffect(() => {
+    notificationService.initialize()
+  }, [])
 
   return (
     <>

@@ -68,22 +68,33 @@
 }
 
 .tasks-main-section {
-  flex: 1;
+  flex: 2;
   min-width: 0; /* Allows flex item to shrink below content size */
   display: flex;
   flex-direction: column;
 }
 
-.tasks-detail-section {
-  width: 400px;
+.tasks-sidebar {
+  flex: 1;
   min-width: 400px;
   max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  animation: slideInRight 0.4s ease-out;
+}
+
+.notifications-panel {
+  flex-shrink: 0;
+}
+
+.task-detail-panel {
+  flex: 1;
   background: linear-gradient(135deg, var(--color-white) 0%, var(--color-go3net-blue-50) 100%);
   border: 2px solid var(--color-go3net-blue-200);
   border-radius: var(--border-radius-xl);
   box-shadow: var(--shadow-xl);
   overflow: hidden;
-  animation: slideInRight 0.4s ease-out;
 }
 
 @keyframes slideInRight {
@@ -99,9 +110,9 @@
 
 /* Responsive Design */
 @media (max-width: 1200px) {
-  .tasks-detail-section {
-    width: 350px;
+  .tasks-sidebar {
     min-width: 350px;
+    max-width: 400px;
   }
 }
 
@@ -111,11 +122,19 @@
     gap: var(--spacing-4);
   }
 
-  .tasks-detail-section {
-    width: 100%;
+  .tasks-sidebar {
     min-width: auto;
     max-width: none;
-    height: 50vh;
+    flex-direction: row;
+    height: auto;
+  }
+
+  .notifications-panel {
+    flex: 1;
+  }
+
+  .task-detail-panel {
+    flex: 2;
     min-height: 400px;
   }
 
@@ -143,7 +162,12 @@
     gap: var(--spacing-3);
   }
 
-  .tasks-detail-section {
+  .tasks-sidebar {
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  .task-detail-panel {
     height: 60vh;
     min-height: 300px;
   }
@@ -168,10 +192,14 @@
     gap: var(--spacing-2);
   }
 
-  .tasks-detail-section,
+  .task-detail-panel,
   .tasks-main-section {
     height: auto;
     min-height: 250px;
+  }
+
+  .notifications-panel {
+    order: -1; /* Show notifications first on mobile */
   }
 }
 

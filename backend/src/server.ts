@@ -13,6 +13,7 @@ import roleRoutes from './routes/role.routes'
 import { employeeRoutes } from './routes/employee.routes'
 import { timeTrackingRoutes } from './routes/timeTracking.routes'
 import taskRoutes from './routes/task.routes'
+import notificationRoutes from './routes/notification.routes'
 import { systemRoutes } from './routes/system.routes'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 
@@ -39,6 +40,7 @@ app.use('/api/roles', roleRoutes)
 app.use('/api/employees', employeeRoutes)
 app.use('/api/time-tracking', timeTrackingRoutes)
 app.use('/api/tasks', taskRoutes)
+app.use('/api/notifications', notificationRoutes)
 
 app.use(notFoundHandler)
 app.use(errorHandler)
