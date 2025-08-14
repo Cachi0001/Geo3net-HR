@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { notificationService } from '../services/notification.service'
+import { taskNotificationService } from '../services/taskNotification.service'
 import { AppError } from '../utils/errors'
 
 interface AuthenticatedRequest extends Request {
@@ -335,6 +336,67 @@ export class NotificationController {
         })
       } else {
         console.error('Get notification stats error:', error)
+        res.status(500).json({
+          success: false,
+          message: 'Internal server error'
+        })
+      }
+    }
+  }
+
+  // Notification Preferences
+  async getPreferences(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        throw new AppError('User not authenticated', 401)
+      }
+
+      const preferences = await taskNotificationService.getUserPreferences(userId)
+
+      res.json({
+        success: true,
+        data: preferences
+      })
+    } catch (error) {
+      console.error('Get preferences error:', error)
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      })
+    }
+  }
+
+  async updatePreferences(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        throw new AppError('User not authenticated', 401)
+      }
+
+      const preferences = req.body
+      if (!preferences) {
+        throw new AppError('Preferences data is required', 400)
+      }
+
+      const success = await taskNotificationService.updateUserPreferences(userId, preferences)
+
+      if (!success) {
+        throw new AppError('Failed to update preferences', 500)
+      }
+
+      res.json({
+        success: true,
+        message: 'Preferences updated successfully'
+      })
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({
+          success: false,
+          message: error.message
+        })
+      } else {
+        console.error('Update preferences error:', error)
         res.status(500).json({
           success: false,
           message: 'Internal server error'

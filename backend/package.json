@@ -9,8 +9,11 @@
     "start": "node dist/server.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test:coverage": "jest --coverage --collectCoverage=true",
+    "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
+    "test:ci": "jest --coverage --collectCoverage=true --watchAll=false --passWithNoTests",
+    "test:verbose": "jest --verbose --coverage",
     "migrate": "ts-node src/scripts/run-migration.ts",
     "init-system": "ts-node scripts/initialize-system.ts"
   },

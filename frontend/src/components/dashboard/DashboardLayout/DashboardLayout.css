@@ -1,0 +1,78 @@
+/* Go3net Professional Dashboard Layout */
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--color-gray-50);
+  font-family: var(--font-family-base);
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  transition: margin-left 0.3s ease;
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: var(--spacing-6);
+  overflow-y: auto;
+  background: var(--color-gray-50);
+}
+
+/* Sidebar collapsed state */
+.dashboard-layout.sidebar-collapsed .main-content {
+  margin-left: 0;
+}
+
+/* Mobile responsive */
+.dashboard-layout.mobile .main-content {
+  margin-left: 0;
+}
+
+.dashboard-layout.mobile .dashboard-main {
+  padding: var(--spacing-4);
+}
+
+/* Sidebar overlay for mobile */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  backdrop-filter: blur(2px);
+}
+
+/* Header notification bell positioning */
+.header-notification-bell {
+  margin-left: auto;
+  margin-right: var(--spacing-4);
+}
+
+/* Smooth transitions */
+.dashboard-layout * {
+  transition: all 0.3s ease;
+}
+
+/* Print styles */
+@media print {
+  .dashboard-layout {
+    display: block;
+  }
+  
+  .sidebar {
+    display: none;
+  }
+  
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .dashboard-main {
+    padding: 0;
+  }
+}

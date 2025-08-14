@@ -21,6 +21,10 @@ router.get('/history', notificationController.getNotificationHistory)
 router.patch('/:notificationId/clicked', notificationController.markNotificationClicked)
 router.patch('/:notificationId/dismissed', notificationController.markNotificationDismissed)
 
+// Notification preferences
+router.get('/preferences', notificationController.getPreferences)
+router.put('/preferences', notificationController.updatePreferences)
+
 // Analytics
 router.get('/stats', notificationController.getNotificationStats)
 

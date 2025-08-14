@@ -62,8 +62,9 @@ const TaskList: React.FC<TaskListProps> = ({
     } finally {
       setLoading(false)
     }
-  }  // 
-Filtered and sorted tasks
+  }
+
+  // Filtered and sorted tasks
   const filteredTasks = useMemo(() => {
     let filtered = tasks.filter(task => {
       // Search filter

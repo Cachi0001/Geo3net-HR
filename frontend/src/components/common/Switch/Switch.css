@@ -1,0 +1,208 @@
+/* Go3net Branded Switch Component Styles */
+.switch-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.switch {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.switch:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-go3net-blue-100);
+  border-radius: var(--border-radius-full);
+}
+
+.switch.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Switch Track */
+.switch-track {
+  position: relative;
+  border-radius: var(--border-radius-full);
+  transition: all 0.3s ease;
+  background: var(--color-gray-300);
+  border: 2px solid var(--color-gray-300);
+}
+
+/* Switch Thumb */
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  background: var(--color-white);
+  border-radius: var(--border-radius-full);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Size Variants */
+.switch.sm .switch-track {
+  width: 32px;
+  height: 18px;
+}
+
+.switch.sm .switch-thumb {
+  width: 14px;
+  height: 14px;
+}
+
+.switch.md .switch-track {
+  width: 44px;
+  height: 24px;
+}
+
+.switch.md .switch-thumb {
+  width: 20px;
+  height: 20px;
+}
+
+.switch.lg .switch-track {
+  width: 56px;
+  height: 32px;
+}
+
+.switch.lg .switch-thumb {
+  width: 28px;
+  height: 28px;
+}
+
+/* Color Variants - Unchecked State */
+.switch.primary .switch-track {
+  background: var(--color-gray-300);
+  border-color: var(--color-gray-300);
+}
+
+.switch.success .switch-track {
+  background: var(--color-gray-300);
+  border-color: var(--color-gray-300);
+}
+
+.switch.warning .switch-track {
+  background: var(--color-gray-300);
+  border-color: var(--color-gray-300);
+}
+
+.switch.error .switch-track {
+  background: var(--color-gray-300);
+  border-color: var(--color-gray-300);
+}
+
+/* Checked State */
+.switch.checked.primary .switch-track {
+  background: linear-gradient(135deg, var(--color-go3net-blue) 0%, var(--color-go3net-blue-600) 100%);
+  border-color: var(--color-go3net-blue);
+}
+
+.switch.checked.success .switch-track {
+  background: linear-gradient(135deg, var(--color-go3net-green) 0%, var(--color-go3net-green-600) 100%);
+  border-color: var(--color-go3net-green);
+}
+
+.switch.checked.warning .switch-track {
+  background: linear-gradient(135deg, var(--color-warning-500) 0%, var(--color-warning-600) 100%);
+  border-color: var(--color-warning-500);
+}
+
+.switch.checked.error .switch-track {
+  background: linear-gradient(135deg, var(--color-error-500) 0%, var(--color-error-600) 100%);
+  border-color: var(--color-error-500);
+}
+
+/* Thumb Position - Checked */
+.switch.checked.sm .switch-thumb {
+  transform: translateX(14px);
+}
+
+.switch.checked.md .switch-thumb {
+  transform: translateX(20px);
+}
+
+.switch.checked.lg .switch-thumb {
+  transform: translateX(24px);
+}
+
+/* Hover Effects */
+.switch:not(.disabled):hover .switch-track {
+  transform: scale(1.05);
+}
+
+.switch:not(.disabled):hover .switch-thumb {
+  box-shadow: var(--shadow-md);
+}
+
+.switch.checked:not(.disabled):hover.primary .switch-track {
+  background: linear-gradient(135deg, var(--color-go3net-blue-600) 0%, var(--color-go3net-blue-700) 100%);
+}
+
+.switch.checked:not(.disabled):hover.success .switch-track {
+  background: linear-gradient(135deg, var(--color-go3net-green-600) 0%, var(--color-go3net-green-700) 100%);
+}
+
+/* Active State */
+.switch:not(.disabled):active .switch-thumb {
+  transform: scale(0.95);
+}
+
+.switch.checked:not(.disabled):active.sm .switch-thumb {
+  transform: translateX(14px) scale(0.95);
+}
+
+.switch.checked:not(.disabled):active.md .switch-thumb {
+  transform: translateX(20px) scale(0.95);
+}
+
+.switch.checked:not(.disabled):active.lg .switch-thumb {
+  transform: translateX(24px) scale(0.95);
+}
+
+/* Switch Label */
+.switch-label {
+  color: var(--color-gray-700);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.3s ease;
+}
+
+.switch-label:hover {
+  color: var(--color-go3net-blue);
+}
+
+.switch-label.disabled {
+  color: var(--color-gray-400);
+  cursor: not-allowed;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .switch-track,
+  .switch-thumb,
+  .switch-label {
+    transition: none;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .switch-track {
+    border-width: 3px;
+  }
+  
+  .switch.checked .switch-track {
+    background: var(--color-black);
+    border-color: var(--color-black);
+  }
+  
+  .switch-thumb {
+    border: 2px solid var(--color-gray-600);
+  }
+}

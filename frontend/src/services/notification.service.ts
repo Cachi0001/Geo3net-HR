@@ -298,4 +298,5 @@ class NotificationService {
   }
 }
 
+export { NotificationService }
 export const notificationService = new NotificationService()

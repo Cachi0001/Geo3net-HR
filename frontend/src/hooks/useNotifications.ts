@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { notificationService, NotificationLog, NotificationStats } from '../services/notification.service'
+import { notificationService, NotificationService, NotificationLog, NotificationStats } from '../services/notification.service'
 import { useToast } from './useToast'
 
 interface UseNotificationsReturn {
@@ -31,9 +31,9 @@ export const useNotifications = (): UseNotificationsReturn => {
   const { showToast } = useToast()
   
   // State
-  const [isSupported] = useState(notificationService.constructor.isSupported())
+  const [isSupported] = useState(NotificationService.isSupported())
   const [permission, setPermission] = useState<NotificationPermission>(
-    notificationService.constructor.getPermissionStatus()
+    NotificationService.getPermissionStatus()
   )
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -60,7 +60,7 @@ export const useNotifications = (): UseNotificationsReturn => {
   // Listen for permission changes
   useEffect(() => {
     const checkPermission = () => {
-      const currentPermission = notificationService.constructor.getPermissionStatus()
+      const currentPermission = NotificationService.getPermissionStatus()
       if (currentPermission !== permission) {
         setPermission(currentPermission)
       }
