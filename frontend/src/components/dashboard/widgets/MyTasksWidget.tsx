@@ -1,6 +1,7 @@
 import React from 'react';
 import { Task } from '../../../services/task.service';
 import Card from '../../common/Card/Card';
+import './MyTasksWidget.css';
 
 interface MyTasksWidgetProps {
   tasks: Task[];
@@ -13,10 +14,10 @@ const MyTasksWidget: React.FC<MyTasksWidgetProps> = ({ tasks, isLoading }) => {
       {isLoading ? (
         <p>Loading tasks...</p>
       ) : tasks.length > 0 ? (
-        <ul>
+        <ul className="tasks-widget__list">
           {tasks.slice(0, 5).map(task => ( // Show top 5 tasks
-            <li key={task.id} className="border-b last:border-b-0 py-2">
-              <span className="font-semibold">{task.title}</span> - <span className="text-sm text-gray-500">{task.status}</span>
+            <li key={task.id} className="tasks-widget__item">
+              <span className="tasks-widget__title">{task.title}</span> - <span className="tasks-widget__status">{task.status}</span>
             </li>
           ))}
         </ul>

@@ -1,100 +1,87 @@
-import React, { useState } from 'react'
-import { TaskList, TaskForm, TaskDetail, TaskAssignment, TaskNotification, Task } from '../../components/tasks'
-import { Modal } from '../../components/common'
-import './TasksPage.css'
+import React, { useState, useEffect, useCallback } from 'react';
+import { TaskList, TaskForm, TaskDetail, TaskAssignment, TaskNotification } from '../../components/tasks';
+import { Modal, Button } from '../../components/common';
+import { taskService, Task } from '../../services/task.service';
+import { employeeService, Employee } from '../../services/employee.service';
+import { useToast } from '../../hooks/useToast';
+import './TasksPage.css';
 
 const TasksPage: React.FC = () => {
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [editingTask, setEditingTask] = useState<Task | null>(null)
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [showTaskDetail, setShowTaskDetail] = useState(false)
-  const [showAssignmentModal, setShowAssignmentModal] = useState(false)
-  const [assignmentTask, setAssignmentTask] = useState<Task | null>(null)
-  const [notifications, setNotifications] = useState<any[]>([]) // In real app, this would come from API/WebSocket
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [reloadTasks, setReloadTasks] = useState(false); // State to trigger reload
+  const { addToast } = useToast();
+
+  const loadEmployees = useCallback(async () => {
+    try {
+      const { employees: fetchedEmployees } = await employeeService.getEmployees(1000); // Fetch all for dropdown
+      setEmployees(fetchedEmployees);
+    } catch (error) {
+      addToast({ type: 'error', message: 'Failed to load employees for task assignment.' });
+    }
+  }, [addToast]);
+
+  useEffect(() => {
+    loadEmployees();
+  }, [loadEmployees]);
 
   const handleTaskSelect = (task: Task) => {
-    setSelectedTask(task)
-    setShowTaskDetail(true)
-  }
+    setSelectedTask(task);
+  };
 
   const handleTaskCreate = () => {
-    setEditingTask(null)
-    setShowCreateForm(true)
-  }
+    setEditingTask(null);
+    setShowCreateForm(true);
+  };
 
-  const handleTaskEdit = () => {
-    if (selectedTask) {
-      setEditingTask(selectedTask)
-      setShowTaskDetail(false)
-      setShowCreateForm(true)
-    }
-  }
+  const handleTaskEdit = (task: Task) => {
+    setEditingTask(task);
+    setShowCreateForm(true);
+  };
 
-  const handleTaskSave = (task: Task) => {
-    setShowCreateForm(false)
-    setEditingTask(null)
-    
-    // If we were editing the currently selected task, update it
-    if (selectedTask && selectedTask.id === task.id) {
-      setSelectedTask(task)
+  const handleTaskSave = async (data: Partial<Task>) => {
+    setIsSaving(true);
+    try {
+      if (data.id) {
+        await taskService.updateTask(data.id, data);
+        addToast({ type: 'success', message: 'Task updated successfully.' });
+      } else {
+        await taskService.createTask(data as Task);
+        addToast({ type: 'success', message: 'Task created successfully.' });
+      }
+      setShowCreateForm(false);
+      setEditingTask(null);
+      setReloadTasks(prev => !prev); // Trigger a reload in TaskList
+    } catch (error) {
+      addToast({ type: 'error', message: 'Failed to save task.' });
+    } finally {
+      setIsSaving(false);
     }
-  }
+  };
 
-  const handleTaskUpdate = (task: Task) => {
-    // Update the selected task if it matches
-    if (selectedTask && selectedTask.id === task.id) {
-      setSelectedTask(task)
+  const handleTaskUpdate = (updatedTask: Task) => {
+    if (selectedTask && selectedTask.id === updatedTask.id) {
+      setSelectedTask(updatedTask);
     }
-  }
+    setReloadTasks(prev => !prev);
+  };
+
+  const handleTaskDelete = () => {
+    setSelectedTask(null); // Close detail view
+    setReloadTasks(prev => !prev);
+  };
 
   const handleCloseDetail = () => {
-    setShowTaskDetail(false)
-    setSelectedTask(null)
-  }
+    setSelectedTask(null);
+  };
 
   const handleCloseForm = () => {
-    setShowCreateForm(false)
-    setEditingTask(null)
-  }
-
-  const handleTaskAssign = (task: Task) => {
-    setAssignmentTask(task)
-    setShowAssignmentModal(true)
-  }
-
-  const handleAssignmentComplete = (updatedTask: Task) => {
-    setShowAssignmentModal(false)
-    setAssignmentTask(null)
-    
-    // Update the selected task if it matches
-    if (selectedTask && selectedTask.id === updatedTask.id) {
-      setSelectedTask(updatedTask)
-    }
-  }
-
-  const handleCloseAssignment = () => {
-    setShowAssignmentModal(false)
-    setAssignmentTask(null)
-  }
-
-  const handleNotificationClick = (notification: any) => {
-    // In real implementation, navigate to the task
-    console.log('Notification clicked:', notification)
-  }
-
-  const handleMarkAsRead = (notificationId: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-    )
-  }
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-  }
-
-  const handleClearAllNotifications = () => {
-    setNotifications([])
-  }
+    setShowCreateForm(false);
+    setEditingTask(null);
+  };
 
   return (
     <div className="tasks-page">
@@ -108,6 +95,7 @@ const TasksPage: React.FC = () => {
       <div className="tasks-page-content">
         <div className="tasks-main-section">
           <TaskList
+            key={reloadTasks ? 'reload' : 'initial'} // Force re-render and re-fetch
             onTaskSelect={handleTaskSelect}
             onTaskCreate={handleTaskCreate}
             selectedTaskId={selectedTask?.id}
@@ -115,33 +103,22 @@ const TasksPage: React.FC = () => {
         </div>
 
         <div className="tasks-sidebar">
-          {/* Notifications Panel */}
-          <div className="notifications-panel">
-            <TaskNotification
-              notifications={notifications}
-              onNotificationClick={handleNotificationClick}
-              onMarkAsRead={handleMarkAsRead}
-              onMarkAllAsRead={handleMarkAllAsRead}
-              onClearAll={handleClearAllNotifications}
-              maxVisible={3}
+          {selectedTask ? (
+            <TaskDetail
+              task={selectedTask}
+              onUpdate={handleTaskUpdate}
+              onEdit={handleTaskEdit}
+              onDelete={handleTaskDelete}
+              onClose={handleCloseDetail}
             />
-          </div>
-
-          {/* Task Detail Panel */}
-          {showTaskDetail && selectedTask && (
-            <div className="task-detail-panel">
-              <TaskDetail
-                task={selectedTask}
-                onUpdate={handleTaskUpdate}
-                onEdit={handleTaskEdit}
-                onClose={handleCloseDetail}
-              />
+          ) : (
+            <div className="task-detail-placeholder">
+              <p>Select a task to see details</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Task Form Modal */}
       <Modal
         isOpen={showCreateForm}
         onClose={handleCloseForm}
@@ -150,27 +127,14 @@ const TasksPage: React.FC = () => {
       >
         <TaskForm
           task={editingTask}
+          employees={employees}
           onSave={handleTaskSave}
           onCancel={handleCloseForm}
-        />
-      </Modal>
-
-      {/* Task Assignment Modal */}
-      <Modal
-        isOpen={showAssignmentModal}
-        onClose={handleCloseAssignment}
-        title="Assign Task"
-        size="lg"
-      >
-        <TaskAssignment
-          task={assignmentTask}
-          mode="assign"
-          onAssignmentComplete={handleAssignmentComplete}
-          onCancel={handleCloseAssignment}
+          isSaving={isSaving}
         />
       </Modal>
     </div>
-  )
-}
+  );
+};
 
-export default TasksPage
+export default TasksPage;

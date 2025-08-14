@@ -1,6 +1,7 @@
 import React from 'react';
 import { TimeTrackingSummary } from '../../../services/timeTracking.service';
 import Card from '../../common/Card/Card';
+import './TimeLogWidget.css';
 
 interface TimeLogWidgetProps {
   summary: TimeTrackingSummary | null;
@@ -13,18 +14,18 @@ const TimeLogWidget: React.FC<TimeLogWidgetProps> = ({ summary, isLoading }) => 
       {isLoading ? (
         <p>Loading summary...</p>
       ) : summary ? (
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="time-log-widget__grid">
           <div>
-            <p className="text-2xl font-bold">{summary.today.toFixed(1)}</p>
-            <p className="text-sm text-gray-500">Today</p>
+            <p className="time-log-widget__value">{summary.today.toFixed(1)}</p>
+            <p className="time-log-widget__label">Today</p>
           </div>
           <div>
-            <p className="text-2xl font-bold">{summary.thisWeek.toFixed(1)}</p>
-            <p className="text-sm text-gray-500">This Week</p>
+            <p className="time-log-widget__value">{summary.thisWeek.toFixed(1)}</p>
+            <p className="time-log-widget__label">This Week</p>
           </div>
           <div>
-            <p className="text-2xl font-bold">{summary.thisMonth.toFixed(1)}</p>
-            <p className="text-sm text-gray-500">This Month</p>
+            <p className="time-log-widget__value">{summary.thisMonth.toFixed(1)}</p>
+            <p className="time-log-widget__label">This Month</p>
           </div>
         </div>
       ) : (

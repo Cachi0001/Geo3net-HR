@@ -1,285 +1,149 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { Card, Button, LoadingSpinner, Select, Input } from '../../common'
-import { useApiCall } from '../../../hooks/useApiCall'
-import { useToast } from '../../../hooks/useToast'
-import { useAuth } from '../../../hooks/useAuth'
-import TaskItem from '../TaskItem/TaskItem'
-import './TaskList.css'
-
-export interface Task {
-  id: string
-  title: string
-  description: string
-  assignedTo: string
-  assignedBy: string
-  assignedToName?: string
-  assignedByName?: string
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  status: 'todo' | 'in_progress' | 'completed' | 'cancelled'
-  dueDate: string | null
-  completedAt: string | null
-  completionNotes: string | null
-  createdAt: string
-  updatedAt: string
-  commentsCount?: number
-}
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, Button, LoadingSpinner, Select, Input } from '../../common';
+import { taskService, Task, TaskSearchFilters } from '../../../services/task.service';
+import { useToast } from '../../../hooks/useToast';
+import TaskItem from '../TaskItem/TaskItem';
+import './TaskList.css';
 
 interface TaskListProps {
-  onTaskSelect?: (task: Task) => void
-  onTaskCreate?: () => void
-  selectedTaskId?: string
+  onTaskSelect?: (task: Task) => void;
+  onTaskCreate?: () => void;
+  selectedTaskId?: string;
 }
 
-const TaskList: React.FC<TaskListProps> = ({
-  onTaskSelect,
-  onTaskCreate,
-  selectedTaskId
-}) => {
-  const { user } = useAuth()
-  const { apiCall } = useApiCall()
-  const { showToast } = useToast()
+const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, onTaskCreate, selectedTaskId }) => {
+  const { addToast } = useToast();
 
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [priorityFilter, setPriorityFilter] = useState<string>('all')
-  const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
-  const [sortBy, setSortBy] = useState<string>('dueDate')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [totalTasks, setTotalTasks] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const [filters, setFilters] = useState<TaskSearchFilters>({
+    search: '',
+    status: 'all',
+    priority: 'all',
+    sortBy: 'dueDate',
+    sortOrder: 'asc',
+    limit: 20,
+    offset: 0,
+  });
+
+  const loadTasks = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Prepare filters for the API call
+      const apiFilters: TaskSearchFilters = { ...filters };
+      if (apiFilters.status === 'all') delete apiFilters.status;
+      if (apiFilters.priority === 'all') delete apiFilters.priority;
+
+      const { tasks: fetchedTasks, total } = await taskService.searchTasks(apiFilters);
+      setTasks(fetchedTasks);
+      setTotalTasks(total);
+    } catch (error: any) {
+      addToast({ type: 'error', message: error.message || 'Failed to load tasks' });
+    } finally {
+      setLoading(false);
+    }
+  }, [filters, addToast]);
 
   useEffect(() => {
-    loadTasks()
-  }, [])
+    const timer = setTimeout(() => {
+      loadTasks();
+    }, 500); // Debounce search input
+    return () => clearTimeout(timer);
+  }, [loadTasks]);
 
-  const loadTasks = async () => {
-    try {
-      setLoading(true)
-      const response = await apiCall('/api/tasks', 'GET')
-      setTasks(response.data || [])
-    } catch (error: any) {
-      showToast('error', error.message || 'Failed to load tasks')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Filtered and sorted tasks
-  const filteredTasks = useMemo(() => {
-    let filtered = tasks.filter(task => {
-      // Search filter
-      if (searchTerm && !task.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-          !task.description.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false
-      }
-
-      // Status filter
-      if (statusFilter !== 'all' && task.status !== statusFilter) {
-        return false
-      }
-
-      // Priority filter
-      if (priorityFilter !== 'all' && task.priority !== priorityFilter) {
-        return false
-      }
-
-      // Assignee filter
-      if (assigneeFilter !== 'all') {
-        if (assigneeFilter === 'me' && task.assignedTo !== user?.id) {
-          return false
-        }
-        if (assigneeFilter === 'assigned-by-me' && task.assignedBy !== user?.id) {
-          return false
-        }
-      }
-
-      return true
-    })
-
-    // Sort tasks
-    filtered.sort((a, b) => {
-      let aValue: any, bValue: any
-
-      switch (sortBy) {
-        case 'title':
-          aValue = a.title.toLowerCase()
-          bValue = b.title.toLowerCase()
-          break
-        case 'priority':
-          const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 }
-          aValue = priorityOrder[a.priority]
-          bValue = priorityOrder[b.priority]
-          break
-        case 'status':
-          const statusOrder = { todo: 1, in_progress: 2, completed: 3, cancelled: 4 }
-          aValue = statusOrder[a.status]
-          bValue = statusOrder[b.status]
-          break
-        case 'dueDate':
-          aValue = a.dueDate ? new Date(a.dueDate).getTime() : Infinity
-          bValue = b.dueDate ? new Date(b.dueDate).getTime() : Infinity
-          break
-        case 'createdAt':
-          aValue = new Date(a.createdAt).getTime()
-          bValue = new Date(b.createdAt).getTime()
-          break
-        default:
-          aValue = a.createdAt
-          bValue = b.createdAt
-      }
-
-      if (sortOrder === 'desc') {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0
-      } else {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0
-      }
-    })
-
-    return filtered
-  }, [tasks, searchTerm, statusFilter, priorityFilter, assigneeFilter, sortBy, sortOrder, user?.id])
+  const handleFilterChange = (key: keyof TaskSearchFilters, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value, offset: 0 }));
+  };
 
   const handleTaskUpdate = (updatedTask: Task) => {
-    setTasks(prev => prev.map(task => 
-      task.id === updatedTask.id ? updatedTask : task
-    ))
-  }
+    setTasks(prev => prev.map(task => (task.id === updatedTask.id ? updatedTask : task)));
+  };
 
   const handleTaskDelete = (taskId: string) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId))
-  }
+    setTasks(prev => prev.filter(task => task.id !== taskId));
+    setTotalTasks(prev => prev - 1);
+  };
 
-  const statusOptions = [
-    { value: 'all', label: 'All Status' },
-    { value: 'todo', label: 'To Do' },
-    { value: 'in_progress', label: 'In Progress' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'cancelled', label: 'Cancelled' }
-  ]
+  const statusOptions = [ { value: 'all', label: 'All Status' }, { value: 'todo', label: 'To Do' }, { value: 'in_progress', label: 'In Progress' }, { value: 'completed', label: 'Completed' } ];
+  const priorityOptions = [ { value: 'all', label: 'All Priorities' }, { value: 'low', label: 'Low' }, { value: 'medium', label: 'Medium' }, { value: 'high', label: 'High' }, { value: 'urgent', label: 'Urgent' } ];
+  const sortOptions = [ { value: 'dueDate', label: 'Due Date' }, { value: 'priority', label: 'Priority' }, { value: 'title', label: 'Title' } ];
 
-  const priorityOptions = [
-    { value: 'all', label: 'All Priorities' },
-    { value: 'low', label: 'Low' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'high', label: 'High' },
-    { value: 'urgent', label: 'Urgent' }
-  ]
-
-  const assigneeOptions = [
-    { value: 'all', label: 'All Tasks' },
-    { value: 'me', label: 'Assigned to Me' },
-    { value: 'assigned-by-me', label: 'Assigned by Me' }
-  ]
-
-  const sortOptions = [
-    { value: 'dueDate', label: 'Due Date' },
-    { value: 'priority', label: 'Priority' },
-    { value: 'status', label: 'Status' },
-    { value: 'title', label: 'Title' },
-    { value: 'createdAt', label: 'Created Date' }
-  ]
-
-  if (loading) {
+  if (loading && tasks.length === 0) {
     return (
       <div className="task-list-loading">
         <LoadingSpinner size="lg" />
         <p>Loading tasks...</p>
       </div>
-    )
+    );
   }
 
   return (
     <div className="task-list">
-      {/* Header */}
       <div className="task-list-header">
         <div className="task-list-title">
           <h2>Tasks</h2>
-          <span className="task-count">({filteredTasks.length})</span>
+          <span className="task-count">({totalTasks})</span>
         </div>
-        
         {onTaskCreate && (
-          <Button
-            variant="primary"
-            onClick={onTaskCreate}
-            className="create-task-btn"
-          >
+          <Button variant="primary" onClick={onTaskCreate} className="create-task-btn">
             + New Task
           </Button>
         )}
       </div>
 
-      {/* Filters */}
       <Card className="task-filters" padding="md">
         <div className="filter-row">
           <Input
             type="text"
             placeholder="Search tasks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={filters.search}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
             className="search-input"
           />
-          
           <Select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            value={filters.status}
+            onChange={(e) => handleFilterChange('status', e.target.value)}
             options={statusOptions}
             className="filter-select"
           />
-          
           <Select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
+            value={filters.priority}
+            onChange={(e) => handleFilterChange('priority', e.target.value)}
             options={priorityOptions}
             className="filter-select"
           />
-          
-          <Select
-            value={assigneeFilter}
-            onChange={(e) => setAssigneeFilter(e.target.value)}
-            options={assigneeOptions}
-            className="filter-select"
-          />
         </div>
-        
         <div className="sort-row">
           <label>Sort by:</label>
           <Select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            value={filters.sortBy}
+            onChange={(e) => handleFilterChange('sortBy', e.target.value)}
             options={sortOptions}
             className="sort-select"
           />
-          
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+            onClick={() => handleFilterChange('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
             className="sort-order-btn"
           >
-            {sortOrder === 'asc' ? '↑' : '↓'}
+            {filters.sortOrder === 'asc' ? '↑' : '↓'}
           </Button>
         </div>
       </Card>
 
-      {/* Task List */}
       <div className="task-items">
-        {filteredTasks.length === 0 ? (
+        {loading && <p className="task-list-refreshing">Refreshing...</p>}
+        {!loading && tasks.length === 0 ? (
           <Card className="empty-state" padding="lg">
-            <div className="empty-icon">📋</div>
             <h3>No tasks found</h3>
-            <p>
-              {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all' || assigneeFilter !== 'all'
-                ? 'Try adjusting your filters to see more tasks.'
-                : 'Create your first task to get started.'
-              }
-            </p>
-            {onTaskCreate && (
-              <Button variant="primary" onClick={onTaskCreate}>
-                Create Task
-              </Button>
-            )}
+            <p>Try adjusting your filters or create a new task.</p>
+            {onTaskCreate && <Button variant="primary" onClick={onTaskCreate}>Create Task</Button>}
           </Card>
         ) : (
-          filteredTasks.map(task => (
+          tasks.map(task => (
             <TaskItem
               key={task.id}
               task={task}
@@ -292,7 +156,7 @@ const TaskList: React.FC<TaskListProps> = ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default TaskList
+export default TaskList;

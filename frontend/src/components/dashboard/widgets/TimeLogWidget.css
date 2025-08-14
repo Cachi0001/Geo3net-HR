@@ -1,0 +1,18 @@
+.time-log-widget__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-4, 1rem);
+  text-align: center;
+}
+
+.time-log-widget__value {
+  font-size: var(--font-size-2xl, 1.5rem);
+  font-weight: var(--font-weight-bold, 700);
+  line-height: var(--line-height-2xl, 2rem);
+}
+
+.time-log-widget__label {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary, #64748b);
+  line-height: var(--line-height-sm, 1.25rem);
+}
