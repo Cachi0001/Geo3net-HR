@@ -13,7 +13,7 @@ const EmployeesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const { addToast } = useToast();
+  const { showToast } = useToast();
 
   const fetchEmployees = useCallback(async () => {
     setIsLoading(true);
@@ -22,11 +22,11 @@ const EmployeesPage: React.FC = () => {
       setEmployees(fetchedEmployees);
       setTotalEmployees(total);
     } catch (error) {
-      addToast({ type: 'error', message: 'Failed to fetch employees.' });
+      showToast('error', 'Failed to fetch employees.');
     } finally {
       setIsLoading(false);
     }
-  }, [addToast]);
+  }, [showToast]);
 
   useEffect(() => {
     fetchEmployees();
@@ -46,10 +46,10 @@ const EmployeesPage: React.FC = () => {
     if (window.confirm(`Are you sure you want to delete ${employee.fullName}?`)) {
       try {
         await employeeService.deleteEmployee(employee.id);
-        addToast({ type: 'success', message: 'Employee deleted successfully.' });
+        showToast('success', 'Employee deleted successfully.');
         fetchEmployees(); // Refresh list
       } catch (error) {
-        addToast({ type: 'error', message: 'Failed to delete employee.' });
+        showToast('error', 'Failed to delete employee.');
       }
     }
   };
@@ -60,11 +60,11 @@ const EmployeesPage: React.FC = () => {
       if ('id' in data) {
         // Update employee
         await employeeService.updateEmployee(data.id, data);
-        addToast({ type: 'success', message: 'Employee updated successfully.' });
+        showToast('success', 'Employee updated successfully.');
       } else {
         // Create employee
         await employeeService.createEmployee(data);
-        addToast({ type: 'success', message: 'Employee created successfully.' });
+        showToast('success', 'Employee created successfully.');
       }
       setIsModalOpen(false);
       fetchEmployees(); // Refresh list

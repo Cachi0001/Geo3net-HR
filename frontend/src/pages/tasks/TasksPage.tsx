@@ -13,16 +13,16 @@ const TasksPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [reloadTasks, setReloadTasks] = useState(false); // State to trigger reload
-  const { addToast } = useToast();
+  const { showToast } = useToast();
 
   const loadEmployees = useCallback(async () => {
     try {
       const { employees: fetchedEmployees } = await employeeService.getEmployees(1000); // Fetch all for dropdown
       setEmployees(fetchedEmployees);
     } catch (error) {
-      addToast({ type: 'error', message: 'Failed to load employees for task assignment.' });
+      showToast('error', 'Failed to load employees for task assignment.');
     }
-  }, [addToast]);
+  }, [showToast]);
 
   useEffect(() => {
     loadEmployees();
@@ -47,16 +47,16 @@ const TasksPage: React.FC = () => {
     try {
       if (data.id) {
         await taskService.updateTask(data.id, data);
-        addToast({ type: 'success', message: 'Task updated successfully.' });
+        showToast('success', 'Task updated successfully.');
       } else {
         await taskService.createTask(data as Task);
-        addToast({ type: 'success', message: 'Task created successfully.' });
+        showToast('success', 'Task created successfully.');
       }
       setShowCreateForm(false);
       setEditingTask(null);
       setReloadTasks(prev => !prev); // Trigger a reload in TaskList
     } catch (error) {
-      addToast({ type: 'error', message: 'Failed to save task.' });
+      showToast('error', 'Failed to save task.');
     } finally {
       setIsSaving(false);
     }

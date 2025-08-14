@@ -9,4 +9,4 @@ export { default as TaskCollaboration } from './TaskCollaboration/TaskCollaborat
 export { default as TaskNotificationPanel } from './TaskNotificationPanel/TaskNotificationPanel'
 
 // Re-export types
-export type { Task } from './TaskList/TaskList'
+export type { Task } from '../../services/task.service'

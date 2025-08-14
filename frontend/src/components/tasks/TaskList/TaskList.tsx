@@ -12,7 +12,7 @@ interface TaskListProps {
 }
 
 const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, onTaskCreate, selectedTaskId }) => {
-  const { addToast } = useToast();
+  const { showToast } = useToast();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [totalTasks, setTotalTasks] = useState(0);
@@ -31,7 +31,6 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, onTaskCreate, selecte
   const loadTasks = useCallback(async () => {
     setLoading(true);
     try {
-      // Prepare filters for the API call
       const apiFilters: TaskSearchFilters = { ...filters };
       if (apiFilters.status === 'all') delete apiFilters.status;
       if (apiFilters.priority === 'all') delete apiFilters.priority;
@@ -40,11 +39,11 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, onTaskCreate, selecte
       setTasks(fetchedTasks);
       setTotalTasks(total);
     } catch (error: any) {
-      addToast({ type: 'error', message: error.message || 'Failed to load tasks' });
+      showToast( 'error',  error.message || 'Failed to load tasks' );
     } finally {
       setLoading(false);
     }
-  }, [filters, addToast]);
+  }, [filters, showToast]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -160,3 +159,4 @@ const TaskList: React.FC<TaskListProps> = ({ onTaskSelect, onTaskCreate, selecte
 };
 
 export default TaskList;
+export type { Task } from '../../../services/task.service';

@@ -1,6 +1,5 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, it, expect, beforeEach, jest } from '@jest/globals'
 import CheckInOut from '../../../components/timeTracking/CheckInOut/CheckInOut'
 import { useAuth } from '../../../hooks/useAuth'
 import { useApiCall } from '../../../hooks/useApiCall'

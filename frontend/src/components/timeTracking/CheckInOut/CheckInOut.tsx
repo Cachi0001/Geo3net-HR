@@ -20,7 +20,7 @@ interface CheckInOutStatus {
 
 const CheckInOut: React.FC = () => {
   const { user } = useAuth();
-  const { addToast } = useToast();
+  const { showToast } = useToast();
 
   const [status, setStatus] = useState<CheckInOutStatus>({ isCheckedIn: false });
   const [loading, setLoading] = useState(true);
@@ -49,7 +49,7 @@ const CheckInOut: React.FC = () => {
       const statusData = await timeTrackingService.getCheckInStatus();
       setStatus(statusData);
     } catch (error: any) {
-      addToast({ type: 'error', message: error.message || 'Failed to load check-in status' });
+      showToast('error', error.message || 'Failed to load check-in status');
     } finally {
       setLoading(false);
     }
@@ -62,10 +62,10 @@ const CheckInOut: React.FC = () => {
         timestamp: new Date().toISOString(),
         location: location,
       });
-      addToast({ type: 'success', message: 'Successfully checked in!' });
+      showToast('success', 'Successfully checked in!');
       await loadStatus();
     } catch (error: any) {
-      addToast({ type: 'error', message: error.message || 'Failed to check in' });
+      showToast('error', error.message || 'Failed to check in');
     } finally {
       setActionLoading(false);
     }
@@ -78,10 +78,10 @@ const CheckInOut: React.FC = () => {
         timestamp: new Date().toISOString(),
         location: location,
       });
-      addToast({ type: 'success', message: 'Successfully checked out!' });
+      showToast('success', 'Successfully checked out!' );
       await loadStatus();
     } catch (error: any) {
-      addToast({ type: 'error', message: error.message || 'Failed to check out' });
+      showToast('error', error.message || 'Failed to check out');
     } finally {
       setActionLoading(false);
     }
@@ -96,7 +96,6 @@ const CheckInOut: React.FC = () => {
   return (
     <div className="check-in-out">
       <Card className="check-in-out-card" padding="lg">
-        {/* The rest of the JSX remains the same as it was already well-structured */}
         <div className="check-in-out-header">
           <div className="current-time">
              <div className="time-display">{currentTime.toLocaleTimeString()}</div>

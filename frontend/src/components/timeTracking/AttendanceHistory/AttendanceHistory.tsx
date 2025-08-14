@@ -5,7 +5,7 @@ import { useToast } from '../../../hooks/useToast';
 import './AttendanceHistory.css';
 
 const AttendanceHistory: React.FC = () => {
-  const { addToast } = useToast();
+  const { showToast } = useToast();
 
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [summary, setSummary] = useState<AttendanceSummary | null>(null);
@@ -23,11 +23,11 @@ const AttendanceHistory: React.FC = () => {
       setRecords(recordsData);
       setSummary(summaryData);
     } catch (error: any) {
-      addToast({ type: 'error', message: error.message || 'Failed to load attendance data' });
+      showToast('error', error.message || 'Failed to load attendance data');
     } finally {
       setLoading(false);
     }
-  }, [selectedPeriod, addToast]);
+  }, [selectedPeriod, showToast]);
 
   useEffect(() => {
     loadAttendanceData();

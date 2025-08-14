@@ -7,7 +7,7 @@ import './ProfilePage.css';
 
 const ProfilePage: React.FC = () => {
   const { user, updateProfile, changePassword } = useAuth();
-  const { addToast } = useToast();
+  const { showToast } = useToast();
 
   const profileForm = useForm({
     initialValues: {
@@ -17,9 +17,9 @@ const ProfilePage: React.FC = () => {
     onSubmit: async (values) => {
       try {
         await updateProfile({ fullName: values.fullName });
-        addToast({ type: 'success', message: 'Profile updated successfully!' });
+        showToast('success', 'Profile updated successfully!');
       } catch (error) {
-        addToast({ type: 'error', message: 'Failed to update profile.' });
+        showToast('error', 'Failed to update profile.');
         console.error(error);
       }
     },
@@ -42,10 +42,10 @@ const ProfilePage: React.FC = () => {
     onSubmit: async (values, { reset }) => {
       try {
         await changePassword(values.oldPassword, values.newPassword);
-        addToast({ type: 'success', message: 'Password changed successfully!' });
+        showToast('success', 'Password changed successfully!');
         reset();
       } catch (error) {
-        addToast({ type: 'error', message: 'Failed to change password. Check your old password.' });
+        showToast('error', 'Failed to change password. Check your old password.');
         console.error(error);
       }
     },

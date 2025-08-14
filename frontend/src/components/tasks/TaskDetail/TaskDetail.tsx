@@ -56,7 +56,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!newComment.trim()) return
 
     try {
@@ -64,7 +64,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
       const response = await apiCall(`/api/tasks/${task.id}/comments`, 'POST', {
         comment: newComment.trim()
       })
-      
+
       setComments(prev => [...prev, response.data])
       setNewComment('')
       showToast('success', 'Comment added successfully')
@@ -82,7 +82,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
         status: newStatus,
         completionNotes: newStatus === 'completed' ? 'Task completed' : null
       })
-      
+
       onUpdate?.(response.data)
       showToast('success', `Task marked as ${newStatus.replace('_', ' ')}`)
     } catch (error: any) {
@@ -104,7 +104,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
     if (diffMinutes < 60) return `${diffMinutes}m ago`
     if (diffHours < 24) return `${diffHours}h ago`
     if (diffDays < 7) return `${diffDays}d ago`
-    
+
     return date.toLocaleDateString()
   }
 
@@ -139,13 +139,13 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
         <div className="task-detail-title">
           <h2>{task.title}</h2>
           <div className="task-detail-badges">
-            <span 
+            <span
               className="priority-badge"
               style={{ backgroundColor: getPriorityColor(task.priority) }}
             >
               {task.priority.toUpperCase()}
             </span>
-            <span 
+            <span
               className="status-badge"
               style={{ backgroundColor: getStatusColor(task.status) }}
             >
@@ -176,14 +176,14 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
         <div className="task-meta-grid">
           <div className="meta-item">
             <span className="meta-label">Assigned to:</span>
-            <span className="meta-value">{task.assignedToName || 'Unknown'}</span>
+            <span className="meta-value">{task.assignedTo || 'Unknown'}</span>
           </div>
-          
+
           <div className="meta-item">
             <span className="meta-label">Assigned by:</span>
-            <span className="meta-value">{task.assignedByName || 'Unknown'}</span>
+            <span className="meta-value">{task.assignedBy || 'Unknown'}</span>
           </div>
-          
+
           {task.dueDate && (
             <div className="meta-item">
               <span className="meta-label">Due date:</span>
@@ -193,16 +193,16 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
               </span>
             </div>
           )}
-          
+
           <div className="meta-item">
             <span className="meta-label">Created:</span>
             <span className="meta-value">{formatDate(task.createdAt)}</span>
           </div>
-          
-          {task.completedAt && (
+
+          {task.status === 'completed' && (
             <div className="meta-item">
-              <span className="meta-label">Completed:</span>
-              <span className="meta-value">{formatDate(task.completedAt)}</span>
+              <span className="meta-label">Status:</span>
+              <span className="meta-value">Completed</span>
             </div>
           )}
         </div>
@@ -222,7 +222,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
                   Start Task
                 </Button>
               )}
-              
+
               {task.status === 'in_progress' && (
                 <>
                   <Button
@@ -251,7 +251,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
       {/* Comments Section */}
       <Card className="task-comments" padding="lg">
         <h3>Comments ({comments.length})</h3>
-        
+
         {/* Add Comment Form */}
         <form onSubmit={handleAddComment} className="add-comment-form">
           <Input
