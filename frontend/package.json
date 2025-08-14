@@ -4,10 +4,12 @@
   "description": "Go3net HR Management System Frontend",
   "private": true,
   "dependencies": {
+    "@types/recharts": "^1.8.29",
     "axios": "^1.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.1",
+    "recharts": "^3.1.2",
     "typescript": "^4.9.5"
   },
   "devDependencies": {

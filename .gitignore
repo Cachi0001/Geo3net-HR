@@ -101,3 +101,5 @@ Betashop_Vercel_Deployment_Postmortem.md
 
 *.backup
 *.bak
+
+/frontend/node_modules
