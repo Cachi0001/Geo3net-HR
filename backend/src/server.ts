@@ -15,6 +15,7 @@ import { timeTrackingRoutes } from './routes/timeTracking.routes'
 import taskRoutes from './routes/task.routes'
 import notificationRoutes from './routes/notification.routes'
 import { systemRoutes } from './routes/system.routes'
+import debugRoutes from './routes/debug.routes'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -41,6 +42,7 @@ app.use('/api/employees', employeeRoutes)
 app.use('/api/time-tracking', timeTrackingRoutes)
 app.use('/api/tasks', taskRoutes)
 app.use('/api/notifications', notificationRoutes)
+app.use('/api/debug', debugRoutes)
 
 app.use(notFoundHandler)
 app.use(errorHandler)

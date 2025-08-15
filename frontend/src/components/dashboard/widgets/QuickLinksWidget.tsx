@@ -11,7 +11,7 @@ const QuickLinksWidget: React.FC = () => {
   ];
 
   return (
-    <Card title="Quick Links">
+    <Card header={<h3>Quick Links</h3>}>
       <ul className="quick-links-widget__list">
         {links.map(link => (
           <li key={link.path}>

@@ -82,7 +82,7 @@ describe('useMobileLocation Hook', () => {
       }
     }
 
-    mockGeolocation.getCurrentPosition.mockImplementation((success: PositionCallback) => {
+    mockGeolocation.getCurrentPosition.mockImplementation((success: any) => {
       success(mockPosition as GeolocationPosition)
     })
 
@@ -107,7 +107,7 @@ describe('useMobileLocation Hook', () => {
   })
 
   it('handles location permission denied error', async () => {
-    mockGeolocation.getCurrentPosition.mockImplementation((success, error) => {
+    mockGeolocation.getCurrentPosition.mockImplementation((success: any, error: any) => {
       error({
         code: 1, // PERMISSION_DENIED
         message: 'Permission denied'
@@ -128,7 +128,7 @@ describe('useMobileLocation Hook', () => {
   })
 
   it('handles location unavailable error', async () => {
-    mockGeolocation.getCurrentPosition.mockImplementation((success, error) => {
+    mockGeolocation.getCurrentPosition.mockImplementation((success: any, error: any) => {
       error({
         code: 2, // POSITION_UNAVAILABLE
         message: 'Position unavailable'
@@ -147,7 +147,7 @@ describe('useMobileLocation Hook', () => {
   })
 
   it('handles location timeout error', async () => {
-    mockGeolocation.getCurrentPosition.mockImplementation((success, error) => {
+    mockGeolocation.getCurrentPosition.mockImplementation((success: any, error: any) => {
       error({
         code: 3, // TIMEOUT
         message: 'Timeout'
@@ -175,7 +175,7 @@ describe('useMobileLocation Hook', () => {
 
     localStorageMock.getItem.mockReturnValue(JSON.stringify(cachedLocation))
 
-    mockGeolocation.getCurrentPosition.mockImplementation((success, error) => {
+    mockGeolocation.getCurrentPosition.mockImplementation((success: any, error: any) => {
       error({
         code: 1, // PERMISSION_DENIED
         message: 'Permission denied'
@@ -290,7 +290,7 @@ describe('useMobileLocation Hook', () => {
   it('sets loading state during location request', () => {
     let resolveLocation: (position: any) => void
 
-    mockGeolocation.getCurrentPosition.mockImplementation((success: PositionCallback) => {
+    mockGeolocation.getCurrentPosition.mockImplementation((success: any) => {
       resolveLocation = success
     })
 

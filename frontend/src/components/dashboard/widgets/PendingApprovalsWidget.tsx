@@ -9,7 +9,7 @@ interface PendingApprovalsWidgetProps {
 
 const PendingApprovalsWidget: React.FC<PendingApprovalsWidgetProps> = ({ isLoading }) => {
   return (
-    <Card title="Pending Approvals">
+    <Card header={<h3>Pending Approvals</h3>}>
       {isLoading ? (
         <p>Loading approvals...</p>
       ) : (

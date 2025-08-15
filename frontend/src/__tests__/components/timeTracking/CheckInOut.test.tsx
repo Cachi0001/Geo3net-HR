@@ -54,8 +54,13 @@ describe('CheckInOut Component', () => {
         coords: {
           latitude: 40.7128,
           longitude: -74.0060,
-          accuracy: 10
-        }
+          accuracy: 10,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null
+        },
+        timestamp: Date.now()
       })
     })
   })

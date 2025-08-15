@@ -9,7 +9,7 @@ interface SystemStatusWidgetProps {
 
 const SystemStatusWidget: React.FC<SystemStatusWidgetProps> = ({ isLoading }) => {
   return (
-    <Card title="System Status">
+    <Card header={<h3>System Status</h3>}>
       {isLoading ? (
         <p>Loading system status...</p>
       ) : (

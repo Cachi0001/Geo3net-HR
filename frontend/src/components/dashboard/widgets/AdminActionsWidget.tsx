@@ -11,7 +11,7 @@ const AdminActionsWidget: React.FC = () => {
   ];
 
   return (
-    <Card title="Admin Actions">
+    <Card header={<h3>Admin Actions</h3>}>
       <ul className="admin-actions-widget__list">
         {links.map(link => (
           <li key={link.path}>

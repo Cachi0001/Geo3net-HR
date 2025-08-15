@@ -10,7 +10,7 @@ interface TimeLogWidgetProps {
 
 const TimeLogWidget: React.FC<TimeLogWidgetProps> = ({ summary, isLoading }) => {
   return (
-    <Card title="My Time Log Summary">
+    <Card header={<h3>My Time Log Summary</h3>}>
       {isLoading ? (
         <p>Loading summary...</p>
       ) : summary ? (

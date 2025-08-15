@@ -98,8 +98,9 @@ class AuthService {
     return apiService.post('/auth/verify-email', { token })
   }
 
-  async resendVerificationEmail(): Promise<void> {
-    return apiService.post('/auth/resend-verification')
+  async resendVerificationEmail(email?: string): Promise<void> {
+    const data = email ? { email } : {}
+    return apiService.post('/auth/resend-verification', data)
   }
 }
 

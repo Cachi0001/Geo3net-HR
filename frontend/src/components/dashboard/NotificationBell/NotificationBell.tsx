@@ -14,7 +14,7 @@ const NotificationBell: React.FC = () => {
     loadStats();
   }, [loadNotifications, loadStats]);
 
-  const unreadCount = stats?.unread || 0;
+  const unreadCount = stats?.total || 0;
 
   return (
     <div className="notification-bell">
@@ -33,14 +33,14 @@ const NotificationBell: React.FC = () => {
         <div className="notification-dropdown">
           <header className="dropdown-header">
             <h3>Notifications</h3>
-            {unreadCount > 0 && <Button variant="link" size="sm">Mark all as read</Button>}
+            {unreadCount > 0 && <Button variant="ghost" size="sm">Mark all as read</Button>}
           </header>
 
           <div className="notification-list">
             {notifications.length > 0 ? (
               notifications.map(notification => (
-                <div key={notification.id} className={`notification-item ${!notification.read ? 'unread' : ''}`}>
-                  <p className="notification-message">{notification.message}</p>
+                <div key={notification.id} className={`notification-item ${notification.status === 'sent' ? 'unread' : ''}`}>
+                  <p className="notification-message">{notification.body}</p>
                   <span className="notification-timestamp">{new Date(notification.createdAt).toLocaleString()}</span>
                 </div>
               ))

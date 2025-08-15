@@ -53,7 +53,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, employees, onSave, onCancel, 
       <form onSubmit={handleSubmit} className="task-form-content">
         <div className="form-group">
           <label htmlFor="title">Task Title *</label>
-          <Input id="title" name="title" value={values.title} onChange={handleChange} onBlur={handleBlur} error={touched.title && errors.title} />
+          <Input id="title" name="title" value={values.title} onChange={handleChange} onBlur={handleBlur} error={touched.title && errors.title ? errors.title : undefined} />
         </div>
         <div className="form-group">
           <label htmlFor="description">Description *</label>
@@ -78,7 +78,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, employees, onSave, onCancel, 
               onChange={handleChange}
               onBlur={handleBlur}
               options={[{ value: '', label: 'Select an employee...' }, ...employeeOptions]}
-              error={touched.assignedTo && errors.assignedTo}
+              error={touched.assignedTo && errors.assignedTo ? errors.assignedTo : undefined}
             />
           </div>
           <div className="form-group">

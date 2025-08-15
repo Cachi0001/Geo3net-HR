@@ -18,6 +18,7 @@ global.IntersectionObserver = class IntersectionObserver {
   observe() {}
   unobserve() {}
   disconnect() {}
+  takeRecords() { return []; }
   root = null;
   rootMargin = '';
   thresholds = [];

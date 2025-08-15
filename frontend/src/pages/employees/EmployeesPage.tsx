@@ -67,9 +67,8 @@ const EmployeesPage: React.FC = () => {
         showToast('success', 'Employee created successfully.');
       }
       setIsModalOpen(false);
-      fetchEmployees(); // Refresh list
     } catch (error) {
-      addToast({ type: 'error', message: 'Failed to save employee.' });
+      showToast('error', 'Failed to save employee.');
     } finally {
       setIsSaving(false);
     }

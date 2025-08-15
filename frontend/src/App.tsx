@@ -11,6 +11,7 @@ import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
+import EmailVerificationPage from './pages/auth/EmailVerificationPage'
 
 // Protected pages
 import DashboardPage from './pages/dashboard/DashboardPage'
@@ -56,6 +57,11 @@ const App: React.FC = () => {
         <Route path="/reset-password" element={
           <PublicRoute>
             <ResetPasswordPage />
+          </PublicRoute>
+        } />
+        <Route path="/verify-email" element={
+          <PublicRoute>
+            <EmailVerificationPage />
           </PublicRoute>
         } />
         

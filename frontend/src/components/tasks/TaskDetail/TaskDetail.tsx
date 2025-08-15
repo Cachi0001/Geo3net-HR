@@ -19,6 +19,7 @@ interface TaskDetailProps {
   task: Task
   onUpdate?: (task: Task) => void
   onEdit?: () => void
+  onDelete?: () => void
   onClose?: () => void
 }
 
@@ -26,6 +27,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
   task,
   onUpdate,
   onEdit,
+  onDelete,
   onClose
 }) => {
   const { user } = useAuth()

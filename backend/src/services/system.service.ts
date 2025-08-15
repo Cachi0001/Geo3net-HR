@@ -60,10 +60,7 @@ export class SystemService {
                 employee_id: 'ADMIN001',
                 hire_date: new Date().toISOString().split('T')[0],
                 account_status: 'active',
-                email_verified: true,
-                email_verified_at: new Date().toISOString(),
-                status: 'active',
-                is_system_admin: true
+                status: 'active'
             })
             .select()
             .single()
@@ -144,8 +141,6 @@ export class SystemService {
                 employee_id: employeeId,
                 hire_date: new Date().toISOString().split('T')[0],
                 account_status: 'active',
-                email_verified: true,
-                email_verified_at: new Date().toISOString(),
                 status: 'active',
                 created_by: createdBy
             })
@@ -175,19 +170,19 @@ export class SystemService {
         const needsInit = await this.needsInitialization()
 
         const { data: userCounts, error } = await supabase
-            .from('users')
+            .from('user_roles')
             .select(`
-                id,
-                user_roles!inner(role_name, is_active)
+                role_name,
+                users!inner(id)
             `)
-            .eq('user_roles.is_active', true)
+            .eq('is_active', true)
 
         if (error) {
             throw new AppError(`Failed to get system status: ${error.message}`)
         }
 
-        const roleCounts = userCounts?.reduce((acc, user) => {
-            const role = user.user_roles[0]?.role_name
+        const roleCounts = userCounts?.reduce((acc, userRole: any) => {
+            const role = userRole.role_name
             if (role) {
                 acc[role] = (acc[role] || 0) + 1
             }

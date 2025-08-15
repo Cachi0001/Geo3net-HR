@@ -11,7 +11,15 @@ interface PublicRouteProps {
 const PublicRoute: React.FC<PublicRouteProps> = ({ children, redirectPath = '/dashboard' }) => {
   const { user, loading } = useAuth()
 
+  console.log('🔍 PublicRoute: Render check:', {
+    hasUser: !!user,
+    loading,
+    redirectPath,
+    currentPath: window.location.pathname
+  })
+
   if (loading) {
+    console.log('🔍 PublicRoute: Showing loading spinner')
     return (
       <div className="public-route-loading">
         <LoadingSpinner size="lg" />
@@ -20,9 +28,11 @@ const PublicRoute: React.FC<PublicRouteProps> = ({ children, redirectPath = '/da
   }
 
   if (user) {
+    console.log('🚀 PublicRoute: User authenticated, redirecting to:', redirectPath)
     return <Navigate to={redirectPath} replace />
   }
 
+  console.log('🔍 PublicRoute: No user, showing children (login form)')
   return <>{children}</>
 }
 

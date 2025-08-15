@@ -10,7 +10,7 @@ interface MyTasksWidgetProps {
 
 const MyTasksWidget: React.FC<MyTasksWidgetProps> = ({ tasks, isLoading }) => {
   return (
-    <Card title="My Pending Tasks">
+    <Card header={<h3>My Pending Tasks</h3>}>
       {isLoading ? (
         <p>Loading tasks...</p>
       ) : tasks.length > 0 ? (

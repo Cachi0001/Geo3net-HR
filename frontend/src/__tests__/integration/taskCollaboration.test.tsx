@@ -81,16 +81,12 @@ const mockTask: Task = {
   description: 'This is a test task',
   assignedTo: 'user-2',
   assignedBy: 'user-1',
-  assignedToName: 'Jane Smith',
-  assignedByName: 'Test User',
+
   priority: 'medium',
   status: 'todo',
   dueDate: '2024-12-31',
-  completedAt: null,
-  completionNotes: null,
-  createdAt: '2024-01-01T00:00:00Z',
-  updatedAt: '2024-01-01T00:00:00Z',
-  commentsCount: 1
+
+  createdAt: '2024-01-01T00:00:00Z'
 }
 
 const mockNotifications = [
@@ -149,7 +145,7 @@ describe('Task Collaboration Integration Tests', () => {
     })
 
     it('should handle task assignment successfully', async () => {
-      const user = userEvent.setup()
+      const user = userEvent
       const mockOnAssignmentComplete = jest.fn()
 
       render(
@@ -200,7 +196,7 @@ describe('Task Collaboration Integration Tests', () => {
     })
 
     it('should validate form inputs', async () => {
-      const user = userEvent.setup()
+      const user = userEvent
 
       render(
         <TestWrapper>
@@ -233,7 +229,7 @@ describe('Task Collaboration Integration Tests', () => {
     })
 
     it('should handle mark as read functionality', async () => {
-      const user = userEvent.setup()
+      const user = userEvent
       const mockOnMarkAsRead = jest.fn()
 
       render(
@@ -253,7 +249,7 @@ describe('Task Collaboration Integration Tests', () => {
     })
 
     it('should handle mark all as read', async () => {
-      const user = userEvent.setup()
+      const user = userEvent
       const mockOnMarkAllAsRead = jest.fn()
 
       render(
@@ -283,7 +279,7 @@ describe('Task Collaboration Integration Tests', () => {
     })
 
     it('should handle show more/less functionality', async () => {
-      const user = userEvent.setup()
+      const user = userEvent
       const manyNotifications = Array.from({ length: 10 }, (_, i) => ({
         ...mockNotifications[0],
         id: `notification-${i}`,
@@ -335,7 +331,7 @@ describe('Task Collaboration Integration Tests', () => {
     })
 
     it('should handle comment submission', async () => {
-      const user = userEvent.setup()
+      const user = userEvent
 
       render(
         <TestWrapper>
@@ -389,7 +385,7 @@ describe('Task Collaboration Integration Tests', () => {
 
   describe('Integration Workflows', () => {
     it('should handle complete task assignment workflow', async () => {
-      const user = userEvent.setup()
+      const user = userEvent
       const mockOnAssignmentComplete = jest.fn()
 
       render(
@@ -425,7 +421,7 @@ describe('Task Collaboration Integration Tests', () => {
     })
 
     it('should handle notification interaction workflow', async () => {
-      const user = userEvent.setup()
+      const user = userEvent
       const mockOnNotificationClick = jest.fn()
       const mockOnMarkAsRead = jest.fn()
 
@@ -453,7 +449,7 @@ describe('Task Collaboration Integration Tests', () => {
     })
 
     it('should handle collaboration comment workflow', async () => {
-      const user = userEvent.setup()
+      const user = userEvent
 
       render(
         <TestWrapper>

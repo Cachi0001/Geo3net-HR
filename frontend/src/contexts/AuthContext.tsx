@@ -15,7 +15,7 @@ export interface User {
 interface AuthContextType {
   user: User | null
   loading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<User>
   loginWithGoogle: (token: string) => Promise<void>
   register: (data: { firstName: string; lastName: string; email: string; password: string }) => Promise<{ user: User; message: string }>
   logout: () => Promise<void>
@@ -66,13 +66,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {
+    console.log('🔍 AuthContext: Login method called with:', { email })
     setLoading(true)
     try {
+      console.log('🔍 AuthContext: Making login API call...')
       const response = await authService.login(email, password)
+      console.log('✅ AuthContext: Login API success:', { 
+        hasTokens: !!(response.accessToken && response.refreshToken),
+        hasUser: !!response.user,
+        userRole: response.user?.role,
+        userId: response.user?.id
+      })
+      
+      console.log('🔍 AuthContext: Storing tokens in localStorage...')
       localStorage.setItem('accessToken', response.accessToken)
       localStorage.setItem('refreshToken', response.refreshToken)
+      
+      console.log('🔍 AuthContext: Setting user state...')
       setUser(response.user)
+      console.log('✅ AuthContext: User state updated, returning user data')
+      
+      // Return the user data so LoginPage can use it for immediate navigation
+      return response.user
+    } catch (error) {
+      console.log('❌ AuthContext: Login error:', error)
+      throw error // Re-throw so LoginPage can handle it
     } finally {
+      console.log('🔍 AuthContext: Setting loading to false')
       setLoading(false)
     }
   }, [])

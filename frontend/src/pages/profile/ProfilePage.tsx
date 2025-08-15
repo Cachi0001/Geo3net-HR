@@ -36,14 +36,19 @@ const ProfilePage: React.FC = () => {
       newPassword: { required: true, minLength: 8 },
       confirmPassword: {
         required: true,
-        custom: (value, values) => value !== values.newPassword ? 'Passwords do not match' : null,
+        custom: (value: string) => {
+          const newPassword = (document.getElementById('newPassword') as HTMLInputElement)?.value;
+          return value !== newPassword ? 'Passwords do not match' : null;
+        },
       },
     },
-    onSubmit: async (values, { reset }) => {
+    onSubmit: async (values: { oldPassword: string; newPassword: string; confirmPassword: string }) => {
       try {
         await changePassword(values.oldPassword, values.newPassword);
         showToast('success', 'Password changed successfully!');
-        reset();
+        // Reset form manually
+        const form = document.querySelector('form');
+        if (form) form.reset();
       } catch (error) {
         showToast('error', 'Failed to change password. Check your old password.');
         console.error(error);

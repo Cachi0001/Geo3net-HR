@@ -27,7 +27,7 @@ const SuperAdminDashboard: React.FC = () => {
     const fetchRecentHires = async () => {
       try {
         const hiresData = await employeeService.getEmployees(5);
-        setRecentHires(hiresData);
+        setRecentHires(hiresData.employees || hiresData);
       } catch (error) {
         console.error('Failed to load recent hires for admin dashboard', error);
       } finally {

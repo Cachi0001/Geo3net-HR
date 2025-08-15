@@ -10,7 +10,7 @@ interface RecentHiresWidgetProps {
 
 const RecentHiresWidget: React.FC<RecentHiresWidgetProps> = ({ hires, isLoading }) => {
   return (
-    <Card title="Recent Hires">
+    <Card header={<h3>Recent Hires</h3>}>
       {isLoading ? (
         <p>Loading recent hires...</p>
       ) : hires.length > 0 ? (

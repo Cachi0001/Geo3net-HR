@@ -25,7 +25,7 @@ const TeamAttendanceWidget: React.FC<TeamAttendanceWidgetProps> = ({ stats, isLo
   ].filter(item => item.value > 0) : []; // Only show categories with data
 
   return (
-    <Card title="Team Attendance Today">
+    <Card header={<h3>Team Attendance Today</h3>}>
       {isLoading ? (
         <p>Loading attendance data...</p>
       ) : stats ? (
@@ -43,9 +43,10 @@ const TeamAttendanceWidget: React.FC<TeamAttendanceWidgetProps> = ({ stats, isLo
                   dataKey="value"
                   nameKey="name"
                 >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[entry.name.toLowerCase().replace(' ', '')]} />
-                  ))}
+                  {chartData.map((entry, index) => {
+                    const colorKey = entry.name.toLowerCase().replace(' ', '') as keyof typeof COLORS;
+                    return <Cell key={`cell-${index}`} fill={COLORS[colorKey] || '#8884d8'} />;
+                  })}
                 </Pie>
                 <Tooltip />
                 <Legend iconSize={10} />

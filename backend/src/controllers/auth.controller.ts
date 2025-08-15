@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import { AuthService } from '../services/auth.service'
 import { validatePasswordStrength } from '../utils/password'
 import { ResponseHandler } from '../utils/response'
-import { ValidationError, AuthenticationError, EmailVerificationError } from '../utils/errors'
+import { ValidationError } from '../utils/errors'
 import Joi from 'joi'
 
 const authService = new AuthService()
@@ -38,7 +38,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const { error, value } = registerSchema.validate(req.body)
     if (error) {
       const errors = error.details.map(detail => detail.message)
-      throw new ValidationError('Validation error', errors)
+      throw new ValidationError('Validation failed', errors)
     }
 
     const { email, fullName, password } = value
@@ -54,10 +54,16 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       password
     })
 
-    return ResponseHandler.created(res, 'Account created successfully! Please check your email and click the verification link to activate your account.', {
+    return ResponseHandler.created(res, result.message || 'Account created successfully!', {
       user: result.user
     })
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ Registration error in controller:', {
+      message: error.message,
+      stack: error.stack,
+      body: req.body,
+      timestamp: new Date().toISOString()
+    })
     next(error)
   }
 }
@@ -94,7 +100,6 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
     const { googleToken, fullName, email } = value
 
     try {
-      // Try to register first
       const result = await authService.registerWithEmail({
         email,
         fullName,
@@ -135,7 +140,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
 
     const { email } = value
     const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] as string
-    
+
     await authService.forgotPassword(email, ipAddress)
 
     return ResponseHandler.success(res, 'If email exists, reset link will be sent')

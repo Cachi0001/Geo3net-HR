@@ -149,7 +149,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       <div className="task-meta">
         <div className="task-assignee">
           <span className="meta-label">Assigned to:</span>
-          <span className="meta-value">{task.assignedToName || 'Unknown'}</span>
+          <span className="meta-value">{task.assignedTo || 'Unknown'}</span>
         </div>
         
         {task.dueDate && (
@@ -161,12 +161,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
           </div>
         )}
 
-        {task.commentsCount !== undefined && task.commentsCount > 0 && (
-          <div className="task-comments">
-            <span className="meta-label">💬</span>
-            <span className="meta-value">{task.commentsCount}</span>
-          </div>
-        )}
+        <div className="task-comments">
+          <span className="meta-label">💬</span>
+          <span className="meta-value">0</span>
+        </div>
       </div>
 
       {task.status !== 'completed' && task.status !== 'cancelled' && (

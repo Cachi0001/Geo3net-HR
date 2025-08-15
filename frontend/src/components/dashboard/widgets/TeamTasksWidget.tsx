@@ -18,7 +18,7 @@ const TeamTasksWidget: React.FC<TeamTasksWidgetProps> = ({ stats, isLoading }) =
   ] : [];
 
   return (
-    <Card title="Team Task Overview">
+    <Card header={<h3>Team Task Overview</h3>}>
       {isLoading ? (
         <p>Loading task statistics...</p>
       ) : stats ? (

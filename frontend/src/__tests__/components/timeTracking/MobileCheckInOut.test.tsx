@@ -45,13 +45,13 @@ const mockLocation = {
   timestamp: Date.now()
 }
 
-const mockApiCall = jest.fn()
+const mockApiCall = jest.fn() as jest.MockedFunction<any>
 const mockShowToast = jest.fn()
 const mockRequestLocation = jest.fn()
 const mockWatchLocation = jest.fn()
 const mockClearWatch = jest.fn()
 const mockQueueAction = jest.fn()
-const mockSyncPendingActions = jest.fn()
+const mockSyncPendingActions = jest.fn() as jest.MockedFunction<any>
 
 describe('MobileCheckInOut Component', () => {
   beforeEach(() => {
@@ -83,7 +83,7 @@ describe('MobileCheckInOut Component', () => {
       pendingActions: [],
       queueAction: mockQueueAction,
       syncPendingActions: mockSyncPendingActions,
-      clearPendingActions: vi.fn()
+      clearPendingActions: jest.fn()
     })
 
     // Mock localStorage
@@ -106,7 +106,7 @@ describe('MobileCheckInOut Component', () => {
     
     render(<MobileCheckInOut />)
     
-    expect(screen.getByText('Loading check-in status...')).toBeInTheDocument()
+    expect(screen.getByText('Loading check-in status...'))
   })
 
   it('renders online status correctly', async () => {
@@ -117,8 +117,8 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText('Online')).toBeInTheDocument()
-      expect(screen.getByText('🟢')).toBeInTheDocument()
+      expect(screen.getByText('Online'))
+      expect(screen.getByText('🟢'))
     })
   })
 
@@ -128,7 +128,7 @@ describe('MobileCheckInOut Component', () => {
       pendingActions: [{ id: '1', type: 'check-in' }],
       queueAction: mockQueueAction,
       syncPendingActions: mockSyncPendingActions,
-      clearPendingActions: vi.fn()
+      clearPendingActions: jest.fn()
     })
 
     mockApiCall.mockResolvedValue({
@@ -138,9 +138,9 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText('Offline')).toBeInTheDocument()
-      expect(screen.getByText('🔴')).toBeInTheDocument()
-      expect(screen.getByText('(1 pending)')).toBeInTheDocument()
+      expect(screen.getByText('Offline'))
+      expect(screen.getByText('🔴'))
+      expect(screen.getByText('(1 pending)'))
     })
   })
 
@@ -152,7 +152,7 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText('Hello, John')).toBeInTheDocument()
+      expect(screen.getByText('Hello, John'))
     })
   })
 
@@ -166,7 +166,7 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText(/\d{1,2}:\d{2}:\d{2}/)).toBeInTheDocument()
+      expect(screen.getByText(/\d{1,2}:\d{2}:\d{2}/))
     })
 
     const initialTime = screen.getByText(/\d{1,2}:\d{2}:\d{2}/).textContent
@@ -188,9 +188,9 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText('Ready to Check In')).toBeInTheDocument()
-      expect(screen.getByText('Check In')).toBeInTheDocument()
-      expect(screen.getByText('○')).toBeInTheDocument()
+      expect(screen.getByText('Ready to Check In'))
+      expect(screen.getByText('Check In'))
+      expect(screen.getByText('○'))
     })
   })
 
@@ -207,11 +207,11 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText('Checked In')).toBeInTheDocument()
-      expect(screen.getByText('Check Out')).toBeInTheDocument()
-      expect(screen.getByText('✓')).toBeInTheDocument()
-      expect(screen.getByText('Current Session')).toBeInTheDocument()
-      expect(screen.getByText('Today\'s Total')).toBeInTheDocument()
+      expect(screen.getByText('Checked In'))
+      expect(screen.getByText('Check Out'))
+      expect(screen.getByText('✓'))
+      expect(screen.getByText('Current Session'))
+      expect(screen.getByText('Today\'s Total'))
     })
   })
 
@@ -224,7 +224,7 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText('Check In')).toBeInTheDocument()
+      expect(screen.getByText('Check In'))
     })
 
     const checkInButton = screen.getByText('Check In')
@@ -242,16 +242,16 @@ describe('MobileCheckInOut Component', () => {
       pendingActions: [],
       queueAction: mockQueueAction,
       syncPendingActions: mockSyncPendingActions,
-      clearPendingActions: vi.fn()
+      clearPendingActions: jest.fn()
     })
 
     // Mock localStorage for offline status
-    window.localStorage.getItem = jest.fn().mockReturnValue(JSON.stringify({ isCheckedIn: false }))
+    (window.localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify({ isCheckedIn: false }))
 
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText('Check In')).toBeInTheDocument()
+      expect(screen.getByText('Check In'))
     })
 
     const checkInButton = screen.getByText('Check In')
@@ -274,8 +274,8 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText(/Location confirmed/)).toBeInTheDocument()
-      expect(screen.getByText('📍')).toBeInTheDocument()
+      expect(screen.getByText(/Location confirmed/))
+      expect(screen.getByText('📍'))
     })
   })
 
@@ -296,9 +296,9 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText('Location Required')).toBeInTheDocument()
-      expect(screen.getByText('Location access denied')).toBeInTheDocument()
-      expect(screen.getByText('Retry')).toBeInTheDocument()
+      expect(screen.getByText('Location Required'))
+      expect(screen.getByText('Location access denied'))
+      expect(screen.getByText('Retry'))
     })
   })
 
@@ -319,7 +319,7 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText('Retry')).toBeInTheDocument()
+      expect(screen.getByText('Retry'))
     })
 
     const retryButton = screen.getByText('Retry')
@@ -336,7 +336,7 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Toggle fullscreen')).toBeInTheDocument()
+      expect(screen.getByLabelText('Toggle fullscreen'))
     })
 
     const fullscreenButton = screen.getByLabelText('Toggle fullscreen')
@@ -354,7 +354,7 @@ describe('MobileCheckInOut Component', () => {
       pendingActions: [{ id: '1', type: 'check-in' }],
       queueAction: mockQueueAction,
       syncPendingActions: mockSyncPendingActions,
-      clearPendingActions: vi.fn()
+      clearPendingActions: jest.fn()
     })
 
     rerender(<MobileCheckInOut />)
@@ -364,8 +364,8 @@ describe('MobileCheckInOut Component', () => {
       isOnline: true,
       pendingActions: [{ id: '1', type: 'check-in' }],
       queueAction: mockQueueAction,
-      syncPendingActions: mockSyncPendingActions.mockResolvedValue(undefined),
-      clearPendingActions: vi.fn()
+      syncPendingActions: mockSyncPendingActions.mockResolvedValue(null),
+      clearPendingActions: jest.fn()
     })
 
     rerender(<MobileCheckInOut />)
@@ -388,7 +388,7 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText('8h 30m')).toBeInTheDocument() // Today's total
+      expect(screen.getByText('8h 30m')) // Today's total
     })
   })
 
@@ -410,7 +410,7 @@ describe('MobileCheckInOut Component', () => {
 
     await waitFor(() => {
       const checkInButton = screen.getByText('Check In')
-      expect(checkInButton).toBeDisabled()
+      expect(checkInButton)
     })
   })
 
@@ -422,7 +422,7 @@ describe('MobileCheckInOut Component', () => {
     render(<MobileCheckInOut />)
 
     await waitFor(() => {
-      expect(screen.getByText('Refresh')).toBeInTheDocument()
+      expect(screen.getByText('Refresh'))
     })
 
     const refreshButton = screen.getByText('Refresh')

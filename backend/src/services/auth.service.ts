@@ -3,8 +3,7 @@ import { hashPassword, comparePassword, generateTemporaryPassword, generateReset
 import { generateTokens, TokenPayload } from '../utils/jwt'
 import { EmailService } from './email.service'
 import { RoleService } from './role.service'
-import { ConflictError, AuthenticationError, EmailVerificationError, ValidationError, AppError } from '../utils/errors'
-import { v4 as uuidv4 } from 'uuid'
+import { ConflictError, AuthenticationError, ValidationError, AppError } from '../utils/errors'
 
 export interface RegisterData {
   email: string
@@ -21,6 +20,7 @@ export interface LoginData {
 export interface AuthResult {
   user: any
   tokens?: any
+  message?: string
   verificationToken?: string
   resetToken?: string
   temporaryPassword?: string
@@ -44,8 +44,61 @@ export class AuthService {
     this.emailService = new EmailService()
     this.roleService = new RoleService()
   }
+
+  private async debugDatabaseConstraints() {
+    try {
+      console.log('🔍 Checking database constraints...')
+
+      // Check users table constraints
+      const { data: constraints, error } = await supabase
+        .rpc('get_table_constraints', { table_name: 'users' })
+        .select()
+
+      if (error) {
+        console.log('⚠️ Could not fetch constraints via RPC, trying direct query...')
+
+        // Alternative method to check constraints
+        const { data: constraintData, error: constraintError } = await supabase
+          .from('information_schema.check_constraints')
+          .select('constraint_name, check_clause')
+          .like('constraint_name', '%users%')
+
+        if (constraintError) {
+          console.log('⚠️ Could not fetch constraint info:', constraintError.message)
+        } else {
+          console.log('📋 Found constraints:', constraintData)
+        }
+      } else {
+        console.log('📋 Table constraints:', constraints)
+      }
+    } catch (error) {
+      console.log('⚠️ Error checking constraints:', error)
+    }
+  }
+
+  private async testConstraintValues() {
+    try {
+      console.log('🧪 Testing constraint values...')
+
+      // Test account_status values
+      const testValues = ['pending_setup', 'active', 'suspended']
+      for (const value of testValues) {
+        console.log(`Testing account_status: '${value}'`)
+      }
+
+      // Test status values  
+      const statusValues = ['active', 'inactive', 'terminated']
+      for (const value of statusValues) {
+        console.log(`Testing status: '${value}'`)
+      }
+    } catch (error) {
+      console.log('⚠️ Error testing values:', error)
+    }
+  }
   async registerWithEmail(data: RegisterData): Promise<AuthResult> {
     const { email, fullName, password } = data
+
+
 
     const { data: existingUser } = await supabase
       .from('users')
@@ -57,67 +110,112 @@ export class AuthService {
       throw new ConflictError('An account with this email already exists. Please try logging in instead.')
     }
 
-    const { data: superAdminExists } = await supabase
-      .from('users')
-      .select(`
-        id,
-        user_roles!inner(role_name, is_active)
-      `)
-      .eq('user_roles.role_name', 'super-admin')
-      .eq('user_roles.is_active', true)
-      .single()
-
-    if (!superAdminExists) {
-      throw new ValidationError('System is not initialized. Please contact your administrator to set up the system first.')
+    const CEO_EMAIL = process.env.CEO_EMAIL
+    if (!CEO_EMAIL) {
+      throw new AppError('CEO_EMAIL environment variable is not configured')
     }
+    const isCEO = email.toLowerCase() === CEO_EMAIL.toLowerCase()
 
     const hashedPassword = await hashPassword(password)
-    const employeeId = `EMP${Date.now()}`
+    const employeeId = isCEO ? 'CEO001' : `EMP${Date.now()}`
+
+    const userData = {
+      email,
+      full_name: fullName,
+      password_hash: hashedPassword,
+      employee_id: employeeId,
+      hire_date: new Date().toISOString().split('T')[0],
+      account_status: isCEO ? 'active' : 'pending_setup',
+      status: isCEO ? 'active' : 'inactive'
+    }
+
+    console.log('🔍 Registration Debug Info:')
+    console.log('CEO_EMAIL from env:', process.env.CEO_EMAIL)
+    console.log('User email:', email)
+    console.log('Is CEO:', isCEO)
+    console.log('User data being inserted:', {
+      ...userData,
+      password_hash: '[REDACTED]'
+    })
 
     const { data: newUser, error } = await supabase
       .from('users')
-      .insert({
-        email,
-        full_name: fullName,
-        password_hash: hashedPassword,
-        employee_id: employeeId,
-        hire_date: new Date().toISOString().split('T')[0],
-        account_status: 'pending_verification',
-        email_verified: false,
-        status: 'pending'
-      })
+      .insert(userData)
       .select()
       .single()
 
     if (error) {
+      console.error('❌ Database insertion error:', error)
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      })
+
+      // Check if it's a constraint violation
+      if (error.code === '23514') {
+        console.error('🚨 CHECK CONSTRAINT VIOLATION DETECTED!')
+        console.error('This means one of the values does not match the allowed constraint values')
+        console.error('User data that failed:', { ...userData, password_hash: '[REDACTED]' })
+        console.error('Check account_status and status values in the database schema')
+
+        // Try to identify which constraint failed
+        if (error.message.includes('account_status')) {
+          console.error('❌ account_status constraint failed. Expected: pending_setup, active, suspended')
+          console.error('❌ Actual value:', userData.account_status)
+        }
+        if (error.message.includes('status')) {
+          console.error('❌ status constraint failed. Expected: active, inactive, terminated')
+          console.error('❌ Actual value:', userData.status)
+        }
+      }
+
       throw new AppError(`Failed to create user account: ${error.message}`)
     }
 
-    const roleResult = await this.roleService.assignDefaultRole(newUser.id)
+    console.log('✅ User created successfully:', {
+      id: newUser.id,
+      email: newUser.email,
+      account_status: newUser.account_status,
+      status: newUser.status
+    })
+
+    // Assign role based on whether this is the CEO or not
+    const roleToAssign = isCEO ? 'super-admin' : 'employee'
+    const roleResult = await this.roleService.assignRole(newUser.id, roleToAssign, newUser.id)
     if (!roleResult.success) {
-      throw new AppError(`Failed to assign default role: ${roleResult.message}`)
+      throw new AppError(`Failed to assign ${roleToAssign} role: ${roleResult.message}`)
     }
 
-    const verificationToken = generateResetToken()
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    // Only send verification email for non-CEO users
+    let verificationToken: string | undefined = undefined
+    if (!isCEO) {
+      verificationToken = generateResetToken()
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
-    const { error: tokenError } = await supabase
-      .from('email_verification_tokens')
-      .insert({
-        user_id: newUser.id,
-        verification_token: verificationToken,
-        expires_at: expiresAt
-      })
+      const { error: tokenError } = await supabase
+        .from('email_verification_tokens')
+        .insert({
+          user_id: newUser.id,
+          verification_token: verificationToken,
+          expires_at: expiresAt
+        })
 
-    if (tokenError) {
-      throw new AppError(`Failed to create verification token: ${tokenError.message}`)
+      if (tokenError) {
+        throw new AppError(`Failed to create verification token: ${tokenError.message}`)
+      }
+
+      await this.emailService.sendEmailVerificationEmail(
+        newUser.email,
+        newUser.full_name,
+        verificationToken
+      )
     }
 
-    await this.emailService.sendEmailVerificationEmail(
-      newUser.email,
-      newUser.full_name,
-      verificationToken
-    )
+    const message = isCEO
+      ? 'CEO account created successfully! You can now log in immediately.'
+      : 'Account created successfully! Please check your email and click the verification link to activate your account.'
 
     return {
       user: {
@@ -126,8 +224,9 @@ export class AuthService {
         fullName: newUser.full_name,
         employeeId: newUser.employee_id,
         accountStatus: newUser.account_status,
-        emailVerified: false
+        role: roleToAssign
       },
+      message,
       verificationToken
     }
   }
@@ -135,32 +234,54 @@ export class AuthService {
   async loginWithEmail(data: LoginData): Promise<AuthResult> {
     const { email, password } = data
 
+    // First get the user
     const { data: user, error } = await supabase
       .from('users')
       .select(`
-        id, email, full_name, password_hash, employee_id, account_status, status, email_verified,
-        user_roles!inner(role_name, is_active)
+        id, email, full_name, password_hash, employee_id, account_status, status
       `)
       .eq('email', email)
-      .eq('status', 'active')
       .single()
 
     if (error || !user) {
-      throw new AuthenticationError('Invalid credentials')
+      throw new AuthenticationError('Invalid email or password')
     }
 
     const isValidPassword = await comparePassword(password, user.password_hash)
     if (!isValidPassword) {
-      throw new AuthenticationError('Invalid credentials')
+      throw new AuthenticationError('Invalid email or password')
     }
 
-    if (!user.email_verified) {
-      throw new EmailVerificationError('Please verify your email before logging in')
+    // Check if account is suspended
+    if (user.account_status === 'suspended') {
+      throw new AuthenticationError('Account has been suspended. Please contact support.')
     }
 
-    const activeRole = user.user_roles.find((role: any) => role.is_active)
+    // Check if user is terminated
+    if (user.status === 'terminated') {
+      throw new AuthenticationError('Account has been terminated. Please contact support.')
+    }
+
+    // Get user roles separately
+    const { data: userRoles } = await supabase
+      .from('user_roles')
+      .select('role_name, is_active')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+
+    let activeRole = null
+    if (userRoles && userRoles.length > 0) {
+      activeRole = userRoles[0] // Take the first active role
+    }
+    
     if (!activeRole) {
-      throw new AuthenticationError('No active role assigned')
+      // Assign default employee role if none exists
+      const roleResult = await this.roleService.assignRole(user.id, 'employee', user.id)
+      if (roleResult.success) {
+        activeRole = { role_name: 'employee', is_active: true }
+      } else {
+        throw new AuthenticationError('Unable to assign user role. Please contact support.')
+      }
     }
 
     const tokenPayload: TokenPayload = {
@@ -356,7 +477,7 @@ export class AuthService {
   async resendEmailVerification(email: string): Promise<void> {
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, full_name, email_verified')
+      .select('id, full_name')
       .eq('email', email)
       .single()
 
@@ -364,9 +485,10 @@ export class AuthService {
       throw new ValidationError('User not found')
     }
 
-    if (user.email_verified) {
-      throw new ValidationError('Email already verified')
-    }
+    // Skip email verification check for now
+    // if (user.email_verified) {
+    //   throw new ValidationError('Email already verified')
+    // }
 
     // Mark existing tokens as used
     await supabase

@@ -26,7 +26,7 @@ const AdminDashboard: React.FC = () => {
     const fetchRecentHires = async () => {
       try {
         const hiresData = await employeeService.getEmployees(5); // Get top 5 recent hires
-        setRecentHires(hiresData);
+        setRecentHires(hiresData.employees || hiresData);
       } catch (error) {
         console.error('Failed to load recent hires for admin dashboard', error);
       } finally {

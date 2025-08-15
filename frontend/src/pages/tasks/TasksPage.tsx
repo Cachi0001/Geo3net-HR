@@ -107,7 +107,7 @@ const TasksPage: React.FC = () => {
             <TaskDetail
               task={selectedTask}
               onUpdate={handleTaskUpdate}
-              onEdit={handleTaskEdit}
+              onEdit={() => handleTaskEdit(selectedTask)}
               onDelete={handleTaskDelete}
               onClose={handleCloseDetail}
             />

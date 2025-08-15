@@ -89,6 +89,39 @@
   flex-shrink: 0;
 }
 
+/* Password toggle button */
+.password-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: var(--spacing-1);
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+}
+
+.password-toggle-btn:hover {
+  color: var(--color-text-secondary);
+}
+
+.password-toggle-btn:focus {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+.password-toggle-btn:disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+.password-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 /* Register form footer */
 .register-form-footer {
   display: flex;

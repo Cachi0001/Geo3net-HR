@@ -418,7 +418,7 @@ export class EmployeeService {
           employee_id: employee.employeeId,
           password_hash: temporaryPassword, // This should be hashed in a real implementation
           is_temporary_password: true,
-          account_status: 'pending_verification'
+          account_status: 'pending_setup'
         })
         .select()
         .single()

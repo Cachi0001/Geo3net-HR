@@ -100,7 +100,8 @@ async function verifyEmail(token: string) {
         .update({
             email_verified: true,
             email_verified_at: new Date().toISOString(),
-            account_status: 'active'
+            account_status: 'active',
+            status: 'active'
         })
         .eq('id', verificationRecord.user_id)
 

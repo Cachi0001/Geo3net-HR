@@ -75,7 +75,13 @@ class ApiService {
   }
 
   async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    console.log('🔍 ApiService: POST request to:', url)
     const response: AxiosResponse<T> = await this.api.post(url, data, config)
+    console.log('✅ ApiService: POST response:', {
+      status: response.status,
+      url,
+      hasData: !!response.data
+    })
     return response.data
   }
 

@@ -10,7 +10,7 @@ interface CompanyStatsWidgetProps {
 
 const CompanyStatsWidget: React.FC<CompanyStatsWidgetProps> = ({ stats, isLoading }) => {
   return (
-    <Card title="Company Overview">
+    <Card header={<h3>Company Overview</h3>}>
       {isLoading ? (
         <p>Loading company statistics...</p>
       ) : stats ? (

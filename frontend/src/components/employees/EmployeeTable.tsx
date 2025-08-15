@@ -31,7 +31,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ employees, onEdit, onDele
               <td>{employee.position}</td>
               <td className="employee-table__actions">
                 <Button variant="outline" size="sm" onClick={() => onEdit(employee)}>Edit</Button>
-                <Button variant="danger" size="sm" onClick={() => onDelete(employee)}>Delete</Button>
+                <Button variant="error" size="sm" onClick={() => onDelete(employee)}>Delete</Button>
               </td>
             </tr>
           ))}

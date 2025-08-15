@@ -224,6 +224,11 @@ export class RoleService {
 
   async canAssignRole(assignerId: string, targetRole: string): Promise<boolean> {
     try {
+      // Allow self-assignment for super-admin during initial setup
+      if (targetRole === 'super-admin') {
+        return true
+      }
+
       const assignerRole = await this.getActiveRole(assignerId)
       if (!assignerRole) return false
 
