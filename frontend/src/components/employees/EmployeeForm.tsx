@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm } from '../../hooks/useForm';
 import { Button, Input } from '../common';
 import { CreateEmployeeData, Employee } from '../../services/employee.service';
@@ -12,13 +12,20 @@ interface EmployeeFormProps {
 }
 
 const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onSave, onCancel, isSaving }) => {
+  const initialValues = useMemo(() => ({
+    fullName: employee?.fullName || '',
+    email: employee?.email || '',
+    position: (employee as any)?.position || '',
+    department: (employee as any)?.department || '',
+  }), [
+    employee?.fullName,
+    employee?.email,
+    (employee as any)?.position,
+    (employee as any)?.department
+  ])
+
   const { values, errors, touched, handleChange, handleBlur, handleSubmit, reset } = useForm({
-    initialValues: {
-      fullName: employee?.fullName || '',
-      email: employee?.email || '',
-      position: employee?.position || '',
-      department: employee?.department || '',
-    },
+    initialValues: initialValues,
     validationRules: {
       fullName: { required: true },
       email: { required: true, pattern: /^\S+@\S+\.\S+$/ },
@@ -36,7 +43,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onSave, onCancel,
 
   useEffect(() => {
     reset();
-  }, [employee, reset]);
+  }, [employee]);
 
   return (
     <form onSubmit={handleSubmit} className="employee-form">

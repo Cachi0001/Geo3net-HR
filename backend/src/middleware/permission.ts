@@ -33,6 +33,10 @@ export class PermissionMiddleware {
         if (!req.user?.id) {
           return ResponseHandler.forbidden(res, 'Authentication required')
         }
+        // Super-admin token bypass
+        if (req.user.role === 'super-admin') {
+          return next()
+        }
 
         const hasPermission = await this.roleService.validatePermission(req.user.id, permission)
         
@@ -52,6 +56,10 @@ export class PermissionMiddleware {
       try {
         if (!req.user?.id) {
           return ResponseHandler.forbidden(res, 'Authentication required')
+        }
+        // Super-admin token bypass
+        if (req.user.role === 'super-admin') {
+          return next()
         }
 
         for (const permission of permissions) {
@@ -74,6 +82,10 @@ export class PermissionMiddleware {
         if (!req.user?.id) {
           return ResponseHandler.forbidden(res, 'Authentication required')
         }
+        // Super-admin token bypass
+        if (req.user.role === 'super-admin') {
+          return next()
+        }
 
         for (const permission of permissions) {
           const hasPermission = await this.roleService.validatePermission(req.user.id, permission)
@@ -95,6 +107,10 @@ export class PermissionMiddleware {
       try {
         if (!req.user?.id) {
           return ResponseHandler.forbidden(res, 'Authentication required')
+        }
+        // Super-admin token bypass
+        if (req.user.role === 'super-admin') {
+          return next()
         }
 
         const { resource, action, scope = 'any', allowSelf = false } = options
@@ -131,13 +147,20 @@ export class PermissionMiddleware {
         if (!req.user?.id) {
           return ResponseHandler.forbidden(res, 'Authentication required')
         }
-
+        // Prefer DB role; fallback to token role if missing
         const userRole = await this.roleService.getActiveRole(req.user.id)
-        if (!userRole) {
+        const tokenRoleName = req.user.role
+        const effectiveRoleName = userRole?.roleName || tokenRoleName
+        if (!effectiveRoleName) {
           return ResponseHandler.forbidden(res, 'No active role found')
         }
 
-        const userLevel = this.roleService.getRoleLevel(userRole.roleName)
+        // Super-admin bypass
+        if (effectiveRoleName === 'super-admin') {
+          return next()
+        }
+
+        const userLevel = this.roleService.getRoleLevel(effectiveRoleName)
         const requiredLevel = this.roleService.getRoleLevel(minimumRole)
 
         if (userLevel < requiredLevel) {

@@ -30,7 +30,7 @@ export const assignRole = async (req: AuthenticatedRequest, res: Response, next:
     }
 
     const { userId, roleName } = value
-    const result = await roleService.assignRole(userId, roleName, req.user.userId)
+    const result = await roleService.assignRole(userId, roleName, req.user.id)
 
     if (!result.success) {
       throw new AuthorizationError(result.message)
@@ -68,7 +68,7 @@ export const getMyRoles = async (req: AuthenticatedRequest, res: Response, next:
       throw new AuthorizationError('Authentication required')
     }
 
-    const roles = await roleService.getUserRoles(req.user.userId)
+    const roles = await roleService.getUserRoles(req.user.id)
 
     return ResponseHandler.success(res, 'Your roles retrieved successfully', { roles })
   } catch (error) {
@@ -89,7 +89,7 @@ export const updateUserPermissions = async (req: AuthenticatedRequest, res: Resp
     }
 
     const { userId, permissions } = value
-    const result = await roleService.updateUserPermissions(userId, permissions, req.user.userId)
+    const result = await roleService.updateUserPermissions(userId, permissions, req.user.id)
 
     if (!result.success) {
       throw new AuthorizationError(result.message)
@@ -113,7 +113,7 @@ export const deactivateUserRole = async (req: AuthenticatedRequest, res: Respons
       throw new ValidationError('User ID is required')
     }
 
-    const result = await roleService.deactivateRole(userId, req.user.userId)
+    const result = await roleService.deactivateRole(userId, req.user.id)
 
     if (!result.success) {
       throw new AuthorizationError(result.message)
@@ -157,7 +157,7 @@ export const validatePermission = async (req: AuthenticatedRequest, res: Respons
       throw new ValidationError('Permission is required')
     }
 
-    const hasPermission = await roleService.validatePermission(req.user.userId, permission)
+    const hasPermission = await roleService.validatePermission(req.user.id, permission)
 
     return ResponseHandler.success(res, 'Permission validation completed', {
       hasPermission,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { notificationService, NotificationService, NotificationLog, NotificationStats } from '../services/notification.service'
 import { useToast } from './useToast'
+import { useAuth } from './useAuth'
 
 interface UseNotificationsReturn {
   // Subscription state
@@ -29,9 +30,12 @@ interface UseNotificationsReturn {
 
 export const useNotifications = (): UseNotificationsReturn => {
   const { showToast } = useToast()
+  const { user } = useAuth()
+  const enabled = process.env.REACT_APP_ENABLE_NOTIFICATIONS === 'true'
   
   // State
-  const [isSupported] = useState(NotificationService.isSupported())
+  const [isSupported] = useState(enabled && NotificationService.isSupported())
+
   const [permission, setPermission] = useState<NotificationPermission>(
     NotificationService.getPermissionStatus()
   )
@@ -52,10 +56,10 @@ export const useNotifications = (): UseNotificationsReturn => {
       }
     }
 
-    if (isSupported) {
+    if (enabled && isSupported && user) {
       initializeService()
     }
-  }, [isSupported])
+  }, [enabled, isSupported, user])
 
   // Listen for permission changes
   useEffect(() => {
@@ -67,10 +71,10 @@ export const useNotifications = (): UseNotificationsReturn => {
     }
 
     // Check permission periodically
-    const interval = setInterval(checkPermission, 1000)
+    const interval = enabled ? setInterval(checkPermission, 1000) : undefined
     
-    return () => clearInterval(interval)
-  }, [permission])
+    return () => { if (interval) clearInterval(interval) }
+  }, [permission, enabled])
 
   // Request notification permission
   const requestPermission = useCallback(async () => {
@@ -125,6 +129,7 @@ export const useNotifications = (): UseNotificationsReturn => {
   // Load notification history
   const loadNotifications = useCallback(async (limit: number = 50, offset: number = 0) => {
     try {
+      if (!enabled || !user) return
       setIsLoading(true)
       const response = await notificationService.getNotificationHistory(limit, offset)
       
@@ -144,13 +149,14 @@ export const useNotifications = (): UseNotificationsReturn => {
   // Load notification statistics
   const loadStats = useCallback(async (days: number = 30) => {
     try {
+      if (!enabled || !user) return
       const statsData = await notificationService.getNotificationStats(days)
       setStats(statsData)
     } catch (error) {
       console.error('Failed to load notification stats:', error)
       showToast('error', 'Failed to load notification statistics')
     }
-  }, [showToast])
+  }, [showToast, enabled, user])
 
   // Send notification (admin only)
   const sendNotification = useCallback(async (

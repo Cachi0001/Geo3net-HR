@@ -23,6 +23,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Show loading spinner while checking authentication
   if (loading) {
+    console.log('🔒 ProtectedRoute: loading=true for path', location.pathname)
     return (
       <div className="protected-route-loading">
         <LoadingSpinner size="lg" />
@@ -32,6 +33,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirect to login if not authenticated
   if (!user) {
+    console.log('🔒 ProtectedRoute: no user, redirecting to login from', location.pathname)
     return <Navigate to={fallbackPath} state={{ from: location }} replace />
   }
 
@@ -43,6 +45,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const requiredRoleIndex = roleHierarchy.indexOf(requiredRole)
     
     if (userRoleIndex === -1 || userRoleIndex < requiredRoleIndex) {
+      console.warn('🔒 ProtectedRoute: role check failed', { userRole: user.role, requiredRole })
       return <Navigate to="/unauthorized" replace />
     }
   }
@@ -54,10 +57,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const hasPermissions = checkUserPermissions(user, requiredPermissions, requireAnyPermission)
     
     if (!hasPermissions) {
+      console.warn('🔒 ProtectedRoute: permission check failed', { requiredPermissions, requireAnyPermission })
       return <Navigate to="/unauthorized" replace />
     }
   }
 
+  console.log('🔒 ProtectedRoute: access granted for', location.pathname, 'user=', { id: user.id, role: user.role })
   return <>{children}</>
 }
 

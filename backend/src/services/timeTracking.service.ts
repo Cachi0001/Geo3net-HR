@@ -81,6 +81,7 @@ export class TimeTrackingService {
   private readonly LATE_THRESHOLD_MINUTES = 15
   private readonly EARLY_LEAVE_THRESHOLD_MINUTES = 30
   private readonly MAX_LOCATION_DISTANCE_METERS = 100 // Maximum distance from office location
+  
 
   // Office location (configurable)
   private readonly OFFICE_LOCATION: Location = {
@@ -214,6 +215,9 @@ export class TimeTrackingService {
     }
   }
 
+  async getStatus(employeeId: string){
+    
+  }
   async getActiveTimeEntry(employeeId: string): Promise<TimeEntry | null> {
     try {
       const { data, error } = await supabase

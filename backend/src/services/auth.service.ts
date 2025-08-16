@@ -292,15 +292,19 @@ export class AuthService {
 
     const tokens = generateTokens(tokenPayload)
 
+    const userPayload = {
+      id: user.id,
+      email: user.email,
+      fullName: user.full_name,
+      employeeId: user.employee_id,
+      accountStatus: user.account_status,
+      role: activeRole.role_name
+    }
+
+    console.log('[AuthService] loginWithEmail - Returning user payload:', userPayload)
+
     return {
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.full_name,
-        employeeId: user.employee_id,
-        accountStatus: user.account_status,
-        role: activeRole.role_name
-      },
+      user: userPayload,
       tokens
     }
   }

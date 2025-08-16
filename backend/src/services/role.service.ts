@@ -170,7 +170,23 @@ export class RoleService {
         .eq('is_active', true)
 
       if (error) throw error
-      return roles || []
+      if (!roles) return []
+
+      return roles.map((r: any) => {
+        const basePerms = r.permissions as string[] | null | undefined
+        const perms = basePerms && basePerms.length > 0
+          ? basePerms
+          : (this.roleHierarchy[r.role_name as keyof typeof this.roleHierarchy]?.permissions || [])
+        return {
+          id: r.id,
+          userId: r.user_id,
+          roleName: r.role_name,
+          permissions: perms,
+          assignedBy: r.assigned_by,
+          assignedAt: r.assigned_at,
+          isActive: r.is_active,
+        }
+      })
     } catch (error) {
       return []
     }
@@ -185,8 +201,20 @@ export class RoleService {
         .eq('is_active', true)
         .single()
 
-      if (error) return null
-      return role
+      if (error || !role) return null
+      const basePerms = role.permissions as string[] | null | undefined
+      const perms = basePerms && basePerms.length > 0
+        ? basePerms
+        : (this.roleHierarchy[role.role_name as keyof typeof this.roleHierarchy]?.permissions || [])
+      return {
+        id: role.id,
+        userId: role.user_id,
+        roleName: role.role_name,
+        permissions: perms,
+        assignedBy: role.assigned_by,
+        assignedAt: role.assigned_at,
+        isActive: role.is_active,
+      }
     } catch (error) {
       return null
     }

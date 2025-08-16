@@ -308,6 +308,11 @@ export class EmployeeService {
 
   async searchEmployees(filters: EmployeeSearchFilters): Promise<EmployeeResult> {
     try {
+      const _ts = new Date().toISOString()
+      try {
+        console.log(`[EMPLOYEES][${_ts}] searchEmployees called with filters:`, JSON.stringify(filters))
+      } catch {}
+
       let query = supabase
         .from('employees')
         .select(`
@@ -347,11 +352,29 @@ export class EmployeeService {
         query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1)
       }
 
+      try {
+        console.log(`[EMPLOYEES][${_ts}] pagination -> limit=${filters.limit ?? 'none'} offset=${filters.offset ?? 'none'}`)
+      } catch {}
+
       const { data, error, count } = await query
 
-      if (error) throw error
+      if (error) {
+        try {
+          console.error(`[EMPLOYEES][${_ts}] Supabase error in searchEmployees`, {
+            message: (error as any).message,
+            details: (error as any).details,
+            hint: (error as any).hint,
+            code: (error as any).code
+          })
+        } catch {}
+        throw error
+      }
 
       const employees = data?.map(emp => this.mapDatabaseToEmployee(emp)) || []
+
+      try {
+        console.log(`[EMPLOYEES][${_ts}] searchEmployees success -> rows=${employees.length} total=${count ?? 0}`)
+      } catch {}
 
       return {
         success: true,
@@ -359,7 +382,19 @@ export class EmployeeService {
         employees,
         total: count || 0
       }
-    } catch (error) {
+    } catch (error: any) {
+      try {
+        console.error(`[EMPLOYEES][${new Date().toISOString()}] searchEmployees FAILED`, {
+          filters,
+          error: {
+            message: error?.message,
+            stack: error?.stack,
+            code: error?.code,
+            details: error?.details,
+            hint: error?.hint
+          }
+        })
+      } catch {}
       throw new Error('Failed to search employees')
     }
   }

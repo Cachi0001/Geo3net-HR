@@ -6,13 +6,16 @@ import {
   forgotPassword, 
   resetPassword, 
   verifyEmail, 
-  resendVerification 
+  resendVerification,
+  me
 } from '../controllers/auth.controller'
+import { authenticateToken } from '../middleware/auth'
 
 const router = Router()
 
 router.post('/register', register)
 router.post('/login', login)
+router.get('/me', authenticateToken, me)
 router.post('/google', googleAuth)
 router.post('/forgot-password', forgotPassword)
 router.post('/reset-password', resetPassword)

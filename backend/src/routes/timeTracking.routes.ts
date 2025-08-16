@@ -42,6 +42,12 @@ router.get('/active',
   timeTrackingController.getActiveEntry.bind(timeTrackingController)
 )
 
+// Get current status - requires time.log permission
+router.get('/status',
+  permissionMiddleware.requirePermission('time.log'),
+  timeTrackingController.getStatus.bind(timeTrackingController)
+)
+
 // Validate location - requires time.log permission
 router.post('/validate-location',
   permissionMiddleware.requirePermission('time.log'),

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/auth.service'
 
 export interface User {
@@ -15,8 +16,7 @@ export interface User {
 interface AuthContextType {
   user: User | null
   loading: boolean
-  login: (email: string, password: string) => Promise<User>
-  loginWithGoogle: (token: string) => Promise<void>
+  login: (email: string, password: string, navigate: (path: string) => void) => Promise<void>
   register: (data: { firstName: string; lastName: string; email: string; password: string }) => Promise<{ user: User; message: string }>
   logout: () => Promise<void>
   forgotPassword: (email: string) => Promise<void>
@@ -47,65 +47,60 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Initialize auth state on mount
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('🔧 AuthContext.initializeAuth: start')
       try {
         const token = localStorage.getItem('accessToken')
+        console.log('🔧 AuthContext.initializeAuth: token present =', !!token)
         if (token) {
-          const userData = await authService.getCurrentUser()
-          setUser(userData)
+          try {
+            const userData = await authService.getCurrentUser()
+            console.log('🔧 AuthContext.initializeAuth: fetched user =', userData?.id, userData?.email)
+            setUser(userData)
+          } catch (err: any) {
+            console.warn('⚠️ AuthContext.initializeAuth: failed to fetch current user, clearing tokens', err?.message)
+            localStorage.removeItem('accessToken')
+            localStorage.removeItem('refreshToken')
+            setUser(null)
+          }
+        } else {
+          console.log('🔧 AuthContext.initializeAuth: no token, user stays null')
         }
       } catch (error) {
         // Token might be expired or invalid
+        console.error('❌ AuthContext.initializeAuth: unexpected error', (error as any)?.message)
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
+        setUser(null)
       } finally {
         setLoading(false)
+        console.log('🔧 AuthContext.initializeAuth: end. loading=false, hasUser=', !!user)
       }
     }
 
     initializeAuth()
   }, [])
 
-  const login = useCallback(async (email: string, password: string) => {
-    console.log('🔍 AuthContext: Login method called with:', { email })
+  const login = useCallback(async (email: string, password: string, navigate: (path: string) => void) => {
+    console.log('🔐 AuthContext.login: start for', email)
     setLoading(true)
     try {
-      console.log('🔍 AuthContext: Making login API call...')
       const response = await authService.login(email, password)
-      console.log('✅ AuthContext: Login API success:', { 
-        hasTokens: !!(response.accessToken && response.refreshToken),
-        hasUser: !!response.user,
-        userRole: response.user?.role,
-        userId: response.user?.id
+      console.log('🔐 AuthContext.login: received user/tokens', {
+        hasUser: !!response?.user,
+        hasAT: !!response?.accessToken,
+        hasRT: !!response?.refreshToken,
       })
-      
-      console.log('🔍 AuthContext: Storing tokens in localStorage...')
-      localStorage.setItem('accessToken', response.accessToken)
-      localStorage.setItem('refreshToken', response.refreshToken)
-      
-      console.log('🔍 AuthContext: Setting user state...')
+      if (response?.accessToken) localStorage.setItem('accessToken', response.accessToken)
+      if (response?.refreshToken) localStorage.setItem('refreshToken', response.refreshToken)
       setUser(response.user)
-      console.log('✅ AuthContext: User state updated, returning user data')
-      
-      // Return the user data so LoginPage can use it for immediate navigation
-      return response.user
+      console.log('🔐 AuthContext.login: setUser complete, navigating to /dashboard')
+      navigate('/dashboard')
     } catch (error) {
-      console.log('❌ AuthContext: Login error:', error)
-      throw error // Re-throw so LoginPage can handle it
-    } finally {
-      console.log('🔍 AuthContext: Setting loading to false')
-      setLoading(false)
-    }
-  }, [])
-
-  const loginWithGoogle = useCallback(async (token: string) => {
-    setLoading(true)
-    try {
-      const response = await authService.loginWithGoogle(token)
-      localStorage.setItem('accessToken', response.accessToken)
-      localStorage.setItem('refreshToken', response.refreshToken)
-      setUser(response.user)
+      console.error('❌ AuthContext.login: error', (error as any)?.message)
+      throw error
     } finally {
       setLoading(false)
+      console.log('🔐 AuthContext.login: end. loading=false')
     }
   }, [])
 
@@ -122,6 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [])
 
   const logout = useCallback(async () => {
+    console.log('🚪 AuthContext.logout: start')
     setLoading(true)
     try {
       await authService.logout()
@@ -133,6 +129,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('refreshToken')
       setUser(null)
       setLoading(false)
+      console.log('🚪 AuthContext.logout: completed, tokens cleared')
     }
   }, [])
 
@@ -159,8 +156,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user) return
     
     try {
+      console.log('🔄 AuthContext.refreshUser: fetching /auth/me')
       const userData = await authService.getCurrentUser()
       setUser(userData)
+      console.log('🔄 AuthContext.refreshUser: updated user', userData?.id)
     } catch (error) {
       console.error('Failed to refresh user:', error)
     }
@@ -170,7 +169,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     loading,
     login,
-    loginWithGoogle,
     register,
     logout,
     forgotPassword,

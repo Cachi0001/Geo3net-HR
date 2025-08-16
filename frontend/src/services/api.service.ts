@@ -22,17 +22,34 @@ class ApiService {
         const token = localStorage.getItem('accessToken')
         if (token) {
           config.headers.Authorization = `Bearer ${token}`
+          console.log('📤 ApiService: Request', {
+            method: config.method,
+            url: config.url,
+            hasAuth: true,
+          })
+        } else {
+          console.log('📤 ApiService: Request (no token)', {
+            method: config.method,
+            url: config.url,
+          })
         }
         return config
       },
       (error) => {
+        console.error('❌ ApiService: Request error', error?.message)
         return Promise.reject(error)
       }
     )
 
     // Response interceptor to handle token refresh
     this.api.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        console.log('📥 ApiService: Response', {
+          url: response.config?.url,
+          status: response.status,
+        })
+        return response
+      },
       async (error) => {
         const originalRequest = error.config
 
@@ -42,6 +59,7 @@ class ApiService {
           try {
             const refreshToken = localStorage.getItem('refreshToken')
             if (refreshToken) {
+              console.warn('🔄 ApiService: 401 received. Attempting token refresh...')
               const response = await axios.post(
                 `${this.api.defaults.baseURL}/auth/refresh`,
                 { refreshToken }
@@ -52,17 +70,28 @@ class ApiService {
 
               // Retry original request with new token
               originalRequest.headers.Authorization = `Bearer ${accessToken}`
+              console.log('🔁 ApiService: Retrying original request after refresh', originalRequest.url)
               return this.api(originalRequest)
             }
           } catch (refreshError) {
-            // Refresh failed, redirect to login
+            // Refresh failed. Do not hard-redirect for notification endpoints.
+            console.error('❌ ApiService: Token refresh failed.', (refreshError as any)?.message)
+            const url = (originalRequest?.url || '') as string
+            const isNotificationEndpoint = url.startsWith('/notifications')
             localStorage.removeItem('accessToken')
             localStorage.removeItem('refreshToken')
-            window.location.href = '/login'
+            if (!isNotificationEndpoint && window.location.pathname !== '/login') {
+              window.location.href = '/login'
+            }
             return Promise.reject(refreshError)
           }
         }
 
+        console.error('❌ ApiService: Response error', {
+          url: originalRequest?.url,
+          status: error.response?.status,
+          message: error?.message,
+        })
         return Promise.reject(error)
       }
     )
@@ -70,7 +99,9 @@ class ApiService {
 
   // Generic request methods
   async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    console.log('🔍 ApiService: GET', url)
     const response: AxiosResponse<T> = await this.api.get(url, config)
+    console.log('✅ ApiService: GET response', { url, status: response.status })
     return response.data
   }
 
@@ -86,17 +117,23 @@ class ApiService {
   }
 
   async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    console.log('✏️ ApiService: PUT', url)
     const response: AxiosResponse<T> = await this.api.put(url, data, config)
+    console.log('✅ ApiService: PUT response', { url, status: response.status })
     return response.data
   }
 
   async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    console.log('✏️ ApiService: PATCH', url)
     const response: AxiosResponse<T> = await this.api.patch(url, data, config)
+    console.log('✅ ApiService: PATCH response', { url, status: response.status })
     return response.data
   }
 
   async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    console.log('🗑️ ApiService: DELETE', url)
     const response: AxiosResponse<T> = await this.api.delete(url, config)
+    console.log('✅ ApiService: DELETE response', { url, status: response.status })
     return response.data
   }
 

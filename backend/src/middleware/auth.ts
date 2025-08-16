@@ -2,7 +2,11 @@ import { Request, Response, NextFunction } from 'express'
 import { verifyToken, TokenPayload } from '../utils/jwt'
 
 export interface AuthenticatedRequest extends Request {
-  user?: TokenPayload
+  user?: {
+    id: string
+    email: string
+    role: string
+  }
 }
 
 export const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -18,7 +22,12 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
 
   try {
     const decoded = verifyToken(token)
-    req.user = decoded
+    // Normalize to the shape expected across middlewares (id/email/role)
+    req.user = {
+      id: (decoded as TokenPayload).userId,
+      email: (decoded as TokenPayload).email,
+      role: (decoded as TokenPayload).role,
+    }
     next()
   } catch (error) {
     return res.status(403).json({ 
@@ -54,8 +63,12 @@ export const optionalAuth = (req: AuthenticatedRequest, res: Response, next: Nex
 
   if (token) {
     try {
-      const decoded = verifyToken(token)
-      req.user = decoded
+      const decoded = verifyToken(token) as TokenPayload
+      req.user = {
+        id: decoded.userId,
+        email: decoded.email,
+        role: decoded.role,
+      }
     } catch (error) {
       req.user = undefined
     }

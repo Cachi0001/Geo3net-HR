@@ -56,6 +56,11 @@ class NotificationService {
   // Initialize the service
   async initialize(): Promise<void> {
     try {
+      const enabled = process.env.REACT_APP_ENABLE_NOTIFICATIONS === 'true'
+      if (!enabled) {
+        console.log('Notifications: Disabled by REACT_APP_ENABLE_NOTIFICATIONS flag')
+        return
+      }
       // Check if service workers are supported
       if (!('serviceWorker' in navigator)) {
         console.warn('Service workers are not supported in this browser')
@@ -68,9 +73,9 @@ class NotificationService {
         return
       }
 
-      // Register service worker
-      this.registration = await navigator.serviceWorker.register('/sw.js')
-      console.log('Service worker registered successfully')
+      // Do not register here; use existing registration handled by utils/serviceWorker
+      this.registration = await navigator.serviceWorker.ready
+      console.log('Notifications: serviceWorker.ready obtained')
 
       // Get VAPID public key
       await this.getVapidPublicKey()

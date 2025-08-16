@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useLoading } from './hooks/useLoading'
 import { notificationService } from './services/notification.service'
+import { useAuth } from './hooks/useAuth'
 import Layout from './components/common/Layout/Layout'
 import LoadingSpinner from './components/common/LoadingSpinner/LoadingSpinner'
 import Toast from './components/common/Toast/Toast'
@@ -26,11 +27,20 @@ import PublicRoute from './components/auth/PublicRoute/PublicRoute'
 
 const App: React.FC = () => {
   const { isLoading } = useLoading()
+  const notifInitRef = useRef(false)
+  const { user } = useAuth()
 
   // Initialize notification service
   useEffect(() => {
-    notificationService.initialize()
-  }, [])
+    const enabled = process.env.REACT_APP_ENABLE_NOTIFICATIONS === 'true'
+    if (!enabled) {
+      return
+    }
+    if (user && !notifInitRef.current) {
+      notifInitRef.current = true
+      notificationService.initialize()
+    }
+  }, [user])
 
   return (
     <>

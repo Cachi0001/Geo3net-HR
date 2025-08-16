@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { AuthService } from '../services/auth.service'
+import { supabase } from '../config/database'
+import { AuthenticatedRequest } from '../middleware/auth'
 import { validatePasswordStrength } from '../utils/password'
 import { ResponseHandler } from '../utils/response'
 import { ValidationError } from '../utils/errors'
@@ -64,6 +66,40 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       body: req.body,
       timestamp: new Date().toISOString()
     })
+    next(error)
+  }
+}
+
+// Get current authenticated user
+export const me = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return ResponseHandler.unauthorized(res, 'Authentication required')
+    }
+
+    const { id: userId, role } = req.user
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, full_name, employee_id, account_status, status')
+      .eq('id', userId)
+      .single()
+
+    if (error || !user) {
+      return ResponseHandler.notFound(res, 'User not found')
+    }
+
+    return ResponseHandler.success(res, 'Current user', {
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.full_name,
+        employeeId: user.employee_id,
+        accountStatus: user.account_status,
+        role: role
+      }
+    })
+  } catch (error) {
     next(error)
   }
 }

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { EmployeeService, CreateEmployeeData, UpdateEmployeeData, EmployeeSearchFilters } from '../services/employee.service'
+import { EmployeeService, CreateEmployeeData, UpdateEmployeeData, EmployeeSearchFilters, Employee } from '../services/employee.service'
 import { ResponseHandler } from '../utils/response'
 import { ValidationError, NotFoundError, ConflictError } from '../utils/errors'
 import { AuthenticatedRequest } from '../middleware/permission'
@@ -268,18 +268,18 @@ export class EmployeeController {
         return ResponseHandler.internalError(res, 'Failed to retrieve employee statistics')
       }
 
-      const employees = allEmployeesResult.employees
+      const employees = (allEmployeesResult.employees || []) as Employee[]
 
       const statistics = {
         total: employees.length,
-        active: employees.filter(emp => emp.employmentStatus === 'active').length,
-        inactive: employees.filter(emp => emp.employmentStatus === 'inactive').length,
-        onLeave: employees.filter(emp => emp.employmentStatus === 'on_leave').length,
-        terminated: employees.filter(emp => emp.employmentStatus === 'terminated').length,
+        active: employees.filter((emp: Employee) => emp.employmentStatus === 'active').length,
+        inactive: employees.filter((emp: Employee) => emp.employmentStatus === 'inactive').length,
+        onLeave: employees.filter((emp: Employee) => emp.employmentStatus === 'on_leave').length,
+        terminated: employees.filter((emp: Employee) => emp.employmentStatus === 'terminated').length,
         byDepartment: this.groupByDepartment(employees),
         byPosition: this.groupByPosition(employees),
         recentHires: employees
-          .filter(emp => {
+          .filter((emp: Employee) => {
             const hireDate = new Date(emp.hireDate)
             const thirtyDaysAgo = new Date()
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
@@ -294,18 +294,18 @@ export class EmployeeController {
     }
   }
 
-  private buildOrganizationalHierarchy(employees: any[]): any[] {
+  private buildOrganizationalHierarchy(employees: Employee[]): any[] {
     const employeeMap = new Map()
     const rootEmployees: any[] = []
 
-    employees.forEach(emp => {
+    employees.forEach((emp: Employee) => {
       employeeMap.set(emp.id, {
         ...emp,
         subordinates: []
       })
     })
 
-    employees.forEach(emp => {
+    employees.forEach((emp: Employee) => {
       if (emp.managerId && employeeMap.has(emp.managerId)) {
         const manager = employeeMap.get(emp.managerId)
         manager.subordinates.push(employeeMap.get(emp.id))
@@ -318,10 +318,10 @@ export class EmployeeController {
   }
 
   
-  private groupByDepartment(employees: any[]): Record<string, number> {
+  private groupByDepartment(employees: Employee[]): Record<string, number> {
     const departmentCounts: Record<string, number> = {}
 
-    employees.forEach(emp => {
+    employees.forEach((emp: Employee) => {
       const deptId = emp.departmentId || 'unassigned'
       departmentCounts[deptId] = (departmentCounts[deptId] || 0) + 1
     })
@@ -329,10 +329,10 @@ export class EmployeeController {
     return departmentCounts
   }
 
-  private groupByPosition(employees: any[]): Record<string, number> {
+  private groupByPosition(employees: Employee[]): Record<string, number> {
     const positionCounts: Record<string, number> = {}
 
-    employees.forEach(emp => {
+    employees.forEach((emp: Employee) => {
       const posId = emp.positionId || 'unassigned'
       positionCounts[posId] = (positionCounts[posId] || 0) + 1
     })

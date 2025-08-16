@@ -173,9 +173,40 @@ export class TimeTrackingController {
     }
 
     /**
-     * Get attendance record for specific date
-     * GET /api/time-tracking/attendance/:date
+     * Get current status
+     * GET /api/time-tracking/status
      */
+    async getStatus(req: AuthenticatedRequest, res: Response): Promise<Response> {
+        try {
+            const employeeId = req.user?.id!
+            const activeEntry = await this.timeTrackingService.getActiveTimeEntry(employeeId)
+
+            const today = new Date().toISOString().split('T')[0]
+            const todayAttendance = await this.timeTrackingService.getAttendanceRecord(employeeId, today)
+
+            const statusPayload: any = {
+                status: activeEntry ? 'checked_in' : 'checked_out',
+                since: activeEntry ? activeEntry.checkInTime : undefined,
+                activeEntry: activeEntry || null
+            }
+
+            if (todayAttendance) {
+                statusPayload.today = {
+                    date: todayAttendance.date,
+                    totalHours: todayAttendance.totalHours,
+                    regularHours: todayAttendance.regularHours,
+                    overtimeHours: todayAttendance.overtimeHours,
+                    status: todayAttendance.status,
+                    lateMinutes: todayAttendance.lateMinutes,
+                    earlyLeaveMinutes: todayAttendance.earlyLeaveMinutes
+                }
+            }
+
+            return ResponseHandler.success(res, 'Time tracking status retrieved', statusPayload)
+        } catch (error) {
+            return ResponseHandler.internalError(res, 'Failed to get time tracking status')
+        }
+    }
     async getAttendanceRecord(req: AuthenticatedRequest, res: Response): Promise<Response> {
         try {
             const employeeId = req.user?.id!
