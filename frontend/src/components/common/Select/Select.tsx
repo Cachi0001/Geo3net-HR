@@ -1,5 +1,7 @@
 import React, { forwardRef } from 'react'
-import './Select.css'
+import { ChevronDown } from 'lucide-react'
+import styles from './Select.module.css'
+import { cn } from '../../../utils/cn'
 
 export interface SelectOption {
   value: string | number
@@ -33,37 +35,31 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
   id,
   ...props
 }, ref) => {
-  const selectId = id || `select-${Math.random().toString(36).substr(2, 9)}`
-  
-  const baseClass = 'select-wrapper'
-  const variantClass = `select-wrapper-${variant}`
-  const sizeClass = `select-wrapper-${selectSize}`
-  const fullWidthClass = fullWidth ? 'select-wrapper-full-width' : ''
-  const errorClass = error ? 'select-wrapper-error' : ''
-  
-  const wrapperClasses = [
-    baseClass,
-    variantClass,
-    sizeClass,
-    fullWidthClass,
-    errorClass,
+  const selectId = id || `select-${Math.random().toString(36).substring(2, 11)}`
+
+  const wrapperClasses = cn(
+    styles.selectWrapper,
+    styles[`variant${variant.charAt(0).toUpperCase() + variant.slice(1)}`],
+    styles[`size${selectSize.charAt(0).toUpperCase() + selectSize.slice(1)}`],
+    fullWidth && styles.fullWidth,
+    error && styles.error,
     className
-  ].filter(Boolean).join(' ')
+  )
 
   return (
     <div className={wrapperClasses}>
       {label && (
-        <label htmlFor={selectId} className="select-label">
+        <label htmlFor={selectId} className={styles.selectLabel}>
           {label}
-          {required && <span className="select-required">*</span>}
+          {required && <span className={styles.selectRequired}>*</span>}
         </label>
       )}
-      
-      <div className="select-container">
+
+      <div className={styles.selectContainer}>
         <select
           ref={ref}
           id={selectId}
-          className="select-field"
+          className={styles.selectField}
           {...props}
         >
           {placeholder && (
@@ -81,30 +77,18 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
             </option>
           ))}
         </select>
-        
-        <div className="select-arrow">
-          <svg
-            className="select-arrow-icon"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
+
+        <div className={styles.selectArrow}>
+          <ChevronDown className={styles.selectArrowIcon} size={16} />
         </div>
       </div>
-      
+
       {(error || helperText) && (
-        <div className="select-feedback">
+        <div className={styles.selectFeedback}>
           {error ? (
-            <span className="select-error-text">{error}</span>
+            <span className={styles.selectErrorText}>{error}</span>
           ) : (
-            <span className="select-helper-text">{helperText}</span>
+            <span className={styles.selectHelperText}>{helperText}</span>
           )}
         </div>
       )}

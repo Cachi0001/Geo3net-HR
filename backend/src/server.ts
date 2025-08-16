@@ -49,7 +49,10 @@ app.use(errorHandler)
 
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`)
-  await testConnection()
+  // Run DB connectivity test in background so startup is not blocked by transient network issues
+  testConnection().catch((err) => {
+    console.error('Background DB connectivity check failed:', err?.message || err)
+  })
 })
 
 export default app

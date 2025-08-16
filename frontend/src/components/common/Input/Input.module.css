@@ -1,0 +1,186 @@
+.inputWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputWrapper.fullWidth {
+  width: 100%;
+}
+
+.inputLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  margin-bottom: 0.25rem;
+}
+
+.inputRequired {
+  color: hsl(var(--destructive));
+  margin-left: 0.25rem;
+}
+
+.inputContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputField {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.inputField:focus {
+  border-color: hsl(var(--go3net-blue));
+  box-shadow: 0 0 0 3px hsl(var(--go3net-blue) / 0.1);
+}
+
+.inputField:disabled {
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.inputField::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Size variants */
+.sizeSm .inputField {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.sizeMd .inputField {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+}
+
+.sizeLg .inputField {
+  padding: 1rem 1.25rem;
+  font-size: 1rem;
+}
+
+/* Style variants */
+.variantDefault .inputField {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+}
+
+.variantFilled .inputField {
+  border: 1px solid transparent;
+  background: hsl(var(--muted));
+}
+
+.variantFilled .inputField:focus {
+  border-color: hsl(var(--go3net-blue));
+  background: hsl(var(--background));
+}
+
+.variantOutline .inputField {
+  border: 2px solid hsl(var(--border));
+  background: transparent;
+}
+
+.variantOutline .inputField:focus {
+  border-color: hsl(var(--go3net-blue));
+}
+
+/* Icon styling */
+.inputIcon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.inputIconLeft {
+  left: 0.75rem;
+}
+
+.inputIconRight {
+  right: 0.75rem;
+}
+
+.inputFieldLeftIcon {
+  padding-left: 2.5rem;
+}
+
+.inputFieldRightIcon {
+  padding-right: 2.5rem;
+}
+
+/* Error state */
+.error .inputField {
+  border-color: hsl(var(--destructive));
+}
+
+.error .inputField:focus {
+  border-color: hsl(var(--destructive));
+  box-shadow: 0 0 0 3px hsl(var(--destructive) / 0.1);
+}
+
+.inputFeedback {
+  margin-top: 0.25rem;
+}
+
+.inputErrorText {
+  font-size: 0.8125rem;
+  color: hsl(var(--destructive));
+  font-weight: 500;
+}
+
+.inputHelperText {
+  font-size: 0.8125rem;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Focus within for better UX */
+.inputWrapper:focus-within .inputLabel {
+  color: hsl(var(--go3net-blue));
+}
+
+.error:focus-within .inputLabel {
+  color: hsl(var(--destructive));
+}
+
+/* Hover effects */
+.inputField:hover:not(:disabled):not(:focus) {
+  border-color: hsl(var(--go3net-blue) / 0.5);
+}
+
+.error .inputField:hover:not(:disabled):not(:focus) {
+  border-color: hsl(var(--destructive) / 0.7);
+}
+
+/* Animation for smooth transitions */
+.inputField,
+.inputLabel {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Success state (optional) */
+.success .inputField {
+  border-color: hsl(var(--go3net-green));
+}
+
+.success .inputField:focus {
+  border-color: hsl(var(--go3net-green));
+  box-shadow: 0 0 0 3px hsl(var(--go3net-green) / 0.1);
+}
+
+.success:focus-within .inputLabel {
+  color: hsl(var(--go3net-green));
+}

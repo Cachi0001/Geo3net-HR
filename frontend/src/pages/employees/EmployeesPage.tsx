@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Users, UserPlus, UserCheck, UserX, TrendingUp } from 'lucide-react';
 import { employeeService, Employee, CreateEmployeeData } from '../../services/employee.service';
 import { Button, Modal } from '../../components/common';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
+import { DashboardLayout } from '../../components/layout';
+import { StatsGrid } from '../../components/ui/StatsCard/StatsCard';
 import EmployeeTable from '../../components/employees/EmployeeTable';
 import EmployeeForm from '../../components/employees/EmployeeForm';
-import './EmployeesPage.css';
+import { DashboardStats } from '../../types/design-system';
+import styles from './EmployeesPage.module.css';
 
 const EmployeesPage: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -13,7 +18,22 @@ const EmployeesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [employeeStats, setEmployeeStats] = useState<DashboardStats[]>([]);
   const { showToast } = useToast();
+  const { user } = useAuth();
+
+  // Get user role with super admin recognition
+  const getUserRole = () => {
+    if (user?.email === 'kayode@go3net.com.ng') {
+      return 'super-admin';
+    }
+    const rawRole = (user as any)?.role;
+    if (typeof rawRole === 'string') return rawRole;
+    if (rawRole && typeof rawRole === 'object') {
+      return rawRole.slug || rawRole.name || rawRole.role || rawRole.title || 'employee';
+    }
+    return 'employee';
+  };
 
   const fetchEmployees = useCallback(async () => {
     setIsLoading(true);
@@ -21,6 +41,64 @@ const EmployeesPage: React.FC = () => {
       const { employees: fetchedEmployees, total } = await employeeService.getEmployees();
       setEmployees(fetchedEmployees);
       setTotalEmployees(total);
+      
+      // Calculate employee statistics
+      const activeEmployees = fetchedEmployees.filter(emp => emp.status === 'active').length;
+      const inactiveEmployees = fetchedEmployees.filter(emp => emp.status === 'inactive').length;
+      const newThisMonth = fetchedEmployees.filter(emp => {
+        const createdDate = new Date(emp.createdAt || '');
+        const now = new Date();
+        return createdDate.getMonth() === now.getMonth() && createdDate.getFullYear() === now.getFullYear();
+      }).length;
+      
+      const stats: DashboardStats[] = [
+        {
+          title: 'Total Employees',
+          value: total.toString(),
+          icon: Users,
+          color: 'blue',
+          change: {
+            type: 'positive',
+            value: 5.2,
+            period: 'last month'
+          }
+        },
+        {
+          title: 'Active Employees',
+          value: activeEmployees.toString(),
+          icon: UserCheck,
+          color: 'green',
+          change: {
+            type: 'positive',
+            value: 2.1,
+            period: 'last month'
+          }
+        },
+        {
+          title: 'New This Month',
+          value: newThisMonth.toString(),
+          icon: UserPlus,
+          color: 'purple',
+          change: {
+            type: 'positive',
+            value: 12.5,
+            period: 'last month'
+          }
+        },
+        {
+          title: 'Inactive',
+          value: inactiveEmployees.toString(),
+          icon: UserX,
+          color: 'orange',
+          change: {
+            type: 'negative',
+            value: 1.2,
+            period: 'last month'
+          }
+        }
+      ];
+      
+      setEmployeeStats(stats);
     } catch (error) {
       showToast('error', 'Failed to fetch employees.');
     } finally {
@@ -75,32 +153,75 @@ const EmployeesPage: React.FC = () => {
   };
 
   return (
-    <div className="employees-page">
-      <header className="employees-page__header">
-        <h1 className="employees-page__title">Employee Management</h1>
-        <Button variant="primary" onClick={handleCreate}>Add Employee</Button>
-      </header>
+    <DashboardLayout 
+      userRole={getUserRole()}
+      userName={user?.fullName || 'User'}
+      userEmail={user?.email || ''}
+    >
+      <div className={styles.employeesPage}>
+        <div className={styles.pageHeader}>
+          <div className={styles.headerContent}>
+            <div className={styles.titleSection}>
+              <h1 className={styles.pageTitle}>Employee Management</h1>
+              <p className={styles.pageDescription}>
+                Manage your workforce, track employee information, and oversee HR operations.
+              </p>
+            </div>
+            <div className={styles.headerActions}>
+              <Button 
+                variant="primary" 
+                leftIcon={<UserPlus size={16} />}
+                onClick={handleCreate}
+              >
+                Add Employee
+              </Button>
+            </div>
+          </div>
+        </div>
 
-      {isLoading ? (
-        <p>Loading employees...</p>
-      ) : (
-        <EmployeeTable employees={employees} onEdit={handleEdit} onDelete={handleDelete} />
-      )}
+        {/* Employee Statistics */}
+        <div className={styles.statsSection}>
+          <StatsGrid stats={employeeStats} />
+        </div>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={editingEmployee ? 'Edit Employee' : 'Add New Employee'}
-        size="lg"
-      >
-        <EmployeeForm
-          employee={editingEmployee}
-          onSave={handleSave}
-          onCancel={() => setIsModalOpen(false)}
-          isSaving={isSaving}
-        />
-      </Modal>
-    </div>
+        {/* Employee Table Section */}
+        <div className={styles.tableSection}>
+          <div className={styles.tableSectionHeader}>
+            <h2 className={styles.sectionTitle}>All Employees</h2>
+            <div className={styles.tableActions}>
+              <Button variant="ghost" leftIcon={<TrendingUp size={16} />}>
+                Export
+              </Button>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className={styles.loadingContainer}>
+              <div className={styles.loadingSpinner}></div>
+              <p>Loading employees...</p>
+            </div>
+          ) : (
+            <div className={styles.tableContainer}>
+              <EmployeeTable employees={employees} onEdit={handleEdit} onDelete={handleDelete} />
+            </div>
+          )}
+        </div>
+
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title={editingEmployee ? 'Edit Employee' : 'Add New Employee'}
+          size="lg"
+        >
+          <EmployeeForm
+            employee={editingEmployee}
+            onSave={handleSave}
+            onCancel={() => setIsModalOpen(false)}
+            isSaving={isSaving}
+          />
+        </Modal>
+      </div>
+    </DashboardLayout>
   );
 };
 

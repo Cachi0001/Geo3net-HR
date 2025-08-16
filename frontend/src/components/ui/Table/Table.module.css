@@ -1,0 +1,364 @@
+.tableContainer {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.tableToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+}
+
+.searchContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 300px;
+  flex: 1;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: hsl(var(--go3net-blue));
+  box-shadow: 0 0 0 3px hsl(var(--go3net-blue) / 0.1);
+}
+
+.searchInput::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.selectionInfo {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  font-weight: 500;
+}
+
+.tableWrapper {
+  overflow: auto;
+  max-height: 600px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table.bordered {
+  border: 1px solid hsl(var(--border));
+}
+
+.table.bordered .tableHeaderCell,
+.table.bordered .tableCell {
+  border: 1px solid hsl(var(--border));
+}
+
+/* Size variants */
+.sizeSmall {
+  font-size: 0.8125rem;
+}
+
+.sizeSmall .tableHeaderCell,
+.sizeSmall .tableCell {
+  padding: 0.5rem 0.75rem;
+}
+
+.sizeMiddle .tableHeaderCell,
+.sizeMiddle .tableCell {
+  padding: 0.75rem 1rem;
+}
+
+.sizeLarge {
+  font-size: 1rem;
+}
+
+.sizeLarge .tableHeaderCell,
+.sizeLarge .tableCell {
+  padding: 1rem 1.25rem;
+}
+
+/* Header */
+.tableHeader {
+  background: hsl(var(--muted) / 0.5);
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.tableHeaderCell {
+  text-align: left;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+  position: relative;
+  white-space: nowrap;
+}
+
+.sortableHeader {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.sortableHeader:hover {
+  background: hsl(var(--muted) / 0.7);
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sortIcon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.sortableHeader:hover .sortIcon {
+  opacity: 1;
+}
+
+.sortArrow {
+  color: hsl(var(--muted-foreground));
+  transition: color 0.2s ease;
+}
+
+.sortArrowActive {
+  color: hsl(var(--go3net-blue));
+}
+
+.sortArrowUp {
+  margin-bottom: -2px;
+}
+
+.sortArrowDown {
+  margin-top: -2px;
+}
+
+/* Body */
+.tableBody {
+  background: hsl(var(--card));
+}
+
+.tableRow {
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.tableRow:hover {
+  background: hsl(var(--muted) / 0.3);
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.selectedRow {
+  background: hsl(var(--go3net-blue) / 0.1);
+}
+
+.selectedRow:hover {
+  background: hsl(var(--go3net-blue) / 0.15);
+}
+
+.tableCell {
+  padding: 0.75rem 1rem;
+  color: hsl(var(--foreground));
+  vertical-align: middle;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.emptyCell {
+  padding: 2rem;
+  text-align: center;
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+}
+
+/* Alignment */
+.alignLeft {
+  text-align: left;
+}
+
+.alignCenter {
+  text-align: center;
+}
+
+.alignRight {
+  text-align: right;
+}
+
+/* Selection column */
+.selectionColumn {
+  width: 48px;
+  padding: 0.75rem 1rem;
+  text-align: center;
+}
+
+.checkbox {
+  width: 1rem;
+  height: 1rem;
+  accent-color: hsl(var(--go3net-blue));
+  cursor: pointer;
+}
+
+/* Loading */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.loadingSpinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid hsl(var(--border));
+  border-top: 3px solid hsl(var(--go3net-blue));
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-top: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+}
+
+.paginationInfo {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.paginationButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.paginationButton:hover:not(:disabled) {
+  border-color: hsl(var(--go3net-blue));
+  color: hsl(var(--go3net-blue));
+}
+
+.paginationButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.paginationCurrent {
+  font-size: 0.875rem;
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tableToolbar {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .searchContainer {
+    max-width: none;
+  }
+  
+  .tableWrapper {
+    overflow-x: auto;
+  }
+  
+  .table {
+    min-width: 600px;
+  }
+  
+  .pagination {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .paginationControls {
+    justify-content: center;
+  }
+}
+
+/* Sticky header */
+.tableWrapper.stickyHeader .tableHeaderCell {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: hsl(var(--muted) / 0.95);
+  backdrop-filter: blur(8px);
+}
+
+/* Zebra striping */
+.table.striped .tableRow:nth-child(even) {
+  background: hsl(var(--muted) / 0.1);
+}
+
+.table.striped .tableRow:nth-child(even):hover {
+  background: hsl(var(--muted) / 0.3);
+}
+
+/* Compact mode */
+.table.compact .tableHeaderCell,
+.table.compact .tableCell {
+  padding: 0.5rem 0.75rem;
+}
+
+.table.compact {
+  font-size: 0.8125rem;
+}

@@ -7,6 +7,8 @@ export interface Employee {
   position: string;
   department: string;
   createdAt: string;
+  isActive: boolean;
+  status: 'active' | 'inactive';
 }
 
 export interface EmployeeStatistics {

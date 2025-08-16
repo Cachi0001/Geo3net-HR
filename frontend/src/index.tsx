@@ -6,6 +6,7 @@ import { ToastProvider } from './contexts/ToastContext'
 import { LoadingProvider } from './contexts/LoadingContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { registerSW } from './utils/serviceWorker'
+import './styles/design-system.css'
 import './styles/base/global.css'
 
 const root = ReactDOM.createRoot(

@@ -36,7 +36,11 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onSave, onCancel,
       if (employee) {
         onSave({ ...employee, ...formValues });
       } else {
-        onSave(formValues);
+        onSave({
+          ...formValues,
+          status: 'active' as const,
+          isActive: true
+        });
       }
     },
   });

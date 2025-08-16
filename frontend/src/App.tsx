@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useLoading } from './hooks/useLoading'
 import { notificationService } from './services/notification.service'
 import { useAuth } from './hooks/useAuth'
-import Layout from './components/common/Layout/Layout'
+
 import LoadingSpinner from './components/common/LoadingSpinner/LoadingSpinner'
 import Toast from './components/common/Toast/Toast'
 
@@ -78,30 +78,22 @@ const App: React.FC = () => {
         {/* Protected routes */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
-            <Layout>
-              <DashboardPage />
-            </Layout>
+            <DashboardPage />
           </ProtectedRoute>
         } />
         <Route path="/employees" element={
           <ProtectedRoute>
-            <Layout>
-              <EmployeesPage />
-            </Layout>
+            <EmployeesPage />
           </ProtectedRoute>
         } />
         <Route path="/tasks" element={
           <ProtectedRoute>
-            <Layout>
-              <TasksPage />
-            </Layout>
+            <TasksPage />
           </ProtectedRoute>
         } />
         <Route path="/time-tracking" element={
           <ProtectedRoute>
-            <Layout>
-              <TimeTrackingPage />
-            </Layout>
+            <TimeTrackingPage />
           </ProtectedRoute>
         } />
         <Route path="/mobile-time-tracking" element={
@@ -111,9 +103,7 @@ const App: React.FC = () => {
         } />
         <Route path="/profile" element={
           <ProtectedRoute>
-            <Layout>
-              <ProfilePage />
-            </Layout>
+            <ProfilePage />
           </ProtectedRoute>
         } />
         

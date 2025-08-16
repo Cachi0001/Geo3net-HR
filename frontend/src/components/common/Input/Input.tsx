@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react'
-import './Input.css'
+import styles from './Input.module.css'
+import { cn } from '../../../utils/cn'
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label?: string
@@ -29,35 +30,28 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
 }, ref) => {
     const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`
 
-    const baseClass = 'input-wrapper'
-    const variantClass = `input-wrapper-${variant}`
-    const sizeClass = `input-wrapper-${inputSize}`
-    const fullWidthClass = fullWidth ? 'input-wrapper-full-width' : ''
-    const errorClass = error ? 'input-wrapper-error' : ''
-    const hasIconsClass = (leftIcon || rightIcon) ? 'input-wrapper-has-icons' : ''
-
-    const wrapperClasses = [
-        baseClass,
-        variantClass,
-        sizeClass,
-        fullWidthClass,
-        errorClass,
-        hasIconsClass,
+    const wrapperClasses = cn(
+        styles.inputWrapper,
+        styles[`variant${variant.charAt(0).toUpperCase() + variant.slice(1)}`],
+        styles[`size${inputSize.charAt(0).toUpperCase() + inputSize.slice(1)}`],
+        fullWidth && styles.fullWidth,
+        error && styles.error,
+        (leftIcon || rightIcon) && styles.hasIcons,
         className
-    ].filter(Boolean).join(' ')
+    )
 
     return (
         <div className={wrapperClasses}>
             {label && (
-                <label htmlFor={inputId} className="input-label">
+                <label htmlFor={inputId} className={styles.inputLabel}>
                     {label}
-                    {required && <span className="input-required">*</span>}
+                    {required && <span className={styles.inputRequired}>*</span>}
                 </label>
             )}
 
-            <div className="input-container">
+            <div className={styles.inputContainer}>
                 {leftIcon && (
-                    <div className="input-icon input-icon-left">
+                    <div className={cn(styles.inputIcon, styles.inputIconLeft)}>
                         {leftIcon}
                     </div>
                 )}
@@ -65,23 +59,27 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
                 <input
                     ref={ref}
                     id={inputId}
-                    className={`input-field ${leftIcon ? 'input-field-left-icon' : ''} ${rightIcon ? 'input-field-right-icon' : ''}`}
+                    className={cn(
+                        styles.inputField,
+                        leftIcon && styles.inputFieldLeftIcon,
+                        rightIcon && styles.inputFieldRightIcon
+                    )}
                     {...props}
                 />
 
                 {rightIcon && (
-                    <div className="input-icon input-icon-right">
+                    <div className={cn(styles.inputIcon, styles.inputIconRight)}>
                         {rightIcon}
                     </div>
                 )}
             </div>
 
             {(error || helperText) && (
-                <div className="input-feedback">
+                <div className={styles.inputFeedback}>
                     {error ? (
-                        <span className="input-error-text">{error}</span>
+                        <span className={styles.inputErrorText}>{error}</span>
                     ) : (
-                        <span className="input-helper-text">{helperText}</span>
+                        <span className={styles.inputHelperText}>{helperText}</span>
                     )}
                 </div>
             )}

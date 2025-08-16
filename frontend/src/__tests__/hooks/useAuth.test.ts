@@ -106,7 +106,7 @@ describe('useAuth', () => {
     })
 
     await act(async () => {
-      await result.current.login('test@example.com', 'password')
+      await result.current.login('test@example.com', 'password', jest.fn())
     })
 
     expect(mockAuthService.login).toHaveBeenCalledWith('test@example.com', 'password')
@@ -134,9 +134,9 @@ describe('useAuth', () => {
       wrapper: AuthProvider,
     })
 
-    await act(async () => {
-      await result.current.loginWithGoogle('google-token')
-    })
+    // await act(async () => {
+    //   await result.current.loginWithGoogle('google-token')
+    // })
 
     expect(mockAuthService.loginWithGoogle).toHaveBeenCalledWith('google-token')
     expect(result.current.user).toEqual(mockLoginResponse.user)

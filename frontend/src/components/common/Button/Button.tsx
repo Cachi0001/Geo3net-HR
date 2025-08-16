@@ -1,9 +1,12 @@
 import React, { forwardRef } from 'react'
-import './Button.css'
+import { Loader2 } from 'lucide-react'
+import styles from './Button.module.css'
+import { cn } from '../../../utils/cn'
+import { ButtonVariant, SizeVariant } from '../../../types/design-system'
 
 interface BaseButtonProps {
-  variant?: 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'ghost' | 'outline'
-  size?: 'sm' | 'md' | 'lg'
+  variant?: ButtonVariant
+  size?: SizeVariant
   loading?: boolean
   fullWidth?: boolean
   leftIcon?: React.ReactNode
@@ -42,20 +45,15 @@ const Button = forwardRef((props: ButtonProps, ref: React.Ref<HTMLButtonElement 
     href,
     ...rest
   } = props as any
-  const baseClass = 'btn'
-  const variantClass = `btn-${variant}`
-  const sizeClass = `btn-${size}`
-  const fullWidthClass = fullWidth ? 'btn-full-width' : ''
-  const loadingClass = loading ? 'btn-loading' : ''
-
-  const classes = [
-    baseClass,
-    variantClass,
-    sizeClass,
-    fullWidthClass,
-    loadingClass,
+  const classes = cn(
+    styles.btn,
+    styles[`variant${variant.charAt(0).toUpperCase() + variant.slice(1)}`],
+    styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`],
+    fullWidth && styles.fullWidth,
+    loading && styles.loading,
+    disabled && styles.disabled,
     className
-  ].filter(Boolean).join(' ')
+  )
 
   if (as === 'a') {
     const anchorProps = rest as React.AnchorHTMLAttributes<HTMLAnchorElement>
@@ -67,17 +65,17 @@ const Button = forwardRef((props: ButtonProps, ref: React.Ref<HTMLButtonElement 
         {...anchorProps}
         >
         {!loading && leftIcon && (
-          <span className="btn-icon btn-icon-left">
+          <span className={cn(styles.btnIcon, styles.btnIconLeft)}>
             {leftIcon}
           </span>
         )}
 
-        <span className={`btn-content ${loading ? 'btn-content-loading' : ''}`}>
+        <span className={cn(styles.btnContent, loading && styles.btnContentLoading)}>
           {children}
         </span>
 
         {!loading && rightIcon && (
-          <span className="btn-icon btn-icon-right">
+          <span className={cn(styles.btnIcon, styles.btnIconRight)}>
             {rightIcon}
           </span>
         )}
@@ -94,25 +92,21 @@ const Button = forwardRef((props: ButtonProps, ref: React.Ref<HTMLButtonElement 
       {...buttonProps}
     >
       {loading && (
-        <div className="btn-spinner">
-          <div className="btn-spinner-dot"></div>
-          <div className="btn-spinner-dot"></div>
-          <div className="btn-spinner-dot"></div>
-        </div>
+        <Loader2 className={cn(styles.btnSpinner, styles.btnIcon, styles.btnIconLeft)} size={16} />
       )}
 
       {!loading && leftIcon && (
-        <span className="btn-icon btn-icon-left">
+        <span className={cn(styles.btnIcon, styles.btnIconLeft)}>
           {leftIcon}
         </span>
       )}
 
-      <span className={`btn-content ${loading ? 'btn-content-loading' : ''}`}>
+      <span className={cn(styles.btnContent, loading && styles.btnContentLoading)}>
         {children}
       </span>
 
       {!loading && rightIcon && (
-        <span className="btn-icon btn-icon-right">
+        <span className={cn(styles.btnIcon, styles.btnIconRight)}>
           {rightIcon}
         </span>
       )}

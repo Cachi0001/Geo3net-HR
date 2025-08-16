@@ -4,6 +4,8 @@ import { Modal, Button } from '../../components/common';
 import { taskService, Task } from '../../services/task.service';
 import { employeeService, Employee } from '../../services/employee.service';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
+import { DashboardLayout } from '../../components/layout';
 import './TasksPage.css';
 
 const TasksPage: React.FC = () => {
@@ -14,6 +16,20 @@ const TasksPage: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [reloadTasks, setReloadTasks] = useState(false); // State to trigger reload
   const { showToast } = useToast();
+  const { user } = useAuth();
+
+  // Get user role with super admin recognition
+  const getUserRole = () => {
+    if (user?.email === 'kayode@go3net.com.ng') {
+      return 'super-admin';
+    }
+    const rawRole = (user as any)?.role;
+    if (typeof rawRole === 'string') return rawRole;
+    if (rawRole && typeof rawRole === 'object') {
+      return rawRole.slug || rawRole.name || rawRole.role || rawRole.title || 'employee';
+    }
+    return 'employee';
+  };
 
   const loadEmployees = useCallback(async () => {
     try {
@@ -84,56 +100,62 @@ const TasksPage: React.FC = () => {
   };
 
   return (
-    <div className="tasks-page">
-      <div className="tasks-page-header">
-        <div className="page-title">
-          <h1>Task Management</h1>
-          <p>Organize, assign, and track tasks across your team</p>
-        </div>
-      </div>
-
-      <div className="tasks-page-content">
-        <div className="tasks-main-section">
-          <TaskList
-            key={reloadTasks ? 'reload' : 'initial'} // Force re-render and re-fetch
-            onTaskSelect={handleTaskSelect}
-            onTaskCreate={handleTaskCreate}
-            selectedTaskId={selectedTask?.id}
-          />
+    <DashboardLayout 
+      userRole={getUserRole()}
+      userName={user?.fullName || 'User'}
+      userEmail={user?.email || ''}
+    >
+      <div className="tasks-page">
+        <div className="tasks-page-header">
+          <div className="page-title">
+            <h1>Task Management</h1>
+            <p>Organize, assign, and track tasks across your team</p>
+          </div>
         </div>
 
-        <div className="tasks-sidebar">
-          {selectedTask ? (
-            <TaskDetail
-              task={selectedTask}
-              onUpdate={handleTaskUpdate}
-              onEdit={() => handleTaskEdit(selectedTask)}
-              onDelete={handleTaskDelete}
-              onClose={handleCloseDetail}
+        <div className="tasks-page-content">
+          <div className="tasks-main-section">
+            <TaskList
+              key={reloadTasks ? 'reload' : 'initial'} // Force re-render and re-fetch
+              onTaskSelect={handleTaskSelect}
+              onTaskCreate={handleTaskCreate}
+              selectedTaskId={selectedTask?.id}
             />
-          ) : (
-            <div className="task-detail-placeholder">
-              <p>Select a task to see details</p>
-            </div>
-          )}
-        </div>
-      </div>
+          </div>
 
-      <Modal
-        isOpen={showCreateForm}
-        onClose={handleCloseForm}
-        title={editingTask ? 'Edit Task' : 'Create New Task'}
-        size="lg"
-      >
-        <TaskForm
-          task={editingTask}
-          employees={employees}
-          onSave={handleTaskSave}
-          onCancel={handleCloseForm}
-          isSaving={isSaving}
-        />
-      </Modal>
-    </div>
+          <div className="tasks-sidebar">
+            {selectedTask ? (
+              <TaskDetail
+                task={selectedTask}
+                onUpdate={handleTaskUpdate}
+                onEdit={() => handleTaskEdit(selectedTask)}
+                onDelete={handleTaskDelete}
+                onClose={handleCloseDetail}
+              />
+            ) : (
+              <div className="task-detail-placeholder">
+                <p>Select a task to see details</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Modal
+          isOpen={showCreateForm}
+          onClose={handleCloseForm}
+          title={editingTask ? 'Edit Task' : 'Create New Task'}
+          size="lg"
+        >
+          <TaskForm
+            task={editingTask}
+            employees={employees}
+            onSave={handleTaskSave}
+            onCancel={handleCloseForm}
+            isSaving={isSaving}
+          />
+        </Modal>
+      </div>
+    </DashboardLayout>
   );
 };
 

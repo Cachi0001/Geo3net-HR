@@ -1,11 +1,8 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import EmployeeDashboard from '../../components/dashboard/EmployeeDashboard';
-import ManagerDashboard from '../../components/dashboard/ManagerDashboard';
-import AdminDashboard from '../../components/dashboard/AdminDashboard';
-import SuperAdminDashboard from '../../components/dashboard/SuperAdminDashboard';
+import { ModernDashboard } from '../../components/dashboard/ModernDashboard/ModernDashboard';
 import LoadingSpinner from '../../components/common/LoadingSpinner/LoadingSpinner';
-import DashboardLayout from '../../components/dashboard/DashboardLayout/DashboardLayout';
+import { DashboardLayout } from '../../components/layout';
 
 const DashboardPage: React.FC = () => {
   const { user, loading } = useAuth();
@@ -23,38 +20,61 @@ const DashboardPage: React.FC = () => {
     // which would redirect to a login page.
     return (
       <DashboardLayout>
-        <div className="p-6 text-center">
-          <p className="text-red-500">Error: No user data found. Please try logging in again.</p>
+        <div style={{ padding: '1.5rem', textAlign: 'center' }}>
+          <p style={{ color: 'hsl(var(--destructive))' }}>Error: No user data found. Please try logging in again.</p>
         </div>
       </DashboardLayout>
     );
   }
 
-  const renderDashboardByRole = () => {
-    // Based on the roles defined in AUTHENTICATION_GUIDE.md
-    switch (user.role) {
-      case 'Employee':
-        return <EmployeeDashboard />;
-      case 'Department Manager':
-        return <ManagerDashboard />;
-      case 'HR Admin':
-      case 'HR Staff': // Assuming HR Staff sees the same dashboard as HR Admin
-        return <AdminDashboard />;
-      case 'Super Admin':
-        return <SuperAdminDashboard />;
-      default:
-        // A generic view for any other roles that might exist
-        return <div className="p-6 bg-white rounded-lg shadow">Welcome, {user.fullName}! Your dashboard is currently being configured.</div>;
+
+
+  // Get user role for the layout - with super admin email recognition
+  const getUserRole = () => {
+    // Check if user is the super admin by email
+    if (user.email === 'kayode@go3net.com.ng') {
+      return 'super-admin';
     }
+
+    const rawRole = (() => {
+      const r: any = (user as any)?.role;
+      if (typeof r === 'string') return r;
+      if (!r || typeof r !== 'object') return '';
+      return r.slug || r.name || r.role || r.title || '';
+    })();
+
+    // Normalize role names
+    const normalizedRole = (rawRole || '')
+      .toString()
+      .toLowerCase()
+      .replace(/[_\s]+/g, '-')
+      .trim();
+
+    // Map common role variations
+    const roleMap: { [key: string]: string } = {
+      'super-admin': 'super-admin',
+      'superadmin': 'super-admin',
+      'hr-admin': 'hr-admin',
+      'hradmin': 'hr-admin',
+      'hr-staff': 'hr-staff',
+      'hrstaff': 'hr-staff',
+      'manager': 'manager',
+      'department-manager': 'manager',
+      'employee': 'employee'
+    };
+
+    return roleMap[normalizedRole] || 'employee';
   };
 
+  const userRole = getUserRole();
+
   return (
-    <DashboardLayout>
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">Dashboard</h1>
-        <p className="text-gray-600 mb-8">Welcome back, {user.fullName}!</p>
-        {renderDashboardByRole()}
-      </div>
+    <DashboardLayout 
+      userRole={userRole}
+      userName={user.fullName}
+      userEmail={user.email}
+    >
+      <ModernDashboard userRole={userRole} />
     </DashboardLayout>
   );
 };
