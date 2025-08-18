@@ -29,9 +29,7 @@ const DashboardPage: React.FC = () => {
 
 
 
-  // Get user role for the layout - with super admin email recognition
   const getUserRole = () => {
-    // Check if user is the super admin by email
     if (user.email === 'kayode@go3net.com.ng') {
       return 'super-admin';
     }

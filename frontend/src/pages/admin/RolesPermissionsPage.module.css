@@ -1,0 +1,4 @@
+.container { padding: 1.5rem; }
+.title { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+.subtitle { color: hsl(var(--muted-foreground)); }
+.card { margin-top: 1rem; padding: 1rem; border: 1px solid hsl(var(--border)); border-radius: 8px; }

@@ -42,7 +42,6 @@ const EmployeesPage: React.FC = () => {
       setEmployees(fetchedEmployees);
       setTotalEmployees(total);
       
-      // Calculate employee statistics
       const activeEmployees = fetchedEmployees.filter(emp => emp.status === 'active').length;
       const inactiveEmployees = fetchedEmployees.filter(emp => emp.status === 'inactive').length;
       const newThisMonth = fetchedEmployees.filter(emp => {

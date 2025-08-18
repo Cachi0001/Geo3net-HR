@@ -1,0 +1,4 @@
+.container { padding: 1.5rem; }
+.title { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+.subtitle { color: hsl(var(--muted-foreground)); }
+.list { margin-top: 1rem; }

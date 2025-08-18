@@ -29,7 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userRole, onCloseMobile }) => 
                 return [
                     ...baseItems,
                     { icon: Shield, label: 'System Admin', path: '/admin', section: 'Admin' },
-                    { icon: Users, label: 'All Users', path: '/users', section: 'User Management' },
+                    { icon: Users, label: 'All Users', path: '/employees', section: 'User Management' },
                     { icon: UserCheck, label: 'Roles & Permissions', path: '/roles', section: 'User Management' },
                     { icon: TrendingUp, label: 'Analytics', path: '/analytics', section: 'Reports' },
                     { icon: Settings, label: 'System Settings', path: '/settings', section: 'Admin' }

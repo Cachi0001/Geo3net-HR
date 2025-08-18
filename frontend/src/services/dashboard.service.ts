@@ -2,27 +2,45 @@ import { apiService } from './api.service'
 import { DashboardStats } from '../types/design-system'
 
 export interface DashboardStatistics {
-  employees: {
+  employees?: {
     total: number
     active: number
-    newThisMonth: number
-    departments: { [key: string]: number }
+    inactive: number
+    onLeave: number
+    terminated: number
+    byDepartment: Record<string, number>
+    byPosition: Record<string, number>
+    recentHires: number
   }
-  tasks: {
+  tasks?: {
     total: number
-    completed: number
-    overdue: number
+    pending: number
     inProgress: number
+    completed: number
+    cancelled: number
+    onHold: number
+    overdue: number
+    dueToday: number
+    dueThisWeek: number
+    byPriority: {
+      low: number
+      medium: number
+      high: number
+      urgent: number
+    }
+    byAssignee: Record<string, number>
+    averageCompletionTime: number
   }
-  timeTracking: {
-    totalHoursToday: number
-    activeUsers: number
-    averageHours: number
+  timeTracking?: {
+    totalHoursToday?: number
+    activeUsers?: number
+    averageHours?: number
   }
-  system: {
-    uptime: number
-    activeUsers: number
-    securityAlerts: number
+  system?: {
+    needsInitialization: boolean
+    totalUsers: number
+    roleDistribution: Record<string, number>
+    systemReady: boolean
   }
 }
 
@@ -30,7 +48,8 @@ class DashboardService {
   async getEmployeeStatistics(): Promise<any> {
     try {
       const response = await apiService.get('/employees/statistics')
-      return response.data
+      // Backend wraps statistics under data.statistics
+      return response.data?.statistics
     } catch (error) {
       console.error('Error fetching employee statistics:', error)
       throw error
@@ -96,18 +115,20 @@ class DashboardService {
         return [
           {
             title: 'Total Users',
-            value: employees?.total || 0,
+            value: system?.totalUsers || 0,
             icon: require('lucide-react').Users,
-            change: employees?.newThisMonth ? {
-              value: Math.round((employees.newThisMonth / employees.total) * 100),
-              period: 'last month',
-              type: 'positive' as const
-            } : undefined,
+            change: employees?.recentHires && employees?.total
+              ? {
+                  value: Math.round((employees.recentHires / employees.total) * 100),
+                  period: 'last 30 days',
+                  type: 'positive' as const
+                }
+              : undefined,
             color: 'blue' as const
           },
           {
             title: 'System Health',
-            value: system?.uptime ? `${system.uptime}%` : '99.9%',
+            value: system?.systemReady ? 'Ready' : 'Setup required',
             icon: require('lucide-react').TrendingUp,
             change: {
               value: 0.1,
@@ -117,8 +138,8 @@ class DashboardService {
             color: 'green' as const
           },
           {
-            title: 'Active Sessions',
-            value: system?.activeUsers || 0,
+            title: 'Active Roles',
+            value: Object.keys(system?.roleDistribution || {}).length || 0,
             icon: require('lucide-react').Shield,
             change: {
               value: 5,
@@ -128,8 +149,8 @@ class DashboardService {
             color: 'cyan' as const
           },
           {
-            title: 'Security Alerts',
-            value: system?.securityAlerts || 0,
+            title: 'Init Alerts',
+            value: system?.needsInitialization ? 1 : 0,
             icon: require('lucide-react').AlertTriangle,
             change: {
               value: 2,
@@ -146,11 +167,13 @@ class DashboardService {
             title: 'Total Employees',
             value: employees?.total || 0,
             icon: require('lucide-react').Users,
-            change: employees?.newThisMonth ? {
-              value: Math.round((employees.newThisMonth / employees.total) * 100),
-              period: 'last month',
-              type: 'positive' as const
-            } : undefined,
+            change: employees?.recentHires && employees?.total
+              ? {
+                  value: Math.round((employees.recentHires / employees.total) * 100),
+                  period: 'last 30 days',
+                  type: 'positive' as const
+                }
+              : undefined,
             color: 'blue' as const
           },
           {
@@ -166,7 +189,7 @@ class DashboardService {
           },
           {
             title: 'Departments',
-            value: employees?.departments ? Object.keys(employees.departments).length : 0,
+            value: employees?.byDepartment ? Object.keys(employees.byDepartment).length : 0,
             icon: require('lucide-react').Building,
             change: {
               value: 3,

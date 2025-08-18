@@ -21,6 +21,12 @@ import TasksPage from './pages/tasks/TasksPage'
 import TimeTrackingPage from './pages/timeTracking/TimeTrackingPage'
 import MobileTimeTrackingPage from './pages/timeTracking/MobileTimeTrackingPage'
 import ProfilePage from './pages/profile/ProfilePage'
+import SystemAdminPage from './pages/admin/SystemAdminPage'
+import RolesPermissionsPage from './pages/admin/RolesPermissionsPage'
+import AnalyticsPage from './pages/admin/AnalyticsPage'
+import SystemSettingsPage from './pages/admin/SystemSettingsPage'
+import UnauthorizedPage from './pages/UnauthorizedPage'
+import AdminLayout from './pages/admin/AdminLayout' // Import AdminLayout
 
 import ProtectedRoute from './components/auth/ProtectedRoute/ProtectedRoute'
 import PublicRoute from './components/auth/PublicRoute/PublicRoute'
@@ -107,6 +113,20 @@ const App: React.FC = () => {
           </ProtectedRoute>
         } />
         
+        {/* Admin routes */}
+        <Route path="/admin" element={
+          <ProtectedRoute requiredRole="super-admin">
+            <AdminLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<SystemAdminPage />} />
+          <Route path="roles" element={<RolesPermissionsPage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="settings" element={<SystemSettingsPage />} />
+        </Route>
+
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
         {/* Landing route */}
         <Route path="/" element={
           <PublicRoute>

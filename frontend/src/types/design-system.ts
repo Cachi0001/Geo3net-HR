@@ -1,18 +1,13 @@
 import { LucideIcon } from 'lucide-react'
 
-// Color variants for components
 export type ColorVariant = 'blue' | 'green' | 'orange' | 'purple' | 'cyan' | 'pink'
 
-// Size variants
 export type SizeVariant = 'sm' | 'md' | 'lg' | 'xl'
 
-// Button variants
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'success' | 'error'
 
-// User roles
 export type UserRole = 'super-admin' | 'hr-admin' | 'manager' | 'hr-staff' | 'employee'
 
-// Dashboard statistics interface
 export interface DashboardStats {
   title: string
   value: string | number
