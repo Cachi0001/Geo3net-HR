@@ -16,6 +16,11 @@ import taskRoutes from './routes/task.routes'
 import notificationRoutes from './routes/notification.routes'
 import { systemRoutes } from './routes/system.routes'
 import debugRoutes from './routes/debug.routes'
+import payrollRoutes from './routes/payroll.routes'
+import performanceRoutes from './routes/performance.routes'
+import recruitmentRoutes from './routes/recruitment.routes'
+import leaveRoutes from './routes/leave.routes'
+import auditRoutes from './routes/audit.routes'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -42,6 +47,11 @@ app.use('/api/employees', employeeRoutes)
 app.use('/api/time-tracking', timeTrackingRoutes)
 app.use('/api/tasks', taskRoutes)
 app.use('/api/notifications', notificationRoutes)
+app.use('/api/payroll', payrollRoutes)
+app.use('/api/performance', performanceRoutes)
+app.use('/api/recruitment', recruitmentRoutes)
+app.use('/api/leave', leaveRoutes)
+app.use('/api/audit', auditRoutes)
 app.use('/api/debug', debugRoutes)
 
 app.use(notFoundHandler)

@@ -1,5 +1,0 @@
-.container { padding: 1.5rem; }
-.title { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
-.subtitle { color: hsl(var(--muted-foreground)); }
-.grid { margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
-.card { padding: 1rem; border: 1px solid hsl(var(--border)); border-radius: 8px; }

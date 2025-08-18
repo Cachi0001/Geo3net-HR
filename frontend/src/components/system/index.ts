@@ -1,1 +1,0 @@
-export { default as SystemInitialization } from './SystemInitialization/SystemInitialization'

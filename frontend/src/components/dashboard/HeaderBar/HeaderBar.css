@@ -1,8 +1,0 @@
-.header { display:flex; align-items:center; justify-content:space-between; padding: 16px; }
-.header__left { display:flex; align-items:center; gap:12px; }
-.header__title { font-size: 20px; font-weight: 700; }
-.header__welcome { color:#6b7280; }
-.header__right { display:flex; align-items:center; gap:10px; }
-.header__search { padding:8px 12px; border-radius:8px; border:1px solid #e5e7eb; }
-.header__btn { padding:8px 12px; border-radius:8px; border:1px solid transparent; background:#4f46e5; color:#fff; cursor:pointer; }
-.header__btn:hover { background:#4338ca; }

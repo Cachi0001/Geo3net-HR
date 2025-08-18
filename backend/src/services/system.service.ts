@@ -169,32 +169,45 @@ export class SystemService {
     async getSystemStatus(): Promise<SystemStatus> {
         const needsInit = await this.needsInitialization()
 
-        const { data: userCounts, error } = await supabase
+        // Log start of status check
+        try { console.log('[SystemService] getSystemStatus: start', { needsInit }) } catch {}
+
+        // Count all users directly from users table
+        const { count: totalUsers, error: usersCountError } = await supabase
+            .from('users')
+            .select('id', { count: 'exact', head: true })
+
+        if (usersCountError) {
+            try { console.error('[SystemService] getSystemStatus: users count error', usersCountError) } catch {}
+            throw new AppError(`Failed to count users: ${usersCountError.message}`)
+        }
+
+        // Fetch active user roles to compute role distribution
+        const { data: activeRoles, error: rolesError } = await supabase
             .from('user_roles')
-            .select(`
-                role_name,
-                users!inner(id)
-            `)
+            .select('role_name')
             .eq('is_active', true)
 
-        if (error) {
-            throw new AppError(`Failed to get system status: ${error.message}`)
+        if (rolesError) {
+            try { console.error('[SystemService] getSystemStatus: roles fetch error', rolesError) } catch {}
+            throw new AppError(`Failed to get role distribution: ${rolesError.message}`)
         }
 
-        const roleCounts = userCounts?.reduce((acc, userRole: any) => {
-            const role = userRole.role_name
-            if (role) {
-                acc[role] = (acc[role] || 0) + 1
-            }
+        const roleDistribution = (activeRoles || []).reduce((acc: Record<string, number>, row: any) => {
+            const role = row?.role_name
+            if (role) acc[role] = (acc[role] || 0) + 1
             return acc
-        }, {} as Record<string, number>) || {}
+        }, {})
 
-        return {
+        const status: SystemStatus = {
             needsInitialization: needsInit,
-            totalUsers: userCounts?.length || 0,
-            roleDistribution: roleCounts,
+            totalUsers: totalUsers || 0,
+            roleDistribution,
             systemReady: !needsInit
         }
+
+        try { console.log('[SystemService] getSystemStatus: result', status) } catch {}
+        return status
     }
 
     private generateSecurePassword(): string {

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document outlines the requirements for a comprehensive Go3net HR Management System that provides core HR functionalities including employee management, recruitment, payroll, performance tracking, and administrative tools. The system will be built with Express.js(authentication etc) framework backend using Supabase database(public.users) with a well-defined schema, React frontend with structured CSS architecture, mobile-responsive design, and push notifications support. The system will use Google OAuth and email/password authentication with a modular architecture that allows easy addition of new HR features.
+This document outlines the requirements for a comprehensive Go3net HR Management System that provides core HR functionalities including employee management, recruitment, payroll, performance tracking, and administrative tools. The system will be built with Express.js(authentication etc) framework backend using Supabase database(public.users) with a well-defined schema, React frontend with structured CSS architecture 'Use CSS Modules architecture with .module.css files scoped to each component. Follow the pattern where each component imports its own styles from a co-located module file.', mobile-responsive design, and push notifications support. The system will use Google OAuth and email/password authentication with a modular architecture that allows easy addition of new HR features.
 
 ## Requirements
 
