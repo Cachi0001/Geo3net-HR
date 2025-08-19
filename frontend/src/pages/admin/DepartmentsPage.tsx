@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/hooks/use-toast';
+import { apiClient } from '@/services/api';
 import { 
   Building2, 
   Users, 
@@ -16,7 +18,8 @@ import {
   Phone,
   MapPin,
   Calendar,
-  Award
+  Award,
+  Loader2
 } from 'lucide-react';
 
 interface Department {
@@ -42,8 +45,16 @@ interface Department {
   color: string;
 }
 
-// Mock data - replace with real API calls
-const mockDepartments: Department[] = [
+interface DepartmentStats {
+  department: string;
+  employees: number;
+  present: number;
+  absent: number;
+  performance: number;
+}
+
+// Fallback data for when API is unavailable
+const fallbackDepartments: Department[] = [
   {
     id: '1',
     name: 'Engineering',
@@ -64,7 +75,7 @@ const mockDepartments: Department[] = [
     performance: 87,
     location: 'Lagos Office - Floor 3',
     established: '2020-01-15',
-    color: 'nav-accent-blue'
+    color: 'bg-blue-500'
   },
   {
     id: '2',
@@ -86,7 +97,7 @@ const mockDepartments: Department[] = [
     performance: 93,
     location: 'Lagos Office - Floor 2',
     established: '2020-03-20',
-    color: 'nav-accent-purple'
+    color: 'bg-purple-500'
   },
   {
     id: '3',
@@ -108,7 +119,7 @@ const mockDepartments: Department[] = [
     performance: 88,
     location: 'Abuja Office - Floor 1',
     established: '2020-05-10',
-    color: 'nav-accent-orange'
+    color: 'bg-orange-500'
   },
   {
     id: '4',
@@ -130,7 +141,7 @@ const mockDepartments: Department[] = [
     performance: 90,
     location: 'Lagos Office - Floor 1',
     established: '2020-02-01',
-    color: 'nav-accent-cyan'
+    color: 'bg-cyan-500'
   },
   {
     id: '5',
@@ -152,13 +163,63 @@ const mockDepartments: Department[] = [
     performance: 85,
     location: 'Port Harcourt Office',
     established: '2020-04-15',
-    color: 'nav-accent-pink'
+    color: 'bg-pink-500'
   }
 ];
 
 const DepartmentsPage: React.FC = () => {
-  const [departments] = useState<Department[]>(mockDepartments);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadDepartments();
+  }, []);
+
+  const loadDepartments = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Try to get department stats from dashboard API
+      const departmentStats = await apiClient.getDepartmentStats();
+      
+      // Convert department stats to department format
+      const departmentsFromStats = departmentStats.map((stat: DepartmentStats, index: number) => ({
+        id: (index + 1).toString(),
+        name: stat.department,
+        description: `${stat.department} department operations`,
+        manager: {
+          name: 'Department Manager',
+          email: `manager@${stat.department.toLowerCase().replace(/\s+/g, '')}.go3net.com`,
+          phone: '+234 80' + (1000000 + index * 111111).toString().slice(0, 8)
+        },
+        employeeCount: stat.employees,
+        budget: stat.employees * 200000, // Estimated budget per employee
+        budgetUsed: Math.floor(stat.employees * 200000 * 0.7), // 70% utilization
+        projects: {
+          active: Math.floor(stat.employees / 3),
+          completed: Math.floor(stat.employees / 2),
+          total: Math.floor(stat.employees / 2) + Math.floor(stat.employees / 3)
+        },
+        performance: stat.performance,
+        location: index % 2 === 0 ? 'Lagos Office' : 'Abuja Office',
+        established: '2020-0' + (index + 1) + '-15',
+        color: ['bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-cyan-500', 'bg-pink-500'][index % 5]
+      }));
+      
+      setDepartments(departmentsFromStats);
+    } catch (error) {
+      console.error('Failed to load departments:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load departments. Using fallback data.',
+        variant: 'destructive'
+      });
+      setDepartments(fallbackDepartments);
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   const filteredDepartments = departments.filter(dept => 
     dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -179,6 +240,17 @@ const DepartmentsPage: React.FC = () => {
       maximumFractionDigits: 0
     }).format(amount);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading departments...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -260,7 +332,7 @@ const DepartmentsPage: React.FC = () => {
                 <p className="text-sm font-medium text-muted-foreground mb-1">Avg Performance</p>
                 <p className="text-3xl font-bold text-foreground">{Math.round(avgPerformance)}%</p>
               </div>
-              <div className="h-12 w-12 nav-accent-cyan rounded-lg flex items-center justify-center">
+              <div className="h-12 w-12 bg-cyan-500 rounded-lg flex items-center justify-center">
                 <TrendingUp className="h-6 w-6 text-white" />
               </div>
             </div>

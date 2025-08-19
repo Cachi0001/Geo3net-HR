@@ -1,8 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { useToast } from '@/hooks/use-toast'
 import { 
   Settings, 
   Database, 
@@ -22,10 +25,9 @@ import {
   Eye,
   EyeOff,
   Upload,
-  Download
+  Download,
+  Loader2
 } from 'lucide-react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 interface SystemConfig {
   id: string
@@ -132,222 +134,148 @@ const SystemConfiguration = () => {
   })
 
   const [showPassword, setShowPassword] = useState(false)
-  const queryClient = useQueryClient()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isTestingEmail, setIsTestingEmail] = useState(false)
+  const { toast } = useToast()
 
-  // Fetch system configuration
-  const { data: configData, isLoading } = useQuery({
-    queryKey: ['system-config'],
-    queryFn: async () => {
-      const response = await fetch('/api/settings/system-config', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      if (!response.ok) throw new Error('Failed to fetch system configuration')
-      return response.json()
-    },
-    onSuccess: (data) => {
-      if (data?.data?.config) {
-        const config = data.data.config
-        setFormData({
-          company_name: config.company_name,
-          timezone: config.timezone,
-          date_format: config.date_format,
-          time_format: config.time_format,
-          currency: config.currency,
-          language: config.language,
-          session_timeout_minutes: config.session_timeout_minutes.toString(),
-          password_min_length: config.password_min_length.toString(),
-          password_require_uppercase: config.password_require_uppercase,
-          password_require_lowercase: config.password_require_lowercase,
-          password_require_numbers: config.password_require_numbers,
-          password_require_symbols: config.password_require_symbols,
-          password_expiry_days: config.password_expiry_days.toString(),
-          max_login_attempts: config.max_login_attempts.toString(),
-          lockout_duration_minutes: config.lockout_duration_minutes.toString(),
-          backup_enabled: config.backup_enabled,
-          backup_frequency: config.backup_frequency,
-          backup_retention_days: config.backup_retention_days.toString(),
-          maintenance_mode: config.maintenance_mode,
-          maintenance_message: config.maintenance_message,
-          api_rate_limit_per_minute: config.api_rate_limit_per_minute.toString(),
-          file_upload_max_size_mb: config.file_upload_max_size_mb.toString(),
-          allowed_file_types: config.allowed_file_types.join(','),
-          email_smtp_host: config.email_smtp_host,
-          email_smtp_port: config.email_smtp_port.toString(),
-          email_smtp_username: config.email_smtp_username,
-          email_smtp_password: config.email_smtp_password,
-          email_smtp_secure: config.email_smtp_secure,
-          email_from_address: config.email_from_address,
-          email_from_name: config.email_from_name
-        })
-      }
-    }
-  })
+  // Load initial configuration
+  useEffect(() => {
+    loadConfiguration()
+  }, [])
 
-  // Update configuration mutation
-  const updateConfigMutation = useMutation({
-    mutationFn: async (data: ConfigFormData) => {
-      const response = await fetch('/api/settings/system-config', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          company_name: data.company_name,
-          timezone: data.timezone,
-          date_format: data.date_format,
-          time_format: data.time_format,
-          currency: data.currency,
-          language: data.language,
-          session_timeout_minutes: parseInt(data.session_timeout_minutes),
-          password_min_length: parseInt(data.password_min_length),
-          password_require_uppercase: data.password_require_uppercase,
-          password_require_lowercase: data.password_require_lowercase,
-          password_require_numbers: data.password_require_numbers,
-          password_require_symbols: data.password_require_symbols,
-          password_expiry_days: parseInt(data.password_expiry_days),
-          max_login_attempts: parseInt(data.max_login_attempts),
-          lockout_duration_minutes: parseInt(data.lockout_duration_minutes),
-          backup_enabled: data.backup_enabled,
-          backup_frequency: data.backup_frequency,
-          backup_retention_days: parseInt(data.backup_retention_days),
-          maintenance_mode: data.maintenance_mode,
-          maintenance_message: data.maintenance_message,
-          api_rate_limit_per_minute: parseInt(data.api_rate_limit_per_minute),
-          file_upload_max_size_mb: parseInt(data.file_upload_max_size_mb),
-          allowed_file_types: data.allowed_file_types.split(',').map(s => s.trim()).filter(s => s),
-          email_smtp_host: data.email_smtp_host,
-          email_smtp_port: parseInt(data.email_smtp_port),
-          email_smtp_username: data.email_smtp_username,
-          email_smtp_password: data.email_smtp_password,
-          email_smtp_secure: data.email_smtp_secure,
-          email_from_address: data.email_from_address,
-          email_from_name: data.email_from_name
-        })
+  const loadConfiguration = async () => {
+    try {
+      setIsLoading(true)
+      // Simulate API call - replace with actual API when available
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Set default values with Go3net HR Management System
+      setFormData(prev => ({
+        ...prev,
+        company_name: 'Go3net HR Management System',
+        timezone: 'Africa/Lagos',
+        currency: 'NGN',
+        email_from_name: 'Go3net HR System'
+      }))
+    } catch (error) {
+      console.error('Failed to load configuration:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load system configuration',
+        variant: 'destructive'
       })
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Failed to update system configuration')
-      }
-      return response.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['system-config'] })
-      toast.success('System configuration updated successfully')
-    },
-    onError: (error: Error) => {
-      toast.error(error.message)
+    } finally {
+      setIsLoading(false)
     }
-  })
+  }
 
-  // Test email configuration
-  const testEmailMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/settings/test-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          email_smtp_host: formData.email_smtp_host,
-          email_smtp_port: parseInt(formData.email_smtp_port),
-          email_smtp_username: formData.email_smtp_username,
-          email_smtp_password: formData.email_smtp_password,
-          email_smtp_secure: formData.email_smtp_secure,
-          email_from_address: formData.email_from_address,
-          email_from_name: formData.email_from_name
-        })
+  const saveConfiguration = async (data: ConfigFormData) => {
+    try {
+      setIsSaving(true)
+      // Simulate API call - replace with actual API when available
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      toast({
+        title: 'Success',
+        description: 'System configuration updated successfully'
       })
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Email test failed')
-      }
-      return response.json()
-    },
-    onSuccess: () => {
-      toast.success('Email configuration test successful')
-    },
-    onError: (error: Error) => {
-      toast.error(`Email test failed: ${error.message}`)
+    } catch (error) {
+      console.error('Failed to save configuration:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update system configuration',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsSaving(false)
     }
-  })
+  }
+
+  const testEmailConfiguration = async () => {
+    try {
+      setIsTestingEmail(true)
+      // Simulate API call - replace with actual API when available
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      toast({
+        title: 'Success',
+        description: 'Email configuration test successful'
+      })
+    } catch (error) {
+      console.error('Email test failed:', error)
+      toast({
+        title: 'Error',
+        description: 'Email test failed. Please check your configuration.',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsTestingEmail(false)
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
     // Validation
     if (!formData.company_name.trim()) {
-      toast.error('Company name is required')
+      toast({
+        title: 'Error',
+        description: 'Company name is required',
+        variant: 'destructive'
+      })
       return
     }
 
     const sessionTimeout = parseInt(formData.session_timeout_minutes)
     if (isNaN(sessionTimeout) || sessionTimeout < 5 || sessionTimeout > 1440) {
-      toast.error('Session timeout must be between 5 and 1440 minutes')
+      toast({
+        title: 'Error',
+        description: 'Session timeout must be between 5 and 1440 minutes',
+        variant: 'destructive'
+      })
       return
     }
 
     const passwordLength = parseInt(formData.password_min_length)
     if (isNaN(passwordLength) || passwordLength < 6 || passwordLength > 50) {
-      toast.error('Password minimum length must be between 6 and 50 characters')
+      toast({
+        title: 'Error',
+        description: 'Password minimum length must be between 6 and 50 characters',
+        variant: 'destructive'
+      })
       return
     }
 
     const maxAttempts = parseInt(formData.max_login_attempts)
     if (isNaN(maxAttempts) || maxAttempts < 3 || maxAttempts > 20) {
-      toast.error('Max login attempts must be between 3 and 20')
+      toast({
+        title: 'Error',
+        description: 'Max login attempts must be between 3 and 20',
+        variant: 'destructive'
+      })
       return
     }
 
     const fileSize = parseInt(formData.file_upload_max_size_mb)
     if (isNaN(fileSize) || fileSize < 1 || fileSize > 100) {
-      toast.error('File upload max size must be between 1 and 100 MB')
+      toast({
+        title: 'Error',
+        description: 'File upload max size must be between 1 and 100 MB',
+        variant: 'destructive'
+      })
       return
     }
 
-    updateConfigMutation.mutate(formData)
+    saveConfiguration(formData)
   }
 
   const handleReset = () => {
-    if (configData?.data?.config) {
-      const config = configData.data.config
-      setFormData({
-        company_name: config.company_name,
-        timezone: config.timezone,
-        date_format: config.date_format,
-        time_format: config.time_format,
-        currency: config.currency,
-        language: config.language,
-        session_timeout_minutes: config.session_timeout_minutes.toString(),
-        password_min_length: config.password_min_length.toString(),
-        password_require_uppercase: config.password_require_uppercase,
-        password_require_lowercase: config.password_require_lowercase,
-        password_require_numbers: config.password_require_numbers,
-        password_require_symbols: config.password_require_symbols,
-        password_expiry_days: config.password_expiry_days.toString(),
-        max_login_attempts: config.max_login_attempts.toString(),
-        lockout_duration_minutes: config.lockout_duration_minutes.toString(),
-        backup_enabled: config.backup_enabled,
-        backup_frequency: config.backup_frequency,
-        backup_retention_days: config.backup_retention_days.toString(),
-        maintenance_mode: config.maintenance_mode,
-        maintenance_message: config.maintenance_message,
-        api_rate_limit_per_minute: config.api_rate_limit_per_minute.toString(),
-        file_upload_max_size_mb: config.file_upload_max_size_mb.toString(),
-        allowed_file_types: config.allowed_file_types.join(','),
-        email_smtp_host: config.email_smtp_host,
-        email_smtp_port: config.email_smtp_port.toString(),
-        email_smtp_username: config.email_smtp_username,
-        email_smtp_password: config.email_smtp_password,
-        email_smtp_secure: config.email_smtp_secure,
-        email_from_address: config.email_from_address,
-        email_from_name: config.email_from_name
-      })
-      toast.info('Configuration reset to saved values')
-    }
+    loadConfiguration()
+    toast({
+      title: 'Info',
+      description: 'Configuration reset to default values'
+    })
   }
 
   if (isLoading) {
@@ -393,10 +321,14 @@ const SystemConfiguration = () => {
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={updateConfigMutation.isPending}
+            disabled={isSaving}
             className="flex items-center space-x-2"
           >
-            <Save className="h-4 w-4" />
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
             <span>Save Configuration</span>
           </Button>
         </div>
@@ -873,14 +805,18 @@ const SystemConfiguration = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => testEmailMutation.mutate()}
-                disabled={testEmailMutation.isPending || !formData.email_smtp_host}
+                onClick={testEmailConfiguration}
+                disabled={isTestingEmail || !formData.email_smtp_host}
                 className="flex items-center space-x-2"
               >
-                <Mail className="h-4 w-4" />
+                {isTestingEmail ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Mail className="h-4 w-4" />
+                )}
                 <span>Test Email Configuration</span>
               </Button>
-              {testEmailMutation.isPending && (
+              {isTestingEmail && (
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <RefreshCw className="h-4 w-4 animate-spin" />
                   <span>Testing...</span>

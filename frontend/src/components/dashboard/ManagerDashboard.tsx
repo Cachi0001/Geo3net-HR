@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import styles from './ManagerDashboard.module.css';
 
 export const ManagerDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -110,7 +111,7 @@ export const ManagerDashboard: React.FC = () => {
                 <Button
                   key={index}
                   variant="outline"
-                  className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary/5 transition-all duration-200"
+                  className={`h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary/5 transition-all duration-200 ${styles.quickAction}`}
                   onClick={action.action}
                 >
                   <Icon className="h-6 w-6 text-primary" />

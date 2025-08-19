@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/hooks/use-toast';
+import { apiClient } from '@/services/api';
 import { 
   Clock, 
   Calendar, 
@@ -23,27 +25,35 @@ import {
   XCircle,
   MoreVertical,
   CalendarDays,
-  BarChart3
+  BarChart3,
+  Loader2
 } from 'lucide-react';
 
 interface TimeEntry {
   id: string;
-  employee: {
+  employeeId: string;
+  employee?: {
     name: string;
     avatar: string;
     department: string;
     employeeId: string;
   };
   date: string;
-  clockIn: string;
+  checkInTime: string;
+  checkOutTime?: string;
+  clockIn?: string;
   clockOut?: string;
-  breakTime: number; // in minutes
-  totalHours: number;
-  status: 'present' | 'late' | 'absent' | 'half_day' | 'working';
+  breakTime?: number; // in minutes
+  totalHours?: number;
+  status: 'checked_in' | 'checked_out' | 'present' | 'late' | 'absent' | 'half_day' | 'working' | 'partial';
   project?: string;
   task?: string;
   notes?: string;
-  location: 'office' | 'remote' | 'field';
+  location?: 'office' | 'remote' | 'field';
+  checkInLocation?: any;
+  checkOutLocation?: any;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface WeeklyStats {
@@ -58,8 +68,8 @@ interface WeeklyStats {
   productivity: number;
 }
 
-// Mock data - replace with real API calls
-const mockTimeEntries: TimeEntry[] = [
+// Fallback data for when API is unavailable
+const fallbackTimeEntries: TimeEntry[] = [
   {
     id: '1',
     employee: {
@@ -171,7 +181,7 @@ const mockTimeEntries: TimeEntry[] = [
   }
 ];
 
-const mockWeeklyStats: WeeklyStats[] = [
+const fallbackWeeklyStats: WeeklyStats[] = [
   {
     employeeId: 'EMP001',
     employeeName: 'John Doe',
@@ -208,34 +218,133 @@ const mockWeeklyStats: WeeklyStats[] = [
 ];
 
 const TimeTrackingPage: React.FC = () => {
-  const [timeEntries] = useState<TimeEntry[]>(mockTimeEntries);
-  const [weeklyStats] = useState<WeeklyStats[]>(mockWeeklyStats);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [weeklyStats, setWeeklyStats] = useState<WeeklyStats[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(true);
+  const [attendanceReport, setAttendanceReport] = useState<any>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadTimeTrackingData();
+  }, [selectedDate, loadTimeTrackingData]);
+
+  const loadTimeTrackingData = useCallback(async () => {
+    try {
+      setLoading(true);
+      await Promise.all([
+        loadTimeEntries(),
+        loadAttendanceReport(),
+        loadWeeklyStats()
+      ]);
+    } catch (error) {
+      console.error('Failed to load time tracking data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDate, loadTimeEntries, loadAttendanceReport, loadWeeklyStats]);
+
+  const loadTimeEntries = useCallback(async () => {
+    try {
+      const response = await apiClient.getAllTimeEntries({
+        startDate: selectedDate,
+        endDate: selectedDate,
+        limit: 100
+      });
+      
+      if (response.success && response.data) {
+        // Transform API data to match our interface
+        const transformedEntries = response.data.map((entry: any) => ({
+          ...entry,
+          date: entry.checkInTime ? entry.checkInTime.split('T')[0] : selectedDate,
+          clockIn: entry.checkInTime ? new Date(entry.checkInTime).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) : '',
+          clockOut: entry.checkOutTime ? new Date(entry.checkOutTime).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) : undefined,
+          employee: {
+            name: entry.employeeId || 'Unknown Employee',
+            avatar: entry.employeeId ? entry.employeeId.substring(0, 2).toUpperCase() : 'UN',
+            department: 'Unknown Department',
+            employeeId: entry.employeeId
+          },
+          location: entry.checkInLocation ? 'office' : 'remote',
+          breakTime: 60, // Default break time
+          status: entry.status === 'checked_in' ? 'working' : entry.status === 'checked_out' ? 'present' : entry.status
+        }));
+        setTimeEntries(transformedEntries);
+      } else {
+        throw new Error('Failed to fetch time entries');
+      }
+    } catch (error) {
+      console.error('Failed to load time entries:', error);
+      toast({
+        title: 'Warning',
+        description: 'Failed to load time entries. Using fallback data.',
+        variant: 'destructive'
+      });
+      setTimeEntries(fallbackTimeEntries);
+    }
+  }, [selectedDate, toast]);
+
+  const loadAttendanceReport = useCallback(async () => {
+    try {
+      const response = await apiClient.getAttendanceReport({
+        startDate: selectedDate,
+        endDate: selectedDate
+      });
+      
+      if (response.success && response.data) {
+        setAttendanceReport(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load attendance report:', error);
+    }
+  }, [selectedDate]);
+
+  const loadWeeklyStats = useCallback(async () => {
+    try {
+      const endDate = new Date(selectedDate);
+      const startDate = new Date(endDate);
+      startDate.setDate(startDate.getDate() - 6); // Get last 7 days
+      
+      const response = await apiClient.getTeamStatistics({
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: selectedDate
+      });
+      
+      if (response.success && response.data) {
+        setWeeklyStats(response.data);
+      } else {
+        throw new Error('Failed to fetch weekly stats');
+      }
+    } catch (error) {
+      console.error('Failed to load weekly stats:', error);
+      setWeeklyStats(fallbackWeeklyStats);
+    }
+  }, [selectedDate]);
 
   const filteredEntries = timeEntries.filter(entry => {
-    const matchesSearch = entry.employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.employee.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = entry.employee?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         entry.employee?.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          entry.project?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          entry.task?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || entry.status === statusFilter;
-    const matchesDepartment = departmentFilter === 'all' || entry.employee.department === departmentFilter;
+    const matchesDepartment = departmentFilter === 'all' || entry.employee?.department === departmentFilter;
     const matchesDate = entry.date === selectedDate;
     
     return matchesSearch && matchesStatus && matchesDepartment && matchesDate;
   });
 
-  const getStatusColor = (status: string) => {
+  const getAttendanceStatusColor = (status: string) => {
     switch (status) {
-      case 'present': return 'bg-gradient-secondary text-white';
-      case 'late': return 'nav-accent-orange text-white';
+      case 'present': return 'bg-green-500 text-white';
+      case 'late': return 'bg-orange-500 text-white';
       case 'absent': return 'bg-red-500 text-white';
-      case 'half_day': return 'nav-accent-cyan text-white';
-      case 'working': return 'bg-gradient-primary text-white';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'half_day': return 'bg-cyan-500 text-white';
+      case 'working': return 'bg-blue-500 text-white';
+      default: return 'bg-gray-500 text-white';
     }
   };
 
@@ -260,15 +369,26 @@ const TimeTrackingPage: React.FC = () => {
   };
 
   const todayStats = {
-    totalEmployees: timeEntries.length,
-    present: timeEntries.filter(e => e.status === 'present').length,
-    late: timeEntries.filter(e => e.status === 'late').length,
-    absent: timeEntries.filter(e => e.status === 'absent').length,
-    working: timeEntries.filter(e => e.status === 'working').length,
-    avgHours: timeEntries.filter(e => e.totalHours > 0).reduce((sum, e) => sum + e.totalHours, 0) / timeEntries.filter(e => e.totalHours > 0).length || 0
+    totalEmployees: attendanceReport?.totalEmployees || timeEntries.length,
+    present: attendanceReport?.present || timeEntries.filter(e => e.status === 'present').length,
+    late: attendanceReport?.late || timeEntries.filter(e => e.status === 'late').length,
+    absent: attendanceReport?.absent || timeEntries.filter(e => e.status === 'absent').length,
+    working: attendanceReport?.working || timeEntries.filter(e => e.status === 'working').length,
+    avgHours: attendanceReport?.avgHours || (timeEntries.filter(e => e.totalHours && e.totalHours > 0).reduce((sum, e) => sum + (e.totalHours || 0), 0) / timeEntries.filter(e => e.totalHours && e.totalHours > 0).length) || 0
   };
 
-  const departments = [...new Set(timeEntries.map(entry => entry.employee.department))];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading time tracking data...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const departments = [...new Set(timeEntries.map(entry => entry.employee?.department).filter(Boolean))];
 
   const formatTime = (timeString: string) => {
     if (!timeString) return '--:--';
@@ -302,7 +422,7 @@ const TimeTrackingPage: React.FC = () => {
       </div>
 
       {/* Today's Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+      <div className="mobile-responsive-grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
         <Card className="metric-card">
           <CardContent className="p-4">
             <div className="text-center">
@@ -330,7 +450,7 @@ const TimeTrackingPage: React.FC = () => {
         <Card className="metric-card">
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="h-10 w-10 nav-accent-orange rounded-lg flex items-center justify-center mx-auto mb-2">
+              <div className="h-10 w-10 bg-orange-500 rounded-lg flex items-center justify-center mx-auto mb-2">
                 <AlertCircle className="h-5 w-5 text-white" />
               </div>
               <p className="text-2xl font-bold text-foreground">{todayStats.late}</p>
@@ -366,7 +486,7 @@ const TimeTrackingPage: React.FC = () => {
         <Card className="metric-card">
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="h-10 w-10 nav-accent-cyan rounded-lg flex items-center justify-center mx-auto mb-2">
+              <div className="h-10 w-10 bg-cyan-500 rounded-lg flex items-center justify-center mx-auto mb-2">
                 <Timer className="h-5 w-5 text-white" />
               </div>
               <p className="text-2xl font-bold text-foreground">{todayStats.avgHours.toFixed(1)}h</p>
@@ -534,7 +654,7 @@ const TimeTrackingPage: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               {weeklyStats.map((stat) => (
-                <div key={stat.employeeId} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border">
+                <div key={stat.employeeId} className="mobile-card flex flex-col md:flex-row md:items-center md:justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border space-y-4 md:space-y-0">
                   <div className="flex items-center gap-4">
                     <div className="h-10 w-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-semibold text-sm">
                       {stat.employeeName.split(' ').map(n => n[0]).join('')}
@@ -544,7 +664,7 @@ const TimeTrackingPage: React.FC = () => {
                       <p className="text-sm text-muted-foreground">{stat.department}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
+                  <div className="grid grid-cols-2 md:flex md:items-center gap-4 md:gap-6">
                     <div className="text-center">
                       <p className="text-lg font-bold text-foreground">{stat.totalHours}h</p>
                       <p className="text-xs text-muted-foreground">Total Hours</p>
@@ -561,7 +681,7 @@ const TimeTrackingPage: React.FC = () => {
                       <p className="text-lg font-bold text-red-600">{stat.daysAbsent}</p>
                       <p className="text-xs text-muted-foreground">Absent</p>
                     </div>
-                    <div className="text-center">
+                    <div className="text-center md:col-span-1 col-span-2">
                       <p className="text-lg font-bold text-blue-600">{stat.productivity}%</p>
                       <p className="text-xs text-muted-foreground">Productivity</p>
                     </div>

@@ -1,0 +1,27 @@
+.dashboard {
+  animation: fade-in 0.5s ease-out;
+}
+
+.dashboard h1 {
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dashboard .quickAction {
+  transition: all 0.2s ease-in-out;
+}
+
+.dashboard .quickAction:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.dashboard .activityItem {
+  transition: background-color 0.2s ease-in-out;
+}
+
+.dashboard .activityItem:hover {
+  background-color: hsl(var(--muted) / 0.5);
+}

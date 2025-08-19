@@ -72,11 +72,11 @@ const AnalyticsPage: React.FC = () => {
 
   const getDepartmentColor = (index: number) => {
     const colors = [
-      'bg-gradient-primary',
-      'bg-gradient-secondary', 
-      'nav-accent-orange',
-      'nav-accent-purple',
-      'nav-accent-cyan'
+      'bg-blue-500',
+      'bg-green-500', 
+      'bg-orange-500',
+      'bg-purple-500',
+      'bg-cyan-500'
     ];
     return colors[index % colors.length];
   };

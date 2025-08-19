@@ -14,6 +14,7 @@ const LoginPage = () => {
     email: '',
     password: ''
   })
+  const [rememberMe, setRememberMe] = useState(false)
   const { login, isLoggingIn } = useAuth()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,7 +34,8 @@ const LoginPage = () => {
     
     login({
       email: formData.email,
-      password: formData.password
+      password: formData.password,
+      rememberMe: rememberMe
     })
   }
 
@@ -144,6 +146,8 @@ const LoginPage = () => {
                   <input
                     id="remember"
                     type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
                     className="rounded border-gray-300 text-primary focus:ring-primary"
                   />
                   <Label htmlFor="remember" className="text-sm font-normal">

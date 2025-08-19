@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/hooks/use-toast';
+import { apiClient } from '@/services/api';
 import { 
   CheckSquare, 
   Clock, 
@@ -18,31 +20,43 @@ import {
   Target,
   TrendingUp,
   MoreVertical,
-  Flag
+  Flag,
+  Loader2
 } from 'lucide-react';
 
 interface Task {
   id: string;
   title: string;
   description: string;
-  assignee: {
+  assignee?: {
     name: string;
     avatar: string;
     department: string;
   };
-  department: string;
+  assignedTo?: string;
+  assignedToUser?: {
+    fullName: string;
+    email: string;
+    department?: {
+      name: string;
+    };
+  };
+  department?: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'todo' | 'in_progress' | 'review' | 'completed';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   dueDate: string;
-  createdDate: string;
-  progress: number;
-  estimatedHours: number;
+  createdAt: string;
+  updatedAt?: string;
+  estimatedHours?: number;
   actualHours?: number;
-  tags: string[];
+  tags?: string[];
+  createdBy?: string;
+  projectId?: string;
+  departmentId?: string;
 }
 
-// Mock data - replace with real API calls
-const mockTasks: Task[] = [
+// Fallback data for when API is unavailable
+const fallbackTasks: Task[] = [
   {
     id: '1',
     title: 'Implement User Authentication System',
@@ -56,7 +70,7 @@ const mockTasks: Task[] = [
     priority: 'high',
     status: 'in_progress',
     dueDate: '2024-02-15',
-    createdDate: '2024-01-20',
+    createdAt: '2024-01-20',
     progress: 65,
     estimatedHours: 40,
     actualHours: 26,
@@ -75,7 +89,7 @@ const mockTasks: Task[] = [
     priority: 'medium',
     status: 'review',
     dueDate: '2024-02-10',
-    createdDate: '2024-01-25',
+    createdAt: '2024-01-25',
     progress: 90,
     estimatedHours: 20,
     actualHours: 18,
@@ -94,7 +108,7 @@ const mockTasks: Task[] = [
     priority: 'urgent',
     status: 'todo',
     dueDate: '2024-02-05',
-    createdDate: '2024-01-28',
+    createdAt: '2024-01-28',
     progress: 0,
     estimatedHours: 30,
     tags: ['Social Media', 'Strategy', 'Content']
@@ -112,7 +126,7 @@ const mockTasks: Task[] = [
     priority: 'medium',
     status: 'completed',
     dueDate: '2024-01-30',
-    createdDate: '2024-01-15',
+    createdAt: '2024-01-15',
     progress: 100,
     estimatedHours: 15,
     actualHours: 14,
@@ -131,7 +145,7 @@ const mockTasks: Task[] = [
     priority: 'high',
     status: 'in_progress',
     dueDate: '2024-02-08',
-    createdDate: '2024-01-22',
+    createdAt: '2024-01-22',
     progress: 45,
     estimatedHours: 25,
     actualHours: 12,
@@ -150,7 +164,7 @@ const mockTasks: Task[] = [
     priority: 'high',
     status: 'todo',
     dueDate: '2024-02-20',
-    createdDate: '2024-01-30',
+    createdAt: '2024-01-30',
     progress: 0,
     estimatedHours: 35,
     tags: ['Database', 'Performance', 'Optimization']
@@ -158,10 +172,68 @@ const mockTasks: Task[] = [
 ];
 
 const TaskAssignmentPage: React.FC = () => {
-  const [tasks] = useState<Task[]>(mockTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
+  const [statistics, setStatistics] = useState<any>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadTasks();
+    loadTaskStatistics();
+  }, [loadTasks, loadTaskStatistics]);
+
+  const loadTasks = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.getTasks();
+      if (response.success && response.data) {
+        // Transform API data to match our interface
+        const transformedTasks = response.data.map((task: any) => ({
+          ...task,
+          assignee: task.assignedToUser ? {
+            name: task.assignedToUser.fullName || 'Unassigned',
+            avatar: task.assignedToUser.fullName ? task.assignedToUser.fullName.split(' ').map((n: string) => n[0]).join('') : 'UN',
+            department: task.assignedToUser.department?.name || 'No Department'
+          } : {
+            name: 'Unassigned',
+            avatar: 'UN',
+            department: 'No Department'
+          },
+          status: task.status === 'pending' ? 'todo' : task.status,
+          createdDate: task.createdAt,
+          progress: task.status === 'completed' ? 100 : task.status === 'in_progress' ? 50 : 0,
+          tags: task.tags || []
+        }));
+        setTasks(transformedTasks);
+      } else {
+        throw new Error('Failed to fetch tasks');
+      }
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load tasks. Using fallback data.',
+        variant: 'destructive'
+      });
+      setTasks(fallbackTasks);
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  const loadTaskStatistics = useCallback(async () => {
+    try {
+      const response = await apiClient.getTaskStatistics();
+      if (response.success && response.data) {
+        setStatistics(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load task statistics:', error);
+    }
+  }, []);
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -187,9 +259,9 @@ const TaskAssignmentPage: React.FC = () => {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'low': return 'nav-accent-cyan';
-      case 'medium': return 'nav-accent-orange';
-      case 'high': return 'nav-accent-pink';
+      case 'low': return 'bg-cyan-500';
+      case 'medium': return 'bg-orange-500';
+      case 'high': return 'bg-pink-500';
       case 'urgent': return 'bg-red-500';
       default: return 'bg-gray-500';
     }
@@ -205,13 +277,14 @@ const TaskAssignmentPage: React.FC = () => {
     }
   };
 
+  // Use API statistics if available, otherwise calculate from tasks
   const taskStats = {
-    total: tasks.length,
-    todo: tasks.filter(t => t.status === 'todo').length,
-    inProgress: tasks.filter(t => t.status === 'in_progress').length,
-    review: tasks.filter(t => t.status === 'review').length,
-    completed: tasks.filter(t => t.status === 'completed').length,
-    overdue: tasks.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'completed').length
+    total: statistics?.totalTasks || tasks.length,
+    todo: statistics?.todoTasks || tasks.filter(t => t.status === 'todo').length,
+    inProgress: statistics?.inProgressTasks || tasks.filter(t => t.status === 'in_progress').length,
+    review: statistics?.reviewTasks || tasks.filter(t => t.status === 'review').length,
+    completed: statistics?.completedTasks || tasks.filter(t => t.status === 'completed').length,
+    overdue: statistics?.overdueTasks || tasks.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'completed').length
   };
 
   const formatDate = (dateString: string) => {
@@ -225,6 +298,17 @@ const TaskAssignmentPage: React.FC = () => {
   const isOverdue = (dueDate: string, status: string) => {
     return new Date(dueDate) < new Date() && status !== 'completed';
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading tasks...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -281,7 +365,7 @@ const TaskAssignmentPage: React.FC = () => {
         <Card className="metric-card">
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="h-10 w-10 nav-accent-orange rounded-lg flex items-center justify-center mx-auto mb-2">
+              <div className="h-10 w-10 bg-orange-500 rounded-lg flex items-center justify-center mx-auto mb-2">
                 <AlertCircle className="h-5 w-5 text-white" />
               </div>
               <p className="text-2xl font-bold text-foreground">{taskStats.review}</p>
@@ -425,7 +509,7 @@ const TaskAssignmentPage: React.FC = () => {
               <div className="flex items-center justify-between pt-2 border-t border-border/50">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Calendar className="h-3 w-3" />
-                  <span>Created: {formatDate(task.createdDate)}</span>
+                  <span>Created: {formatDate(task.createdAt || task.createdDate)}</span>
                 </div>
                 <div className={`flex items-center gap-2 text-xs ${
                   isOverdue(task.dueDate, task.status) ? 'text-red-600 font-medium' : 'text-muted-foreground'

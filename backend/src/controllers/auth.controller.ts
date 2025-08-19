@@ -17,7 +17,8 @@ const registerSchema = Joi.object({
 
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
-  password: Joi.string().required()
+  password: Joi.string().required(),
+  rememberMe: Joi.boolean().optional()
 })
 
 const forgotPasswordSchema = Joi.object({
@@ -112,9 +113,9 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       throw new ValidationError('Validation error', errors)
     }
 
-    const { email, password } = value
+    const { email, password, rememberMe } = value
 
-    const result = await authService.loginWithEmail({ email, password })
+    const result = await authService.loginWithEmail({ email, password, rememberMe })
 
     return ResponseHandler.success(res, 'Login successful', {
       user: result.user,

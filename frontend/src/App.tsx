@@ -23,6 +23,12 @@ import TaskAssignmentPage from './pages/admin/TaskAssignmentPage'
 import DepartmentsPage from './pages/admin/DepartmentsPage'
 import RolesPage from './pages/admin/RolesPage'
 import AnalyticsPage from './pages/admin/AnalyticsPage'
+import PayrollPage from './pages/admin/PayrollPage'
+import SettingsPage from './pages/dashboard/SettingsPage'
+import RecruitmentPage from './pages/dashboard/RecruitmentPage'
+import SecurityPage from './pages/dashboard/SecurityPage'
+import ProfilePage from './pages/dashboard/ProfilePage'
+import ActivitiesPage from './pages/dashboard/ActivitiesPage'
 
 // Create a client
 const queryClient = new QueryClient({
@@ -63,6 +69,13 @@ function App() {
               <Route path="task-assignment" element={<TaskAssignmentPage />} />
               <Route path="roles" element={<RolesPage />} />
               <Route path="time-tracking" element={<TimeTrackingPage />} />
+              <Route path="payroll" element={
+                <ProtectedRoute requiredRoles={['super-admin', 'hr-admin', 'finance-admin']}>
+                  <PayrollPage />
+                </ProtectedRoute>
+              } />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="activities" element={<ActivitiesPage />} />
               <Route path="reports" element={
                 <ProtectedRoute requiredRoles={['super-admin', 'hr-admin', 'manager']}>
                   <AnalyticsPage />
@@ -70,7 +83,17 @@ function App() {
               } />
               <Route path="settings" element={
                 <ProtectedRoute requiredRoles={['super-admin', 'hr-admin']}>
-                  <div>Settings Page - Coming Soon</div>
+                  <SettingsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="recruitment" element={
+                <ProtectedRoute requiredRoles={['super-admin', 'hr-admin']}>
+                  <RecruitmentPage />
+                </ProtectedRoute>
+              } />
+              <Route path="security" element={
+                <ProtectedRoute requiredRoles={['super-admin']}>
+                  <SecurityPage />
                 </ProtectedRoute>
               } />
             </Route>

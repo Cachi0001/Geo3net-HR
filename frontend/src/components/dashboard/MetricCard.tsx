@@ -34,22 +34,22 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     }
   };
 
-  const getIconBackground = (variant: string) => {
-    switch (variant) {
+  const getIconBgColor = (type: string) => {
+    switch (type) {
       case 'primary':
-        return 'bg-gradient-primary';
+        return 'bg-blue-500';
       case 'secondary':
-        return 'bg-gradient-secondary';
+        return 'bg-green-500';
       case 'accent':
-        return 'bg-gradient-accent';
+        return 'bg-purple-500';
       case 'success':
-        return 'nav-accent-cyan';
+        return 'bg-cyan-500';
       case 'warning':
-        return 'nav-accent-orange';
+        return 'bg-orange-500';
       case 'info':
-        return 'nav-accent-purple';
+        return 'bg-indigo-500';
       default:
-        return 'bg-gradient-primary';
+        return 'bg-blue-500';
     }
   };
 
@@ -68,7 +68,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
               </p>
             )}
           </div>
-          <div className={`h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 ${getIconBackground(variant)} rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0`}>
+          <div className={`h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 ${getIconBgColor(variant)} rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0`}>
             <Icon className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" />
           </div>
         </div>

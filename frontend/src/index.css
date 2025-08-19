@@ -4,31 +4,31 @@
 
 @layer base {
   :root {
-    /* Go3net Brand Colors - Vibrant Theme */
-    --background: 210 40% 98%; /* Light blue-grey background */
-    --foreground: 222.2 84% 4.9%;
+    /* Go3net Brand Colors - Enhanced for Accessibility */
+    --background: 0 0% 100%; /* Pure white for better contrast */
+    --foreground: 222.2 84% 4.9%; /* Dark text for high contrast */
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 207 90% 54%; /* Go3net bright blue #007bff */
+    --primary: 207 90% 45%; /* Darker blue for better contrast */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 207 90% 48%;
-    --secondary: 142 76% 36%; /* Go3net green */
+    --primary-hover: 207 90% 40%; /* Even darker on hover */
+    --secondary: 142 76% 30%; /* Darker green for better contrast */
     --secondary-foreground: 0 0% 100%;
-    --muted: 210 40% 94%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 207 90% 54%; /* Bright blue accent */
+    --muted: 210 40% 96%; /* Lighter muted background */
+    --muted-foreground: 215.4 16.3% 35%; /* Darker muted text for better contrast */
+    --accent: 207 90% 45%; /* Consistent with primary */
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91%;
+    --destructive: 0 84.2% 50%; /* Darker red for better contrast */
+    --destructive-foreground: 0 0% 100%;
+    --border: 214.3 31.8% 85%; /* Slightly darker border */
     --input: 0 0% 100%;
-    --ring: 207 90% 54%;
-    --success: 142 76% 36%; /* Go3net green */
+    --ring: 207 90% 45%;
+    --success: 142 76% 30%; /* Darker green for better contrast */
     --success-foreground: 0 0% 100%;
-    --warning: 32.5 94.6% 43.7%;
-    --warning-foreground: 355.7 100% 97.3%;
+    --warning: 32.5 94.6% 35%; /* Darker orange for better contrast */
+    --warning-foreground: 0 0% 100%;
     --radius: 0.75rem;
     
     /* Go3net Brand Gradient Colors */
@@ -36,14 +36,14 @@
     --gradient-secondary: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(207 90% 54%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(207 90% 54%) 0%, hsl(220 91% 65%) 100%);
     
-    /* Colorful Navigation Accents */
-    --nav-blue: 207 90% 54%;
-    --nav-orange: 32 95% 44%;
-    --nav-purple: 271 81% 56%;
-    --nav-cyan: 188 86% 53%;
-    --nav-pink: 330 81% 60%;
-    --nav-indigo: 231 48% 48%;
-    --nav-red: 0 84% 60%;
+    /* Colorful Navigation Accents - Enhanced Contrast */
+    --nav-blue: 207 90% 40%;
+    --nav-orange: 32 95% 35%;
+    --nav-purple: 271 81% 45%;
+    --nav-cyan: 188 86% 40%;
+    --nav-pink: 330 81% 45%;
+    --nav-indigo: 231 48% 35%;
+    --nav-red: 0 84% 45%;
     
     /* Go3net Sidebar colors */
     --sidebar-background: 0 0% 100%; /* Clean white sidebar */
@@ -113,14 +113,76 @@
     border: 1px solid hsl(214.3 31.8% 91%);
   }
   
-  /* Colorful Navigation Accents */
-  .nav-accent-blue { background-color: hsl(207 90% 54%); }
-  .nav-accent-orange { background-color: hsl(32 95% 44%); }
-  .nav-accent-purple { background-color: hsl(271 81% 56%); }
-  .nav-accent-cyan { background-color: hsl(188 86% 53%); }
-  .nav-accent-pink { background-color: hsl(330 81% 60%); }
-  .nav-accent-indigo { background-color: hsl(231 48% 48%); }
-  .nav-accent-red { background-color: hsl(0 84% 60%); }
+  /* Colorful Navigation Accents - Enhanced Contrast & Hover States */
+  .nav-accent-blue { 
+    background-color: hsl(var(--nav-blue)); 
+    transition: all 0.2s ease-in-out;
+  }
+  .nav-accent-blue:hover { 
+    background-color: hsl(207 90% 35%); 
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(207 90% 40% / 0.3);
+  }
+  
+  .nav-accent-orange { 
+    background-color: hsl(var(--nav-orange)); 
+    transition: all 0.2s ease-in-out;
+  }
+  .nav-accent-orange:hover { 
+    background-color: hsl(32 95% 30%); 
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(32 95% 35% / 0.3);
+  }
+  
+  .nav-accent-purple { 
+    background-color: hsl(var(--nav-purple)); 
+    transition: all 0.2s ease-in-out;
+  }
+  .nav-accent-purple:hover { 
+    background-color: hsl(271 81% 40%); 
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(271 81% 45% / 0.3);
+  }
+  
+  .nav-accent-cyan { 
+    background-color: hsl(var(--nav-cyan)); 
+    transition: all 0.2s ease-in-out;
+  }
+  .nav-accent-cyan:hover { 
+    background-color: hsl(188 86% 35%); 
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(188 86% 40% / 0.3);
+  }
+  
+  .nav-accent-pink { 
+    background-color: hsl(var(--nav-pink)); 
+    transition: all 0.2s ease-in-out;
+  }
+  .nav-accent-pink:hover { 
+    background-color: hsl(330 81% 40%); 
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(330 81% 45% / 0.3);
+  }
+  
+  .nav-accent-indigo { 
+    background-color: hsl(var(--nav-indigo)); 
+    transition: all 0.2s ease-in-out;
+  }
+  .nav-accent-indigo:hover { 
+    background-color: hsl(231 48% 30%); 
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(231 48% 35% / 0.3);
+  }
+  
+  .nav-accent-red { 
+    background-color: hsl(var(--nav-red)); 
+    transition: all 0.2s ease-in-out;
+  }
+  .nav-accent-red:hover { 
+    background-color: hsl(0 84% 40%); 
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(0 84% 45% / 0.3);
+  }
   
   /* Enhanced Card Styles */
   .metric-card {
@@ -133,13 +195,79 @@
     box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
   }
   
-  /* Button Enhancements */
+  /* Button Enhancements - Improved Accessibility & Hover States */
   .btn-primary {
-    @apply bg-gradient-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300;
+    @apply bg-gradient-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200;
+    min-height: 44px; /* Touch target size for accessibility */
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px hsl(207 90% 45% / 0.3);
+  }
+  
+  .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px hsl(207 90% 45% / 0.2);
   }
   
   .btn-secondary {
-    @apply bg-gradient-secondary text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300;
+    @apply bg-gradient-secondary text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200;
+    min-height: 44px; /* Touch target size for accessibility */
+  }
+  
+  .btn-secondary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px hsl(142 76% 30% / 0.3);
+  }
+  
+  .btn-secondary:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px hsl(142 76% 30% / 0.2);
+  }
+  
+  /* Mobile Responsiveness Utilities */
+  .mobile-responsive-grid {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+  
+  .mobile-responsive-flex {
+    @apply flex flex-col gap-4;
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-responsive-flex {
+      @apply flex-row;
+    }
+  }
+  
+  .mobile-card {
+    @apply p-4 rounded-lg border bg-card;
+    min-width: 0; /* Prevent overflow */
+    overflow-wrap: break-word;
+  }
+  
+  @media (max-width: 640px) {
+    .mobile-card {
+      @apply p-3;
+    }
+  }
+  
+  /* Quick Action Button Fixes */
+  .quick-action-btn {
+    @apply inline-flex items-center justify-center p-3 rounded-lg transition-all duration-200;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .quick-action-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  .quick-action-btn:active {
+    transform: translateY(0) !important;
   }
 }
 

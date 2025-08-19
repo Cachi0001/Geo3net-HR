@@ -15,6 +15,7 @@ export interface RegisterData {
 export interface LoginData {
   email: string
   password: string
+  rememberMe?: boolean
 }
 
 export interface AuthResult {
@@ -232,7 +233,7 @@ export class AuthService {
   }
 
   async loginWithEmail(data: LoginData): Promise<AuthResult> {
-    const { email, password } = data
+    const { email, password, rememberMe } = data
 
     // First get the user
     const { data: user, error } = await supabase

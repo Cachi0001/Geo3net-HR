@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Building2, Briefcase, TrendingUp, UserCheck, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 import { MetricCard } from '@/components/dashboard/MetricCard';
@@ -22,7 +22,7 @@ export const Dashboard: React.FC = () => {
     loadDashboardData();
   }, []);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const data = await dashboardApi.getDashboardData();
@@ -39,27 +39,28 @@ export const Dashboard: React.FC = () => {
       // Set fallback data
       setMetrics({
         totalEmployees: 1247,
-        departments: 18,
-        activeRecruitment: 34,
-        monthlyPayroll: 847000000
+        presentToday: 1156,
+        lateArrivals: 23,
+        onLeave: 68,
+        absentToday: 91
       });
       setDepartmentStats([
-        { name: 'Engineering', employees: 324, growth: 12 },
-        { name: 'Sales', employees: 189, growth: 8 },
-        { name: 'Marketing', employees: 156, growth: 15 },
-        { name: 'HR', employees: 45, growth: 3 },
-        { name: 'Finance', employees: 67, growth: 5 }
+        { department: 'Engineering', employees: 324, present: 298, absent: 26, performance: 92 },
+        { department: 'Sales', employees: 189, present: 175, absent: 14, performance: 88 },
+        { department: 'Marketing', employees: 156, present: 142, absent: 14, performance: 91 },
+        { department: 'HR', employees: 45, present: 43, absent: 2, performance: 95 },
+        { department: 'Finance', employees: 67, present: 61, absent: 6, performance: 89 }
       ]);
       setRecentActivities([
-        { id: '1', type: 'employee', message: 'John Doe joined Engineering Department', time: '2 hours ago', status: 'success' },
-        { id: '2', type: 'recruitment', message: 'New position posted: Senior Developer', time: '4 hours ago', status: 'info' },
-        { id: '3', type: 'payroll', message: 'March payroll processed successfully', time: '1 day ago', status: 'success' },
-        { id: '4', type: 'alert', message: 'Attendance review required for 5 employees', time: '2 days ago', status: 'warning' }
+        { id: '1', type: 'check-in', description: 'John Doe checked in', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), user: 'John Doe' },
+        { id: '2', type: 'leave-request', description: 'Sarah Wilson submitted leave request', timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), user: 'Sarah Wilson' },
+        { id: '3', type: 'task-completed', description: 'Mike Johnson completed project milestone', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), user: 'Mike Johnson' },
+        { id: '4', type: 'system-alert', description: 'Attendance review required for 5 employees', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
       ]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   const getMetricCards = () => {
     if (!metrics) return [];
@@ -72,22 +73,22 @@ export const Dashboard: React.FC = () => {
         icon: Users
       },
       {
-        title: 'Departments',
-        value: metrics.departments.toString(),
-        change: { value: '+2 new', trend: 'up' as const },
-        icon: Building2
-      },
-      {
-        title: 'Active Recruitment',
-        value: metrics.activeRecruitment.toString(),
-        change: { value: '8 positions filled', trend: 'up' as const },
-        icon: Briefcase
-      },
-      {
-        title: 'Monthly Payroll',
-        value: `₦${(metrics.monthlyPayroll / 1000000).toFixed(0)}M`,
-        change: { value: '+3.2% vs last month', trend: 'up' as const },
+        title: 'Present Today',
+        value: metrics.presentToday.toLocaleString(),
+        change: { value: `${((metrics.presentToday / metrics.totalEmployees) * 100).toFixed(1)}% attendance`, trend: 'up' as const },
         icon: UserCheck
+      },
+      {
+        title: 'Late Arrivals',
+        value: metrics.lateArrivals.toString(),
+        change: { value: '-5 vs yesterday', trend: 'down' as const },
+        icon: Clock
+      },
+      {
+        title: 'On Leave',
+        value: metrics.onLeave.toString(),
+        change: { value: '+3 this week', trend: 'up' as const },
+        icon: Briefcase
       }
     ];
   };
@@ -164,16 +165,16 @@ export const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             {departmentStats.map((dept) => (
-              <div key={dept.name} className="flex items-center justify-between">
+              <div key={dept.department} className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-foreground">{dept.name}</span>
+                    <span className="font-medium text-foreground">{dept.department}</span>
                     <span className="text-sm text-muted-foreground">{dept.employees} employees</span>
                   </div>
-                  <Progress value={dept.growth * 5} className="h-2" />
+                  <Progress value={dept.performance} className="h-2" />
                 </div>
                 <Badge variant="outline" className="ml-4 text-success border-success">
-                  +{dept.growth}%
+                  {dept.performance}%
                 </Badge>
               </div>
             ))}
@@ -193,22 +194,31 @@ export const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-3 pb-4 border-b border-border/50 last:border-b-0">
-                  <div className={`h-3 w-3 rounded-full mt-1.5 shadow-sm ${
-                    activity.status === 'success' ? 'bg-gradient-to-r from-green-400 to-green-600' :
-                    activity.status === 'warning' ? 'bg-gradient-to-r from-orange-400 to-orange-600' : 
-                    'bg-gradient-to-r from-blue-400 to-blue-600'
-                  }`} />
-                  <div className="flex-1">
-                    <p className="text-sm text-foreground">{activity.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+              {recentActivities.map((activity) => {
+                const timeAgo = new Date(activity.timestamp).toLocaleString();
+                const activityStatus = activity.type === 'system-alert' ? 'warning' : 
+                                     activity.type === 'check-in' ? 'success' : 'info';
+                
+                return (
+                  <div key={activity.id} className="flex items-start gap-3 pb-4 border-b border-border/50 last:border-b-0">
+                    <div className={`h-3 w-3 rounded-full mt-1.5 shadow-sm ${
+                      activityStatus === 'success' ? 'bg-gradient-to-r from-green-400 to-green-600' :
+                      activityStatus === 'warning' ? 'bg-gradient-to-r from-orange-400 to-orange-600' : 
+                      'bg-gradient-to-r from-blue-400 to-blue-600'
+                    }`} />
+                    <div className="flex-1">
+                      <p className="text-sm text-foreground">{activity.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{timeAgo}</p>
+                      {activity.user && (
+                        <p className="text-xs text-muted-foreground">by {activity.user}</p>
+                      )}
+                    </div>
+                    {activityStatus === 'warning' && (
+                      <AlertTriangle className="h-4 w-4 text-warning" />
+                    )}
                   </div>
-                  {activity.status === 'warning' && (
-                    <AlertTriangle className="h-4 w-4 text-warning" />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -223,7 +233,7 @@ export const Dashboard: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div 
-              className="p-4 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer"
+              className={`${styles.quickAction} p-4 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer`}
               onClick={() => handleQuickAction('add-employee')}
             >
               <UserCheck className="h-8 w-8 text-primary mb-2" />
@@ -231,7 +241,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-sm text-muted-foreground">Create new employee record</p>
             </div>
             <div 
-              className="p-4 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer"
+              className={`${styles.quickAction} p-4 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer`}
               onClick={() => handleQuickAction('post-job')}
             >
               <Briefcase className="h-8 w-8 text-primary mb-2" />
@@ -239,7 +249,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-sm text-muted-foreground">Create new job posting</p>
             </div>
             <div 
-              className="p-4 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer"
+              className={`${styles.quickAction} p-4 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer`}
               onClick={() => handleQuickAction('process-payroll')}
             >
               <UserCheck className="h-8 w-8 text-primary mb-2" />
@@ -247,7 +257,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-sm text-muted-foreground">Run monthly payroll</p>
             </div>
             <div 
-              className="p-4 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer"
+              className={`${styles.quickAction} p-4 rounded-lg border border-border hover:shadow-md transition-shadow cursor-pointer`}
               onClick={() => handleQuickAction('manage-departments')}
             >
               <Building2 className="h-8 w-8 text-primary mb-2" />

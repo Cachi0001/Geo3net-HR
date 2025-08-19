@@ -27,7 +27,7 @@ export const useAuth = () => {
   } = useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => {
-      const token = localStorage.getItem('accessToken')
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
       if (!token) return null
       
       try {
@@ -46,13 +46,22 @@ export const useAuth = () => {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: (data: LoginData) => apiClient.login(data),
-    onSuccess: (response) => {
+    onSuccess: (response, variables) => {
       if (response.success && response.data) {
         const { user, accessToken, refreshToken } = response.data
+        const rememberMe = variables.rememberMe || false
         
-        // Store tokens
-        apiClient.setToken(accessToken)
-        localStorage.setItem('refreshToken', refreshToken)
+        // Store tokens with remember me preference
+        apiClient.setToken(accessToken, rememberMe)
+        
+        // Store refresh token in the same storage type as access token
+        if (rememberMe) {
+          localStorage.setItem('refreshToken', refreshToken)
+          sessionStorage.removeItem('refreshToken')
+        } else {
+          sessionStorage.setItem('refreshToken', refreshToken)
+          localStorage.removeItem('refreshToken')
+        }
         
         // Update query cache
         queryClient.setQueryData(['currentUser'], user)
