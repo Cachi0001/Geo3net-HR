@@ -1,0 +1,23 @@
+.metricCard {
+  @apply bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-sm;
+  animation: scale-in 0.2s ease-out;
+}
+
+.metricCard:hover {
+  transform: translateY(-2px);
+}
+
+.metricCard .cardContent {
+  @apply relative;
+}
+
+.metricCard .cardContent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient-primary);
+  border-radius: inherit;
+}

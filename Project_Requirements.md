@@ -129,6 +129,21 @@ This document outlines the requirements for a comprehensive Go3net HR Management
 
 ### Requirement 12
 
+**User Story:** As a super-admin, I want to configure system-wide settings for location management, attendance policies, and check-in/checkout rules, so that the HR system can be customized to match organizational requirements and ensure accurate time tracking.
+
+#### Acceptance Criteria
+
+1. WHEN a super-admin accesses location management THEN the system SHALL allow creation, editing, and deletion of office locations with GPS coordinates, address details, and geofencing radius for check-in verification
+2. WHEN attendance policies are configured THEN the system SHALL support setting work hours, break times, overtime rules, late arrival grace periods, and working days per policy with ability to assign policies to different employee groups
+3. WHEN check-in/checkout settings are managed THEN the system SHALL allow configuration of location requirements, manual check-in permissions, maximum distance tolerance, face recognition settings, QR code options, and automatic checkout rules
+4. WHEN notification settings are configured THEN the system SHALL support enabling/disabling alerts for late arrivals, missed checkouts, overtime, and absences with customizable thresholds and notification channels (email, push, SMS)
+5. WHEN system configuration is updated THEN the system SHALL allow setting company details, timezone, date/time formats, fiscal year settings, security policies, and session management rules
+6. WHEN attendance dashboard is accessed THEN the system SHALL provide real-time attendance monitoring, daily/weekly/monthly analytics, employee presence status, late arrival tracking, and comprehensive reporting with export capabilities
+7. IF location-based check-in is enabled THEN the system SHALL verify employee location against configured office locations and enforce geofencing rules with appropriate error messages for out-of-range attempts
+8. IF attendance policies are changed THEN the system SHALL apply new rules prospectively while maintaining historical data integrity and providing migration options for existing records
+
+### Requirement 13
+
 **User Story:** As a product owner, I want the system architecture to support easy addition of new HR features, so that the platform can evolve and expand functionality over time.
 
 #### Acceptance Criteria

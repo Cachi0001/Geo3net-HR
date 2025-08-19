@@ -4,41 +4,56 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* Go3net Brand Colors - Vibrant Theme */
+    --background: 210 40% 98%; /* Light blue-grey background */
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 45%;
+    --primary: 207 90% 54%; /* Go3net bright blue #007bff */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 221.2 83.2% 40%;
-    --secondary: 210 40% 94%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
+    --primary-hover: 207 90% 48%;
+    --secondary: 142 76% 36%; /* Go3net green */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 40% 94%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --accent: 207 90% 54%; /* Bright blue accent */
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 85%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --success: 142.1 76.2% 36.3%;
-    --success-foreground: 355.7 100% 97.3%;
+    --border: 214.3 31.8% 91%;
+    --input: 0 0% 100%;
+    --ring: 207 90% 54%;
+    --success: 142 76% 36%; /* Go3net green */
+    --success-foreground: 0 0% 100%;
     --warning: 32.5 94.6% 43.7%;
     --warning-foreground: 355.7 100% 97.3%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
     
-    /* Sidebar colors */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Go3net Brand Gradient Colors */
+    --gradient-primary: linear-gradient(135deg, hsl(207 90% 54%) 0%, hsl(142 76% 36%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(207 90% 54%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(207 90% 54%) 0%, hsl(220 91% 65%) 100%);
+    
+    /* Colorful Navigation Accents */
+    --nav-blue: 207 90% 54%;
+    --nav-orange: 32 95% 44%;
+    --nav-purple: 271 81% 56%;
+    --nav-cyan: 188 86% 53%;
+    --nav-pink: 330 81% 60%;
+    --nav-indigo: 231 48% 48%;
+    --nav-red: 0 84% 60%;
+    
+    /* Go3net Sidebar colors */
+    --sidebar-background: 0 0% 100%; /* Clean white sidebar */
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-primary: 207 90% 54%; /* Go3net blue */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222.2 84% 4.9%;
+    --sidebar-border: 214.3 31.8% 91%;
+    --sidebar-ring: 207 90% 54%;
   }
 
   .dark {
@@ -79,12 +94,67 @@
   }
 }
 
+@layer components {
+  /* Go3net Brand Gradients */
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, hsl(207 90% 54%) 0%, hsl(142 76% 36%) 100%);
+  }
+  
+  .bg-gradient-secondary {
+    background: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(207 90% 54%) 100%);
+  }
+  
+  .bg-gradient-accent {
+    background: linear-gradient(135deg, hsl(207 90% 54%) 0%, hsl(220 91% 65%) 100%);
+  }
+  
+  .bg-gradient-card {
+    background: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%);
+    border: 1px solid hsl(214.3 31.8% 91%);
+  }
+  
+  /* Colorful Navigation Accents */
+  .nav-accent-blue { background-color: hsl(207 90% 54%); }
+  .nav-accent-orange { background-color: hsl(32 95% 44%); }
+  .nav-accent-purple { background-color: hsl(271 81% 56%); }
+  .nav-accent-cyan { background-color: hsl(188 86% 53%); }
+  .nav-accent-pink { background-color: hsl(330 81% 60%); }
+  .nav-accent-indigo { background-color: hsl(231 48% 48%); }
+  .nav-accent-red { background-color: hsl(0 84% 60%); }
+  
+  /* Enhanced Card Styles */
+  .metric-card {
+    @apply bg-gradient-card rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300;
+    border: 1px solid hsl(214.3 31.8% 91%);
+  }
+  
+  .metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+  }
+  
+  /* Button Enhancements */
+  .btn-primary {
+    @apply bg-gradient-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300;
+  }
+  
+  .btn-secondary {
+    @apply bg-gradient-secondary text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
   }
-  body {
+  html, body {
+    margin: 0;
+    padding: 0;
     @apply bg-background text-foreground;
+  }
+  #root {
+    min-height: 100vh;
+    width: 100%;
   }
 }
 

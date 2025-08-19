@@ -21,10 +21,12 @@ import performanceRoutes from './routes/performance.routes'
 import recruitmentRoutes from './routes/recruitment.routes'
 import leaveRoutes from './routes/leave.routes'
 import auditRoutes from './routes/audit.routes'
+import { settingsRoutes } from './routes/settings.routes'
+import dashboardRoutes from './routes/dashboard.routes'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 
 const app = express()
-const PORT = process.env.PORT || 5001
+const PORT = process.env.PORT || 5003
 
 app.use(helmet())
 app.use(cors())
@@ -52,6 +54,8 @@ app.use('/api/performance', performanceRoutes)
 app.use('/api/recruitment', recruitmentRoutes)
 app.use('/api/leave', leaveRoutes)
 app.use('/api/audit', auditRoutes)
+app.use('/api/settings', settingsRoutes)
+app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/debug', debugRoutes)
 
 app.use(notFoundHandler)
@@ -63,6 +67,6 @@ app.listen(PORT, async () => {
   testConnection().catch((err) => {
     console.error('Background DB connectivity check failed:', err?.message || err)
   })
-})
+}) // Trigger restart - updated
 
 export default app

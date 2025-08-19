@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Toaster } from 'sonner'
+import { Toaster as RadixToaster } from './components/ui/toaster'
 import ProtectedRoute from './components/ProtectedRoute'
 
 // Import pages
@@ -14,20 +15,21 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import VerifyEmailPage from './pages/auth/VerifyEmailPage'
 
 // Dashboard layouts and pages
-import DashboardLayout from './components/layout/DashboardLayout'
-import DashboardHome from './pages/dashboard/DashboardHome'
-// import EmployeesPage from './pages/dashboard/EmployeesPage'
-// import TimeTrackingPage from './pages/dashboard/TimeTrackingPage'
-// import TasksPage from './pages/dashboard/TasksPage'
-// import ReportsPage from './pages/dashboard/ReportsPage'
-// import SettingsPage from './pages/dashboard/SettingsPage'
+import { AdminLayout } from './components/layout/AdminLayout'
+import { RoleBasedDashboard } from './components/dashboard/RoleBasedDashboard'
+import EmployeesPage from './pages/admin/EmployeesPage'
+import TimeTrackingPage from './pages/admin/TimeTrackingPage'
+import TaskAssignmentPage from './pages/admin/TaskAssignmentPage'
+import DepartmentsPage from './pages/admin/DepartmentsPage'
+import RolesPage from './pages/admin/RolesPage'
+import AnalyticsPage from './pages/admin/AnalyticsPage'
 
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 10, // 10 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
     },
   },
 })
@@ -38,6 +40,7 @@ function App() {
       <Router>
         <div className="min-h-screen bg-background">
           <Toaster position="top-right" richColors />
+          <RadixToaster />
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
@@ -50,21 +53,24 @@ function App() {
             {/* Dashboard Routes - Protected */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <DashboardLayout />
+                <AdminLayout />
               </ProtectedRoute>
             }>
-              <Route index element={<DashboardHome />} />
-              <Route path="employees" element={<div>Employees Page Placeholder</div>} />
-              <Route path="time-tracking" element={<div>Time Tracking Page Placeholder</div>} />
-              <Route path="tasks" element={<div>Tasks Page Placeholder</div>} />
+              <Route index element={<RoleBasedDashboard />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="employees" element={<EmployeesPage />} />
+              <Route path="departments" element={<DepartmentsPage />} />
+              <Route path="task-assignment" element={<TaskAssignmentPage />} />
+              <Route path="roles" element={<RolesPage />} />
+              <Route path="time-tracking" element={<TimeTrackingPage />} />
               <Route path="reports" element={
                 <ProtectedRoute requiredRoles={['super-admin', 'hr-admin', 'manager']}>
-                  <div>Reports Page Placeholder</div>
+                  <AnalyticsPage />
                 </ProtectedRoute>
               } />
               <Route path="settings" element={
                 <ProtectedRoute requiredRoles={['super-admin', 'hr-admin']}>
-                  <div>Settings Page Placeholder</div>
+                  <div>Settings Page - Coming Soon</div>
                 </ProtectedRoute>
               } />
             </Route>

@@ -114,7 +114,7 @@ const LandingPage = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
             {features.map((feature, index) => {
               const Icon = feature.icon
               return (
@@ -191,7 +191,7 @@ const LandingPage = () => {
               </Button>
             </Link>
             <Link to="/login">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-primary">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto border-white text-white bg-white/10 hover:bg-white hover:text-primary">
                 Sign In
               </Button>
             </Link>

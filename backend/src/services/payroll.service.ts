@@ -84,6 +84,14 @@ export interface UpdatePayrollRecordData {
   notes?: string
 }
 
+export interface UpdatePayrollPeriodData {
+  name?: string
+  startDate?: string
+  endDate?: string
+  payDate?: string
+  status?: 'draft' | 'processing' | 'approved' | 'paid' | 'cancelled'
+}
+
 export interface PayrollSearchFilters {
   employeeId?: string
   payrollPeriodId?: string

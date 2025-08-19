@@ -95,23 +95,23 @@ const DashboardHome = () => {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back!</h1>
-          <p className="text-gray-600 mt-1">Here's what's happening at your company today.</p>
+          <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
+          <p className="text-gray-600 mt-2 text-lg">Here's what's happening at your company today.</p>
         </div>
         <div className="mt-4 sm:mt-0">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button size="lg" className="shadow-md hover:shadow-lg transition-shadow">
+            <Plus className="mr-2 h-5 w-5" />
             Quick Action
           </Button>
         </div>
       </div>
 
-      {/* Stats Overview Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      {/* Stats Overview Grid - Mobile First: 2x2, Tablet: 2x2, Desktop: 4x1 */}
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
@@ -166,7 +166,7 @@ const DashboardHome = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Recent Activities */}
         <Card className="xl:col-span-2">
           <CardHeader>
@@ -175,8 +175,8 @@ const DashboardHome = () => {
               Latest updates from your team
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="pt-6">
+            <div className="space-y-6">
               {recentActivities.map((activity) => {
                 const Icon = activity.icon
                 return (
@@ -217,15 +217,15 @@ const DashboardHome = () => {
               Common tasks and shortcuts
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 gap-3">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 gap-4">
               {quickActions.map((action) => {
                 const Icon = action.icon
                 return (
                   <Link
                     key={action.title}
                     to={action.href}
-                    className="p-3 border rounded-lg hover:bg-gray-50 transition-colors group flex items-center space-x-3"
+                    className="p-4 border rounded-xl hover:bg-gray-50 hover:shadow-md transition-all duration-200 group flex items-center space-x-4"
                   >
                     <div className={`w-8 h-8 ${action.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0`}>
                       <Icon className="h-4 w-4 text-white" />
@@ -250,9 +250,9 @@ const DashboardHome = () => {
             Upcoming meetings and events
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100">
               <div className="flex items-center space-x-3">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 <div>
@@ -263,7 +263,7 @@ const DashboardHome = () => {
               <span className="text-sm font-medium text-blue-600">10:00 AM</span>
             </div>
             
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-100">
               <div className="flex items-center space-x-3">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <div>
@@ -274,7 +274,7 @@ const DashboardHome = () => {
               <span className="text-sm font-medium text-green-600">2:00 PM</span>
             </div>
             
-            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-100">
               <div className="flex items-center space-x-3">
                 <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                 <div>

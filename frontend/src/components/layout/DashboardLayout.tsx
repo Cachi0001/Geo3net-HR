@@ -77,16 +77,16 @@ const DashboardLayout = () => {
         fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex items-center justify-between h-16 px-6 border-b">
+        <div className="flex items-center justify-between h-16 px-6 border-b bg-gray-50/50">
           <div className="flex items-center space-x-3">
             <img 
               src="/logo.jpeg" 
               alt="Go3net Logo" 
-              className="h-8 w-8 rounded object-cover"
+              className="h-10 w-10 rounded-lg object-cover shadow-sm"
             />
             <div>
               <h1 className="text-lg font-bold text-gray-900">Go3net</h1>
-              <p className="text-xs text-gray-600">HR System</p>
+              <p className="text-xs text-gray-500 font-medium">HR System</p>
             </div>
           </div>
           <Button
@@ -99,8 +99,8 @@ const DashboardLayout = () => {
           </Button>
         </div>
 
-        <nav className="mt-6 px-3">
-          <ul className="space-y-1">
+        <nav className="mt-8 px-8">
+          <ul className="space-y-2">
             {filteredSidebarItems.map((item) => {
               const Icon = item.icon
               const isActive = location.pathname === item.href
@@ -110,16 +110,16 @@ const DashboardLayout = () => {
                   <Link
                     to={item.href}
                     className={`
-                      flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
+                      flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200
                       ${isActive 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        ? 'bg-primary text-primary-foreground shadow-sm' 
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm'
                       }
                     `}
                     onClick={() => setSidebarOpen(false)}
                   >
-                    <Icon className="mr-3 h-5 w-5" />
-                    {item.name}
+                    <Icon className="mr-4 h-5 w-5 flex-shrink-0" />
+                    <span className="truncate">{item.name}</span>
                   </Link>
                 </li>
               )
@@ -129,11 +129,11 @@ const DashboardLayout = () => {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Top header */}
-        <header className="bg-white shadow-sm border-b">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6">
-            <div className="flex items-center space-x-4">
+        <div className="lg:pl-64 flex flex-col min-h-screen">
+          {/* Top header */}
+          <header className="bg-white shadow-sm border-b flex-shrink-0">
+          <div className="flex items-center justify-between h-16 px-6 sm:px-8">
+            <div className="flex items-center space-x-6">
               <Button
                 variant="ghost"
                 size="icon"
@@ -149,14 +149,14 @@ const DashboardLayout = () => {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search..."
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="Search employees, tasks..."
+                    className="w-64 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               {/* Notifications */}
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
@@ -216,8 +216,10 @@ const DashboardLayout = () => {
         </header>
 
         {/* Page content */}
-        <main className="p-4 sm:p-6">
-          <Outlet />
+        <main className="flex-1 p-3 md:p-4 lg:p-6 overflow-x-hidden">
+          <div className="w-full h-full">
+            <Outlet />
+          </div>
         </main>
       </div>
 

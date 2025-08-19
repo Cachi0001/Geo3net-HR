@@ -25,10 +25,8 @@ router.post('/applications',
   recruitmentController.createJobApplication.bind(recruitmentController)
 )
 
-// Apply authentication to remaining routes
 router.use(authenticateToken)
 
-// Job Posting Management Routes (Authenticated)
 router.post('/jobs', 
   requireHRStaff,
   recruitmentController.createJobPosting.bind(recruitmentController)
@@ -54,7 +52,6 @@ router.delete('/jobs/:id',
   recruitmentController.deleteJobPosting.bind(recruitmentController)
 )
 
-// Job Application Management Routes
 router.get('/applications', 
   permissionMiddleware.requireAnyPermission(['recruitment.read', 'recruitment.manage']),
   recruitmentController.getJobApplications.bind(recruitmentController)
@@ -75,13 +72,11 @@ router.delete('/applications/:id',
   recruitmentController.deleteJobApplication.bind(recruitmentController)
 )
 
-// Job-specific application routes
 router.get('/jobs/:jobId/applications', 
   permissionMiddleware.requireAnyPermission(['recruitment.read', 'recruitment.manage']),
   recruitmentController.getJobApplicationsByJobId.bind(recruitmentController)
 )
 
-// Analytics and Reports
 router.get('/analytics', 
   permissionMiddleware.requireAnyPermission(['reports.generate', 'recruitment.manage']),
   recruitmentController.getRecruitmentAnalytics.bind(recruitmentController)

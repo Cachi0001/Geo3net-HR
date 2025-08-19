@@ -5,7 +5,7 @@ yarn-debug.log*
 yarn-error.log*
 public
 .kiro
-
+go3net-pulse
 # Environment variables
 .env
 .env.local
@@ -13,6 +13,7 @@ public
 .env.test.local
 .env.production.local
 .env.example
+.trae
 
 
 # Build outputs
