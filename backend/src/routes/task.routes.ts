@@ -1,103 +1,66 @@
-import { Router } from 'express'
-import { TaskController } from '../controllers/task.controller'
-import { authenticateToken } from '../middleware/auth'
-import { permissionMiddleware } from '../middleware/permission'
+import { Router } from 'express';
+import { TaskController } from '../controllers/task.controller';
+import { authenticateToken } from '../middleware/auth';
+import { permissionMiddleware } from '../middleware/permission';
 
-const router = Router()
-const taskController = new TaskController()
+const router = Router();
+const taskController = new TaskController();
 
 // Apply authentication to all routes
-router.use(authenticateToken)
+router.use(authenticateToken);
 
-// Task CRUD operations
-router.post(
-  '/',
-  permissionMiddleware.requireAnyPermission(['tasks.create', 'tasks.assign']),
-  taskController.createTask.bind(taskController)
-)
+/**
+ * Task Management Routes
+ * Access: All authenticated users can view/manage their tasks
+ * Managers and above can create/assign tasks to others
+ */
 
-router.get(
-  '/search',
-  permissionMiddleware.requirePermission('tasks.read'),
-  taskController.searchTasks.bind(taskController)
-)
+// Get task statistics for current user
+router.get('/stats',
+  taskController.getTaskStats.bind(taskController)
+);
 
-router.get(
-  '/my-tasks',
-  permissionMiddleware.requirePermission('tasks.read'),
+// Get tasks assigned to current user
+router.get('/my-tasks',
   taskController.getMyTasks.bind(taskController)
-)
+);
 
-router.get(
-  '/created-by-me',
-  permissionMiddleware.requireAnyPermission(['tasks.create', 'tasks.assign']),
-  taskController.getTasksCreatedByMe.bind(taskController)
-)
+// Get all tasks (with filtering) - Managers and above
+router.get('/',
+  permissionMiddleware.requireMinimumRole('manager'),
+  taskController.getTasks.bind(taskController)
+);
 
-router.get(
-  '/overdue',
-  permissionMiddleware.requireAnyPermission(['tasks.read', 'tasks.assign']),
-  taskController.getOverdueTasks.bind(taskController)
-)
-
-router.get(
-  '/statistics',
-  permissionMiddleware.requireAnyPermission(['tasks.read', 'tasks.assign', 'reports.generate']),
-  taskController.getTaskStatistics.bind(taskController)
-)
-
-router.get(
-  '/:id',
-  permissionMiddleware.requireResourcePermission({
-    resource: 'tasks',
-    action: 'read',
-    allowSelf: true
-  }),
+// Get task by ID
+router.get('/:id',
   taskController.getTaskById.bind(taskController)
-)
+);
 
-router.put(
-  '/:id',
-  permissionMiddleware.requireResourcePermission({
-    resource: 'tasks',
-    action: 'update',
-    allowSelf: true
-  }),
-  taskController.updateTask.bind(taskController)
-)
+// Get task comments
+router.get('/:id/comments',
+  taskController.getTaskComments.bind(taskController)
+);
 
-router.delete(
-  '/:id',
-  permissionMiddleware.requireAnyPermission(['tasks.delete', 'tasks.assign']),
-  taskController.deleteTask.bind(taskController)
-)
-
-// Task assignment operations
-router.patch(
-  '/:id/assign',
-  permissionMiddleware.requirePermission('tasks.assign'),
-  taskController.assignTask.bind(taskController)
-)
-
-router.patch(
-  '/:id/status',
-  permissionMiddleware.requireResourcePermission({
-    resource: 'tasks',
-    action: 'update',
-    allowSelf: true
-  }),
-  taskController.updateTaskStatus.bind(taskController)
-)
-
-// Task comments
-router.post(
-  '/:id/comments',
-  permissionMiddleware.requireResourcePermission({
-    resource: 'tasks',
-    action: 'read',
-    allowSelf: true
-  }),
+// Add comment to task
+router.post('/:id/comments',
   taskController.addTaskComment.bind(taskController)
-)
+);
 
-export default router
+// Create new task - Managers and above
+router.post('/',
+  permissionMiddleware.requireMinimumRole('manager'),
+  taskController.createTask.bind(taskController)
+);
+
+// Update task - Task assignee or Managers and above
+router.put('/:id',
+  taskController.updateTask.bind(taskController)
+);
+
+// Delete task - HR Admin and above
+router.delete('/:id',
+  permissionMiddleware.requireMinimumRole('hr-admin'),
+  taskController.deleteTask.bind(taskController)
+);
+
+export default router;

@@ -1,275 +1,460 @@
-import { Request, Response } from 'express'
-import { TaskService, CreateTaskData, UpdateTaskData, TaskSearchFilters } from '../services/task.service'
-import { ResponseHandler } from '../utils/response'
-import { ValidationError, NotFoundError, ConflictError } from '../utils/errors'
-import { AuthenticatedRequest } from '../middleware/permission'
+import { Request, Response } from 'express';
+import { supabase } from '../config/database';
+import { ResponseHandler } from '../utils/response';
+import { AppError } from '../utils/errors';
+import { AuthenticatedRequest } from '../middleware/permission';
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  assigned_to: string;
+  assigned_by: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'todo' | 'in_progress' | 'completed' | 'cancelled';
+  due_date?: string;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateTaskRequest {
+  title: string;
+  description?: string;
+  assigned_to: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  status?: 'todo' | 'in_progress' | 'completed' | 'cancelled';
+  due_date?: string;
+}
 
 export class TaskController {
-  private taskService: TaskService
-
-  constructor() {
-    this.taskService = new TaskService()
-  }
-
-  async createTask(req: AuthenticatedRequest, res: Response): Promise<void> {
+  /**
+   * Get all tasks with filtering and pagination
+   */
+  async getTasks(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
-      const taskData: CreateTaskData = {
-        title: req.body.title,
-        description: req.body.description,
-        assignedTo: req.body.assignedTo,
-        priority: req.body.priority,
-        dueDate: req.body.dueDate,
-        startDate: req.body.startDate,
-        estimatedHours: req.body.estimatedHours,
-        tags: req.body.tags,
-        dependencies: req.body.dependencies,
-        projectId: req.body.projectId,
-        departmentId: req.body.departmentId
+      const userId = req.user?.id;
+      const { 
+        status, 
+        priority, 
+        assigned_to, 
+        assigned_by, 
+        page = 1, 
+        limit = 20,
+        search 
+      } = req.query;
+      
+      console.log('📋 Fetching tasks for user:', userId);
+      
+      let query = supabase
+        .from('tasks')
+        .select(`
+          *,
+          assigned_to_user:assigned_to (
+            id,
+            fullName,
+            email
+          ),
+          assigned_by_user:assigned_by (
+            id,
+            fullName,
+            email
+          )
+        `);
+
+      // Apply filters
+      if (status) {
+        query = query.eq('status', status);
+      }
+      
+      if (priority) {
+        query = query.eq('priority', priority);
+      }
+      
+      if (assigned_to) {
+        query = query.eq('assigned_to', assigned_to);
+      }
+      
+      if (assigned_by) {
+        query = query.eq('assigned_by', assigned_by);
+      }
+      
+      if (search) {
+        query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+      }
+      
+      // Apply pagination
+      const offset = (Number(page) - 1) * Number(limit);
+      query = query.range(offset, offset + Number(limit) - 1);
+      
+      // Order by created_at desc
+      query = query.order('created_at', { ascending: false });
+
+      const { data: tasks, error, count } = await query;
+
+      if (error) {
+        console.error('❌ Error fetching tasks:', error);
+        throw new AppError('Failed to fetch tasks', 500);
       }
 
-      const result = await this.taskService.createTask(taskData, req.user!.id)
-
-      ResponseHandler.success(res, result.message, result.task, 201)
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        ResponseHandler.badRequest(res, error.message, error.errors)
-      } else {
-        ResponseHandler.error(res, 'Failed to create task')
-      }
+      console.log(`✅ Found ${tasks?.length || 0} tasks`);
+      return ResponseHandler.success(res, 'Tasks retrieved successfully', {
+        tasks: tasks || [],
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total: count || 0,
+          totalPages: Math.ceil((count || 0) / Number(limit))
+        }
+      });
+    } catch (error: any) {
+      console.error('❌ Get tasks error:', error);
+      return ResponseHandler.internalError(res, error.message || 'Failed to retrieve tasks');
     }
   }
 
-  async getTaskById(req: AuthenticatedRequest, res: Response): Promise<void> {
+  /**
+   * Get tasks assigned to current user
+   */
+  async getMyTasks(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
-      const { id } = req.params
-      const task = await this.taskService.getTaskById(id)
+      const userId = req.user?.id;
+      const { status } = req.query;
+      
+      console.log('👤 Fetching tasks for user:', userId);
+      
+      let query = supabase
+        .from('tasks')
+        .select(`
+          *,
+          assigned_by_user:assigned_by (
+            id,
+            fullName,
+            email
+          )
+        `)
+        .eq('assigned_to', userId);
 
-      if (!task) {
-        ResponseHandler.notFound(res, 'Task not found')
-        return
+      if (status) {
+        query = query.eq('status', status);
       }
+      
+      query = query.order('created_at', { ascending: false });
 
-      ResponseHandler.success(res, 'Task retrieved successfully', task)
-    } catch (error) {
-      ResponseHandler.error(res, 'Failed to retrieve task')
-    }
-  }
+      const { data: tasks, error } = await query;
 
-  async updateTask(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params
-      const updateData: UpdateTaskData = {
-        title: req.body.title,
-        description: req.body.description,
-        assignedTo: req.body.assignedTo,
-        status: req.body.status,
-        priority: req.body.priority,
-        dueDate: req.body.dueDate,
-        startDate: req.body.startDate,
-        completedDate: req.body.completedDate,
-        estimatedHours: req.body.estimatedHours,
-        actualHours: req.body.actualHours,
-        tags: req.body.tags,
-        dependencies: req.body.dependencies,
-        projectId: req.body.projectId,
-        departmentId: req.body.departmentId
-      }
-
-      const result = await this.taskService.updateTask(id, updateData, req.user!.id)
-
-      ResponseHandler.success(res, result.message, result.task)
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        ResponseHandler.notFound(res, error.message)
-      } else if (error instanceof ValidationError) {
-        ResponseHandler.badRequest(res, error.message, error.errors)
-      } else {
-        ResponseHandler.error(res, 'Failed to update task')
-      }
-    }
-  }
-
-  async deleteTask(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params
-      const result = await this.taskService.deleteTask(id, req.user!.id)
-
-      ResponseHandler.success(res, result.message)
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        ResponseHandler.notFound(res, error.message)
-      } else if (error instanceof ConflictError) {
-        ResponseHandler.conflict(res, error.message)
-      } else {
-        ResponseHandler.error(res, 'Failed to delete task')
-      }
-    }
-  }
-
-  async searchTasks(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      const filters: TaskSearchFilters = {
-        assignedTo: req.query.assignedTo as string,
-        assignedBy: req.query.assignedBy as string,
-        status: req.query.status as string,
-        priority: req.query.priority as string,
-        departmentId: req.query.departmentId as string,
-        projectId: req.query.projectId as string,
-        dueDateFrom: req.query.dueDateFrom as string,
-        dueDateTo: req.query.dueDateTo as string,
-        search: req.query.search as string,
-        tags: req.query.tags ? (req.query.tags as string).split(',') : undefined,
-        limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
-        offset: req.query.offset ? parseInt(req.query.offset as string) : undefined,
-        sortBy: req.query.sortBy as any,
-        sortOrder: req.query.sortOrder as 'asc' | 'desc'
+      if (error) {
+        console.error('❌ Error fetching user tasks:', error);
+        throw new AppError('Failed to fetch tasks', 500);
       }
 
-      const result = await this.taskService.searchTasks(filters)
-
-      ResponseHandler.success(res, result.message, {
-        tasks: result.tasks,
-        total: result.total,
-        limit: filters.limit,
-        offset: filters.offset
-      })
-    } catch (error) {
-      ResponseHandler.error(res, 'Failed to search tasks')
+      console.log(`✅ Found ${tasks?.length || 0} tasks for user`);
+      return ResponseHandler.success(res, 'User tasks retrieved successfully', tasks || []);
+    } catch (error: any) {
+      console.error('❌ Get user tasks error:', error);
+      return ResponseHandler.internalError(res, error.message || 'Failed to retrieve user tasks');
     }
   }
 
-  async getMyTasks(req: AuthenticatedRequest, res: Response): Promise<void> {
+  /**
+   * Get task by ID
+   */
+  async getTaskById(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
-      const { status } = req.query
-      const tasks = await this.taskService.getTasksByAssignee(
-        req.user!.id, 
-        status as string
-      )
+      const { id } = req.params;
+      console.log('📋 Fetching task:', id);
 
-      ResponseHandler.success(res, 'Tasks retrieved successfully', tasks)
-    } catch (error) {
-      ResponseHandler.error(res, 'Failed to retrieve tasks')
-    }
-  }
+      const { data: task, error } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          assigned_to_user:assigned_to (
+            id,
+            fullName,
+            email
+          ),
+          assigned_by_user:assigned_by (
+            id,
+            fullName,
+            email
+          )
+        `)
+        .eq('id', id)
+        .single();
 
-  async getTasksCreatedByMe(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      const { status } = req.query
-      const tasks = await this.taskService.getTasksByCreator(
-        req.user!.id, 
-        status as string
-      )
-
-      ResponseHandler.success(res, 'Tasks retrieved successfully', tasks)
-    } catch (error) {
-      ResponseHandler.error(res, 'Failed to retrieve tasks')
-    }
-  }
-
-  async getOverdueTasks(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      const tasks = await this.taskService.getOverdueTasks()
-
-      ResponseHandler.success(res, 'Overdue tasks retrieved successfully', tasks)
-    } catch (error) {
-      ResponseHandler.error(res, 'Failed to retrieve overdue tasks')
-    }
-  }
-
-  async getTaskStatistics(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      const filters = {
-        assignedTo: req.query.assignedTo as string,
-        departmentId: req.query.departmentId as string,
-        projectId: req.query.projectId as string
+      if (error) {
+        console.error('❌ Error fetching task:', error);
+        if (error.code === 'PGRST116') {
+          return ResponseHandler.notFound(res, 'Task not found');
+        }
+        throw new AppError('Failed to fetch task', 500);
       }
 
-      const stats = await this.taskService.getTaskStatistics(filters)
-
-      ResponseHandler.success(res, 'Task statistics retrieved successfully', stats)
-    } catch (error) {
-      ResponseHandler.error(res, 'Failed to retrieve task statistics')
+      console.log('✅ Task found:', task.title);
+      return ResponseHandler.success(res, 'Task retrieved successfully', task);
+    } catch (error: any) {
+      console.error('❌ Get task error:', error);
+      return ResponseHandler.internalError(res, error.message || 'Failed to retrieve task');
     }
   }
 
-  async addTaskComment(req: AuthenticatedRequest, res: Response): Promise<void> {
+  /**
+   * Create new task
+   */
+  async createTask(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
-      const { id } = req.params
-      const { comment } = req.body
+      const userId = req.user?.id;
+      const taskData: CreateTaskRequest = req.body;
+      
+      console.log('➕ Creating task:', taskData.title);
+
+      // Validate required fields
+      if (!taskData.title || !taskData.assigned_to) {
+        return ResponseHandler.badRequest(res, 'Title and assigned user are required');
+      }
+
+      const newTask = {
+        ...taskData,
+        assigned_by: userId,
+        priority: taskData.priority || 'medium',
+        status: taskData.status || 'todo',
+      };
+
+      const { data: task, error } = await supabase
+        .from('tasks')
+        .insert([newTask])
+        .select(`
+          *,
+          assigned_to_user:assigned_to (
+            id,
+            fullName,
+            email
+          ),
+          assigned_by_user:assigned_by (
+            id,
+            fullName,
+            email
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('❌ Error creating task:', error);
+        throw new AppError('Failed to create task', 500);
+      }
+
+      console.log('✅ Task created:', task.id);
+      return ResponseHandler.created(res, 'Task created successfully', task);
+    } catch (error: any) {
+      console.error('❌ Create task error:', error);
+      return ResponseHandler.internalError(res, error.message || 'Failed to create task');
+    }
+  }
+
+  /**
+   * Update task
+   */
+  async updateTask(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const { id } = req.params;
+      const updateData: Partial<CreateTaskRequest> = req.body;
+      
+      console.log('✏️ Updating task:', id);
+
+      // If status is being changed to completed, set completed_at
+      if (updateData.status === 'completed') {
+        (updateData as any).completed_at = new Date().toISOString();
+      } else if (updateData.status && ['todo', 'in_progress', 'cancelled'].includes(updateData.status)) {
+        (updateData as any).completed_at = null;
+      }
+
+      const { data: task, error } = await supabase
+        .from('tasks')
+        .update(updateData)
+        .eq('id', id)
+        .select(`
+          *,
+          assigned_to_user:assigned_to (
+            id,
+            fullName,
+            email
+          ),
+          assigned_by_user:assigned_by (
+            id,
+            fullName,
+            email
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('❌ Error updating task:', error);
+        if (error.code === 'PGRST116') {
+          return ResponseHandler.notFound(res, 'Task not found');
+        }
+        throw new AppError('Failed to update task', 500);
+      }
+
+      console.log('✅ Task updated:', task.title);
+      return ResponseHandler.success(res, 'Task updated successfully', task);
+    } catch (error: any) {
+      console.error('❌ Update task error:', error);
+      return ResponseHandler.internalError(res, error.message || 'Failed to update task');
+    }
+  }
+
+  /**
+   * Delete task
+   */
+  async deleteTask(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const { id } = req.params;
+      console.log('🗑️ Deleting task:', id);
+
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('❌ Error deleting task:', error);
+        throw new AppError('Failed to delete task', 500);
+      }
+
+      console.log('✅ Task deleted');
+      return ResponseHandler.success(res, 'Task deleted successfully');
+    } catch (error: any) {
+      console.error('❌ Delete task error:', error);
+      return ResponseHandler.internalError(res, error.message || 'Failed to delete task');
+    }
+  }
+
+  /**
+   * Get task comments
+   */
+  async getTaskComments(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const { id } = req.params;
+      console.log('💬 Fetching comments for task:', id);
+
+      const { data: comments, error } = await supabase
+        .from('task_comments')
+        .select(`
+          *,
+          user:user_id (
+            id,
+            fullName,
+            email
+          )
+        `)
+        .eq('task_id', id)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('❌ Error fetching task comments:', error);
+        throw new AppError('Failed to fetch task comments', 500);
+      }
+
+      console.log(`✅ Found ${comments?.length || 0} comments`);
+      return ResponseHandler.success(res, 'Task comments retrieved successfully', comments || []);
+    } catch (error: any) {
+      console.error('❌ Get task comments error:', error);
+      return ResponseHandler.internalError(res, error.message || 'Failed to retrieve task comments');
+    }
+  }
+
+  /**
+   * Add comment to task
+   */
+  async addTaskComment(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const { id } = req.params;
+      const { comment } = req.body;
+      const userId = req.user?.id;
+      
+      console.log('💬 Adding comment to task:', id);
 
       if (!comment || !comment.trim()) {
-        ResponseHandler.badRequest(res, 'Comment is required')
-        return
+        return ResponseHandler.badRequest(res, 'Comment is required');
       }
 
-      const result = await this.taskService.addTaskComment(id, comment.trim(), req.user!.id)
+      const { data: newComment, error } = await supabase
+        .from('task_comments')
+        .insert([{
+          task_id: id,
+          user_id: userId,
+          comment: comment.trim()
+        }])
+        .select(`
+          *,
+          user:user_id (
+            id,
+            fullName,
+            email
+          )
+        `)
+        .single();
 
-      ResponseHandler.success(res, result.message, result.comment, 201)
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        ResponseHandler.notFound(res, error.message)
-      } else {
-        ResponseHandler.error(res, 'Failed to add comment')
+      if (error) {
+        console.error('❌ Error adding task comment:', error);
+        throw new AppError('Failed to add task comment', 500);
       }
+
+      console.log('✅ Comment added to task');
+      return ResponseHandler.created(res, 'Comment added successfully', newComment);
+    } catch (error: any) {
+      console.error('❌ Add task comment error:', error);
+      return ResponseHandler.internalError(res, error.message || 'Failed to add task comment');
     }
   }
 
-  async assignTask(req: AuthenticatedRequest, res: Response): Promise<void> {
+  /**
+   * Get task statistics
+   */
+  async getTaskStats(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
-      const { id } = req.params
-      const { assignedTo } = req.body
+      const userId = req.user?.id;
+      console.log('📊 Fetching task statistics for user:', userId);
 
-      if (!assignedTo) {
-        ResponseHandler.badRequest(res, 'Assignee is required')
-        return
+      // Get task counts by status
+      const { data: statusStats, error: statusError } = await supabase
+        .from('tasks')
+        .select('status')
+        .eq('assigned_to', userId);
+
+      if (statusError) {
+        console.error('❌ Error fetching status stats:', statusError);
+        throw new AppError('Failed to fetch task statistics', 500);
       }
 
-      const result = await this.taskService.updateTask(
-        id, 
-        { assignedTo }, 
-        req.user!.id
-      )
+      // Count tasks by status
+      const stats = {
+        total: statusStats?.length || 0,
+        todo: statusStats?.filter(t => t.status === 'todo').length || 0,
+        in_progress: statusStats?.filter(t => t.status === 'in_progress').length || 0,
+        completed: statusStats?.filter(t => t.status === 'completed').length || 0,
+        cancelled: statusStats?.filter(t => t.status === 'cancelled').length || 0,
+        overdue: 0
+      };
 
-      ResponseHandler.success(res, 'Task assigned successfully', result.task)
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        ResponseHandler.notFound(res, error.message)
-      } else if (error instanceof ValidationError) {
-        ResponseHandler.badRequest(res, error.message, error.errors)
-      } else {
-        ResponseHandler.error(res, 'Failed to assign task')
-      }
-    }
-  }
+      // Get overdue tasks
+      const { data: overdueTasks, error: overdueError } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('assigned_to', userId)
+        .lt('due_date', new Date().toISOString())
+        .neq('status', 'completed')
+        .neq('status', 'cancelled');
 
-  async updateTaskStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params
-      const { status, completionNotes } = req.body
-
-      if (!status) {
-        ResponseHandler.badRequest(res, 'Status is required')
-        return
+      if (!overdueError) {
+        stats.overdue = overdueTasks?.length || 0;
       }
 
-      const updateData: UpdateTaskData = { status }
-      
-      // Add completion notes if task is being completed
-      if (status === 'completed' && completionNotes) {
-        updateData.actualHours = req.body.actualHours
-      }
-
-      const result = await this.taskService.updateTask(id, updateData, req.user!.id)
-
-      ResponseHandler.success(res, 'Task status updated successfully', result.task)
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        ResponseHandler.notFound(res, error.message)
-      } else if (error instanceof ValidationError) {
-        ResponseHandler.badRequest(res, error.message, error.errors)
-      } else {
-        ResponseHandler.error(res, 'Failed to update task status')
-      }
+      console.log('✅ Task statistics retrieved');
+      return ResponseHandler.success(res, 'Task statistics retrieved successfully', stats);
+    } catch (error: any) {
+      console.error('❌ Get task stats error:', error);
+      return ResponseHandler.internalError(res, error.message || 'Failed to retrieve task statistics');
     }
   }
 }

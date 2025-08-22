@@ -26,7 +26,7 @@ import DepartmentsPage from './pages/admin/DepartmentsPage'
 import RolesPage from './pages/admin/RolesPage'
 import AnalyticsPage from './pages/admin/AnalyticsPage'
 import PayrollPage from './pages/admin/PayrollPage'
-import SettingsPage from './pages/dashboard/SettingsPage'
+import SettingsPage from './pages/admin/SettingsPage'
 import RecruitmentPage from './pages/dashboard/RecruitmentPage'
 import SecurityPage from './pages/dashboard/SecurityPage'
 import ProfilePage from './pages/dashboard/ProfilePage'
@@ -112,6 +112,11 @@ function App() {
               <Route path="reports" element={
                 <ProtectedRoute requiredRoles={['super-admin', 'hr-admin', 'manager']}>
                   <AnalyticsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="settings" element={
+                <ProtectedRoute requiredRoles={['super-admin', 'hr-admin']}>
+                  <SettingsPage />
                 </ProtectedRoute>
               } />
               <Route path="settings/:tab" element={

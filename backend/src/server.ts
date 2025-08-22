@@ -20,11 +20,12 @@ import debugRoutes from './routes/debug.routes'
 import payrollRoutes from './routes/payroll.routes'
 import performanceRoutes from './routes/performance.routes'
 import recruitmentRoutes from './routes/recruitment.routes'
-import leaveRoutes from './routes/leave.routes'
+// import leaveRoutes from './routes/leave.routes' // Temporarily disabled until leave service is implemented
 import auditRoutes from './routes/audit.routes'
 import { settingsRoutes } from './routes/settings.routes'
 import dashboardRoutes from './routes/dashboard.routes'
 import { departmentRoutes } from './routes/department.routes'
+import attendancePolicyRoutes from './routes/attendancePolicy.routes'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -60,11 +61,12 @@ app.use('/api/notifications', notificationRoutes)
 app.use('/api/payroll', payrollRoutes)
 app.use('/api/performance', performanceRoutes)
 app.use('/api/recruitment', recruitmentRoutes)
-app.use('/api/leave', leaveRoutes)
+// app.use('/api/leave', leaveRoutes) // Temporarily disabled until leave service is implemented
 app.use('/api/audit', auditRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/departments', departmentRoutes)
+app.use('/api/attendance-policies', attendancePolicyRoutes)
 app.use('/api/debug', debugRoutes)
 
 app.use(notFoundHandler)

@@ -262,21 +262,31 @@ const TimeTrackingPage: React.FC = () => {
         timestamp: new Date().toISOString()
       };
 
-      // TODO: Replace with actual API call
-      const newEntry: TimeEntry = {
-        id: Date.now().toString(),
-        date: new Date().toISOString().split('T')[0],
-        checkInTime: new Date().toISOString(),
-        totalHours: 0,
-        status: 'checked_in',
-        location: checkInData.location,
-        notes: checkInData.notes,
-        deviceInfo: checkInData.deviceInfo
-      };
+      // Call the actual API endpoint
+      console.log('🔄 Calling check-in API...');
+      const response = await apiClient.checkIn(checkInData.location);
+      
+      if (response.success && response.data) {
+        console.log('✅ Check-in successful:', response.data);
+        
+        // Create new time entry from API response
+        const newEntry: TimeEntry = {
+          id: response.data.id || Date.now().toString(),
+          date: new Date().toISOString().split('T')[0],
+          checkInTime: response.data.check_in_time || new Date().toISOString(),
+          totalHours: 0,
+          status: 'checked_in',
+          location: checkInData.location,
+          notes: checkInData.notes,
+          deviceInfo: checkInData.deviceInfo
+        };
 
-      setActiveEntry(newEntry);
-      setTimeEntries(prev => [newEntry, ...prev]);
-      setCheckInNotes('');
+        setActiveEntry(newEntry);
+        setTimeEntries(prev => [newEntry, ...prev]);
+        setCheckInNotes('');
+      } else {
+        throw new Error(response.message || 'Check-in failed');
+      }
 
       toast({
         title: 'Checked In Successfully',
@@ -303,23 +313,35 @@ const TimeTrackingPage: React.FC = () => {
       setIsCheckingOut(true);
       
       const position = await getCurrentLocation();
-      const checkOutTime = new Date();
-      const checkInTime = new Date(activeEntry.checkInTime!);
-      const totalHours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
+      const { latitude, longitude } = position.coords;
+      
+      // Call the actual API endpoint
+      console.log('🔄 Calling check-out API...');
+      const response = await apiClient.checkOut({ latitude, longitude });
+      
+      if (response.success && response.data) {
+        console.log('✅ Check-out successful:', response.data);
+        
+        const checkOutTime = new Date();
+        const checkInTime = new Date(activeEntry.checkInTime!);
+        const totalHours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
 
-      const updatedEntry: TimeEntry = {
-        ...activeEntry,
-        checkOutTime: checkOutTime.toISOString(),
-        totalHours: Math.round(totalHours * 100) / 100,
-        status: 'checked_out',
-        notes: activeEntry.notes + (checkOutNotes ? ` | Checkout: ${checkOutNotes}` : '')
-      };
+        const updatedEntry: TimeEntry = {
+          ...activeEntry,
+          checkOutTime: response.data.check_out_time || checkOutTime.toISOString(),
+          totalHours: response.data.hours_worked || Math.round(totalHours * 100) / 100,
+          status: 'checked_out',
+          notes: activeEntry.notes + (checkOutNotes ? ` | Checkout: ${checkOutNotes}` : '')
+        };
 
-      setActiveEntry(null);
-      setTimeEntries(prev => prev.map(entry => 
-        entry.id === activeEntry.id ? updatedEntry : entry
-      ));
-      setCheckOutNotes('');
+        setActiveEntry(null);
+        setTimeEntries(prev => prev.map(entry => 
+          entry.id === activeEntry.id ? updatedEntry : entry
+        ));
+        setCheckOutNotes('');
+      } else {
+        throw new Error(response.message || 'Check-out failed');
+      }
 
       toast({
         title: 'Checked Out Successfully',
