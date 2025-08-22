@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
 import { 
   Users, 
@@ -170,9 +171,12 @@ const DashboardLayout = () => {
                   className="flex items-center space-x-2 px-3"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                 >
-                  <div className="h-8 w-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
-                    {getInitials(user.fullName)}
-                  </div>
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.avatar || ''} alt={user.fullName} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
+                      {getInitials(user.fullName)}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="hidden sm:block text-left">
                     <p className="text-sm font-medium text-gray-900">{user.fullName}</p>
                     <p className="text-xs text-gray-500">{user.email}</p>

@@ -142,7 +142,7 @@ const SystemConfiguration = () => {
   // Load initial configuration
   useEffect(() => {
     loadConfiguration()
-  }, [])
+  }, [loadConfiguration])
 
   const loadConfiguration = async () => {
     try {

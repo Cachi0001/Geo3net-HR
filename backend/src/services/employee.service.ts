@@ -46,6 +46,8 @@ export interface CreateEmployeeData {
   skills?: string[]
   notes?: string
   sendInvitation?: boolean
+  accountSetupMethod?: 'email_invitation' | 'manual_setup'
+  password?: string
 }
 
 export interface UpdateEmployeeData {
@@ -82,6 +84,13 @@ export interface EmployeeResult {
   employees?: Employee[]
   total?: number
   temporaryPassword?: string
+}
+
+export interface EmployeeAccessContext {
+  userId: string
+  role: string
+  permissions: string[]
+  isOwner?: boolean
 }
 
 export class EmployeeService {
@@ -136,17 +145,25 @@ export class EmployeeService {
 
       const employee = this.mapDatabaseToEmployee(newEmployee)
 
-      // Send invitation if requested
       let temporaryPassword: string | undefined
-      if (data.sendInvitation) {
+      let userAccountCreated = false
+
+      // Handle account setup based on method
+      if (data.accountSetupMethod === 'manual_setup' && data.password) {
+        // Create user account with provided password
+        temporaryPassword = await this.createUserAccountWithPassword(employee, data.password, createdBy)
+        userAccountCreated = true
+      } else if (data.sendInvitation || data.accountSetupMethod === 'email_invitation') {
+        // Send invitation with temporary password
         temporaryPassword = await this.sendEmployeeInvitation(employee, createdBy)
+        userAccountCreated = true
       }
 
       return {
         success: true,
-        message: 'Employee created successfully',
+        message: `Employee created successfully${userAccountCreated ? ' with user account' : ''}`,
         employee,
-        temporaryPassword
+        temporaryPassword: temporaryPassword && data.accountSetupMethod === 'email_invitation' ? temporaryPassword : undefined
       }
     } catch (error) {
       if (error instanceof ConflictError || error instanceof ValidationError) {
@@ -156,7 +173,7 @@ export class EmployeeService {
     }
   }
 
-  async getEmployeeById(id: string): Promise<Employee | null> {
+  async getEmployeeById(id: string, accessContext?: EmployeeAccessContext): Promise<Employee | null> {
     try {
       const { data, error } = await supabase
         .from('employees')
@@ -171,13 +188,20 @@ export class EmployeeService {
 
       if (error || !data) return null
 
-      return this.mapDatabaseToEmployee(data)
+      const employee = this.mapDatabaseToEmployee(data)
+      
+      // Apply role-based data filtering if access context is provided
+      if (accessContext) {
+        return this.filterEmployeeDataByRole(employee, accessContext)
+      }
+      
+      return employee
     } catch (error) {
       return null
     }
   }
 
-  async getEmployeeByEmployeeId(employeeId: string): Promise<Employee | null> {
+  async getEmployeeByEmployeeId(employeeId: string, accessContext?: EmployeeAccessContext): Promise<Employee | null> {
     try {
       const { data, error } = await supabase
         .from('employees')
@@ -192,7 +216,14 @@ export class EmployeeService {
 
       if (error || !data) return null
 
-      return this.mapDatabaseToEmployee(data)
+      const employee = this.mapDatabaseToEmployee(data)
+      
+      // Apply role-based data filtering if access context is provided
+      if (accessContext) {
+        return this.filterEmployeeDataByRole(employee, accessContext)
+      }
+      
+      return employee
     } catch (error) {
       return null
     }
@@ -306,7 +337,7 @@ export class EmployeeService {
     }
   }
 
-  async searchEmployees(filters: EmployeeSearchFilters): Promise<EmployeeResult> {
+  async searchEmployees(filters: EmployeeSearchFilters, accessContext?: EmployeeAccessContext): Promise<EmployeeResult> {
     try {
       const _ts = new Date().toISOString()
       try {
@@ -370,7 +401,12 @@ export class EmployeeService {
         throw error
       }
 
-      const employees = data?.map(emp => this.mapDatabaseToEmployee(emp)) || []
+      let employees = data?.map(emp => this.mapDatabaseToEmployee(emp)) || []
+      
+      // Apply role-based data filtering if access context is provided
+      if (accessContext) {
+        employees = employees.map(emp => this.filterEmployeeDataByRole(emp, accessContext))
+      }
 
       try {
         console.log(`[EMPLOYEES][${_ts}] searchEmployees success -> rows=${employees.length} total=${count ?? 0}`)
@@ -482,6 +518,51 @@ export class EmployeeService {
     }
   }
 
+  private async createUserAccountWithPassword(employee: Employee, password: string, createdBy: string): Promise<string> {
+    try {
+      // Import hash function here to avoid circular dependency
+      const { hashPassword } = await import('../utils/password')
+      
+      // Hash the provided password
+      const hashedPassword = await hashPassword(password)
+
+      // Create user account for the employee
+      const { data: newUser, error } = await supabase
+        .from('users')
+        .insert({
+          email: employee.email,
+          full_name: employee.fullName,
+          employee_id: employee.employeeId,
+          password_hash: hashedPassword,
+          is_temporary_password: false,
+          account_status: 'active', // Account is immediately active
+          status: 'active',
+          created_by: createdBy
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Failed to create user account:', error)
+        throw new Error(`Failed to create user account: ${error.message}`)
+      }
+
+      // Link employee to user
+      await supabase
+        .from('employees')
+        .update({ user_id: newUser.id })
+        .eq('id', employee.id)
+
+      // Assign default employee role
+      await this.roleService.assignDefaultRole(newUser.id)
+
+      return password // Return the original password for confirmation
+    } catch (error: any) {
+      console.error('Error in createUserAccountWithPassword:', error)
+      throw new Error('Failed to create user account with password')
+    }
+  }
+
   private async generateEmployeeId(): Promise<string> {
     const prefix = 'EMP'
     const timestamp = Date.now().toString().slice(-6)
@@ -515,6 +596,95 @@ export class EmployeeService {
     }
   }
 
+  async linkUserToEmployee(employeeId: string, userId: string): Promise<EmployeeResult> {
+    try {
+      // Check if employee exists
+      const existingEmployee = await this.getEmployeeById(employeeId)
+      if (!existingEmployee) {
+        throw new NotFoundError('Employee not found')
+      }
+
+      // Check if employee already has a user linked
+      if (existingEmployee.userId) {
+        throw new ConflictError('Employee already has a user account linked')
+      }
+
+      // Update employee record to link user
+      const { data: updatedEmployee, error } = await supabase
+        .from('employees')
+        .update({
+          user_id: userId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', employeeId)
+        .select(`
+          *,
+          department:departments(id, name),
+          position:positions(id, title),
+          manager:employees!manager_id(id, full_name, employee_id)
+        `)
+        .single()
+
+      if (error) throw error
+
+      const employee = this.mapDatabaseToEmployee(updatedEmployee)
+
+      return {
+        success: true,
+        message: 'User linked to employee successfully',
+        employee
+      }
+    } catch (error) {
+      if (error instanceof NotFoundError || error instanceof ConflictError) {
+        throw error
+      }
+      throw new Error('Failed to link user to employee')
+    }
+  }
+
+  async activateEmployeeAccount(employeeId: string, activatedBy: string): Promise<EmployeeResult> {
+    try {
+      // Get employee details
+      const employee = await this.getEmployeeById(employeeId)
+      if (!employee) {
+        throw new NotFoundError('Employee not found')
+      }
+
+      if (!employee.userId) {
+        throw new ValidationError('Employee does not have a user account to activate')
+      }
+
+      // Update user account status to active
+      const { data: updatedUser, error: userError } = await supabase
+        .from('users')
+        .update({
+          account_status: 'active',
+          status: 'active',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', employee.userId)
+        .select()
+        .single()
+
+      if (userError) {
+        console.error('Failed to update user account:', userError)
+        throw new Error(`Failed to activate user account: ${userError.message}`)
+      }
+
+      return {
+        success: true,
+        message: 'Employee account activated successfully',
+        employee
+      }
+    } catch (error) {
+      if (error instanceof NotFoundError || error instanceof ValidationError) {
+        throw error
+      }
+      console.error('Error in activateEmployeeAccount:', error)
+      throw new Error('Failed to activate employee account')
+    }
+  }
+
   private mapDatabaseToEmployee(data: any): Employee {
     return {
       id: data.id,
@@ -540,6 +710,63 @@ export class EmployeeService {
       updatedAt: data.updated_at,
       createdBy: data.created_by,
       updatedBy: data.updated_by
+    }
+  }
+
+  private filterEmployeeDataByRole(employee: Employee, accessContext: EmployeeAccessContext): Employee {
+    // If user is viewing their own profile, return full data
+    if (employee.userId === accessContext.userId || accessContext.isOwner) {
+      return employee
+    }
+
+    // Super-admin gets full access to all data
+    if (accessContext.role === 'super-admin' || accessContext.permissions.includes('employees:read:all')) {
+      return employee
+    }
+
+    // HR-admin gets full access to employee data
+    if (accessContext.role === 'hr-admin' || accessContext.permissions.includes('employees:read:hr')) {
+      return employee
+    }
+
+    // Manager can see team data with some restrictions
+    if (accessContext.role === 'manager' || accessContext.permissions.includes('employees:read:team')) {
+      return {
+        ...employee,
+        // Managers can see salary if they have permission
+        salary: accessContext.permissions.includes('employees:read:salary') ? employee.salary : undefined,
+        // Show emergency contacts if they have permission
+        emergencyContact: accessContext.permissions.includes('employees:read:emergency') ? employee.emergencyContact : undefined,
+        emergencyPhone: accessContext.permissions.includes('employees:read:emergency') ? employee.emergencyPhone : undefined,
+        // Show notes if they have permission
+        notes: accessContext.permissions.includes('employees:read:notes') ? employee.notes : undefined
+      }
+    }
+
+    // HR-staff can see basic employee information with emergency contacts
+    if (accessContext.role === 'hr-staff') {
+      return {
+        ...employee,
+        // Hide salary for hr-staff
+        salary: undefined,
+        // Show emergency contacts as they may need this for HR purposes
+        emergencyContact: employee.emergencyContact,
+        emergencyPhone: employee.emergencyPhone,
+        // Hide personal notes
+        notes: undefined
+      }
+    }
+
+    // Default: return limited public information for regular employees
+    return {
+      ...employee,
+      phoneNumber: undefined,
+      dateOfBirth: undefined,
+      address: undefined,
+      emergencyContact: undefined,
+      emergencyPhone: undefined,
+      salary: undefined,
+      notes: undefined
     }
   }
 }

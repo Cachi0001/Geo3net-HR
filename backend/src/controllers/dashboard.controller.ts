@@ -247,29 +247,8 @@ export class DashboardController {
       return ResponseHandler.success(res, 'Recent activities retrieved successfully', recentActivities);
     } catch (error) {
       console.error('Recent activities error:', error);
-      // Return fallback data if audit logs are not available
-      const fallbackActivities: RecentActivity[] = [
-        {
-          id: '1',
-          type: 'check-in',
-          description: 'Employee checked in',
-          timestamp: new Date(Date.now() - 5 * 60000).toISOString()
-        },
-        {
-          id: '2',
-          type: 'leave-request',
-          description: 'Leave request submitted',
-          timestamp: new Date(Date.now() - 15 * 60000).toISOString()
-        },
-        {
-          id: '3',
-          type: 'task-completed',
-          description: 'Task completed',
-          timestamp: new Date(Date.now() - 30 * 60000).toISOString()
-        }
-      ];
-      
-      return ResponseHandler.success(res, 'Recent activities retrieved successfully', fallbackActivities);
+      // Return empty array if audit logs are not available
+      return ResponseHandler.success(res, 'Recent activities retrieved successfully', []);
     }
   }
 
@@ -304,6 +283,33 @@ export class DashboardController {
     } catch (error) {
       console.error('Dashboard data error:', error);
       return ResponseHandler.internalError(res, 'Failed to retrieve dashboard data');
+    }
+  }
+
+  /**
+   * Get super admin specific dashboard data
+   */
+  async getSuperAdminDashboard(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      // Get comprehensive metrics for super admin
+      const metrics = await this.getDashboardMetricsData();
+      
+      // Get additional super admin specific data
+      const superAdminData = {
+        totalEmployees: metrics.totalEmployees,
+        totalDepartments: metrics.departments,
+        activeRecruitment: metrics.activeRecruitment,
+        monthlyPayroll: `$${(metrics.monthlyPayroll / 1000000).toFixed(1)}M`,
+        employeeGrowth: 12, // Mock data - can be calculated from historical data
+        departmentGrowth: 2,
+        recruitmentFilled: 8,
+        payrollGrowth: 5.2
+      };
+
+      return ResponseHandler.success(res, 'Super admin dashboard data retrieved successfully', superAdminData);
+    } catch (error: any) {
+      console.error('Super admin dashboard error:', error);
+      return ResponseHandler.internalError(res, 'Failed to retrieve super admin dashboard data');
     }
   }
 
@@ -350,50 +356,23 @@ export class DashboardController {
 
   private getFallbackMetrics(): DashboardMetrics {
     return {
-      totalEmployees: 248,
-      presentToday: 186,
-      lateArrivals: 8,
-      onLeave: 24,
-      absentToday: 30,
-      departments: 8,
-      activeRecruitment: 12,
-      monthlyPayroll: 37200000
+      totalEmployees: 0,
+      presentToday: 0,
+      lateArrivals: 0,
+      onLeave: 0,
+      absentToday: 0,
+      departments: 0,
+      activeRecruitment: 0,
+      monthlyPayroll: 0
     };
   }
 
   private getFallbackDepartmentStats(): DepartmentStats[] {
-    return [
-      { department: 'Engineering', employees: 45, present: 42, absent: 3, performance: 92 },
-      { department: 'Marketing', employees: 28, present: 26, absent: 2, performance: 88 },
-      { department: 'Sales', employees: 35, present: 32, absent: 3, performance: 85 },
-      { department: 'HR', employees: 12, present: 11, absent: 1, performance: 95 }
-    ];
+    return [];
   }
 
   private getFallbackActivities(): RecentActivity[] {
-    return [
-      {
-        id: '1',
-        type: 'check-in',
-        description: 'John Doe checked in',
-        timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
-        user: 'John Doe'
-      },
-      {
-        id: '2',
-        type: 'leave-request',
-        description: 'Sarah Wilson submitted leave request',
-        timestamp: new Date(Date.now() - 15 * 60000).toISOString(),
-        user: 'Sarah Wilson'
-      },
-      {
-        id: '3',
-        type: 'task-completed',
-        description: 'Mike Johnson completed project milestone',
-        timestamp: new Date(Date.now() - 30 * 60000).toISOString(),
-        user: 'Mike Johnson'
-      }
-    ];
+    return [];
   }
 
   private getActivityType(action: string, tableName: string): string {

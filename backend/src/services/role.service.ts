@@ -24,6 +24,9 @@ export interface RoleAssignmentResult {
 }
 
 export class RoleService {
+  private roleCache = new Map<string, { role: Role | null, timestamp: number }>()
+  private readonly CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
   private readonly roleHierarchy = {
     'super-admin': {
       level: 5,
@@ -112,7 +115,10 @@ export class RoleService {
 
   async assignRole(userId: string, roleName: string, assignedBy: string): Promise<RoleAssignmentResult> {
     try {
+      console.log(`🔍 [RoleService] Assigning role ${roleName} to user ${userId} by ${assignedBy}`)
+      
       if (!this.roleHierarchy[roleName as keyof typeof this.roleHierarchy]) {
+        console.log(`❌ [RoleService] Invalid role name: ${roleName}`)
         return {
           success: false,
           message: 'Invalid role name'
@@ -121,17 +127,23 @@ export class RoleService {
 
       const canAssign = await this.canAssignRole(assignedBy, roleName)
       if (!canAssign) {
+        console.log(`❌ [RoleService] User ${assignedBy} cannot assign role ${roleName}`)
         return {
           success: false,
           message: 'Insufficient permissions to assign this role'
         }
       }
 
-      await supabase
+      // Deactivate existing roles
+      const { error: deactivateError } = await supabase
         .from('user_roles')
         .update({ is_active: false })
         .eq('user_id', userId)
         .eq('is_active', true)
+
+      if (deactivateError) {
+        console.error(`❌ [RoleService] Error deactivating existing roles:`, deactivateError)
+      }
 
       const roleConfig = this.roleHierarchy[roleName as keyof typeof this.roleHierarchy]
       const { data: newRole, error } = await supabase
@@ -146,17 +158,26 @@ export class RoleService {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error(`❌ [RoleService] Error inserting new role:`, error)
+        throw error
+      }
 
+      // Clear cache for this user
+      this.clearRoleCache(userId)
+
+      console.log(`✅ [RoleService] Role ${roleName} assigned successfully to user ${userId}`)
+      
       return {
         success: true,
         message: `Role ${roleName} assigned successfully`,
         role: newRole
       }
     } catch (error) {
+      console.error(`❌ [RoleService] Role assignment error:`, error)
       return {
         success: false,
-        message: 'Failed to assign role'
+        message: `Failed to assign role: ${error instanceof Error ? error.message : 'Unknown error'}`
       }
     }
   }
@@ -192,8 +213,19 @@ export class RoleService {
     }
   }
 
-  async getActiveRole(userId: string): Promise<Role | null> {
+  async getActiveRole(userId: string, useCache: boolean = true): Promise<Role | null> {
     try {
+      // Check cache first if enabled
+      if (useCache) {
+        const cached = this.roleCache.get(userId)
+        if (cached && (Date.now() - cached.timestamp) < this.CACHE_TTL) {
+          console.log(`🔍 [RoleService] Using cached role for user ${userId}:`, cached.role?.roleName)
+          return cached.role
+        }
+      }
+
+      console.log(`🔍 [RoleService] Fetching active role for user ${userId} from database`)
+      
       const { data: role, error } = await supabase
         .from('user_roles')
         .select('*')
@@ -201,12 +233,18 @@ export class RoleService {
         .eq('is_active', true)
         .single()
 
-      if (error || !role) return null
+      if (error || !role) {
+        console.log(`❌ [RoleService] No active role found for user ${userId}:`, error?.message)
+        this.roleCache.set(userId, { role: null, timestamp: Date.now() })
+        return null
+      }
+
       const basePerms = role.permissions as string[] | null | undefined
       const perms = basePerms && basePerms.length > 0
         ? basePerms
         : (this.roleHierarchy[role.role_name as keyof typeof this.roleHierarchy]?.permissions || [])
-      return {
+      
+      const roleData: Role = {
         id: role.id,
         userId: role.user_id,
         roleName: role.role_name,
@@ -215,8 +253,25 @@ export class RoleService {
         assignedAt: role.assigned_at,
         isActive: role.is_active,
       }
+
+      // Cache the result
+      this.roleCache.set(userId, { role: roleData, timestamp: Date.now() })
+      
+      console.log(`✅ [RoleService] Active role found for user ${userId}:`, roleData.roleName)
+      return roleData
     } catch (error) {
+      console.error(`❌ [RoleService] Error fetching role for user ${userId}:`, error)
       return null
+    }
+  }
+
+  clearRoleCache(userId?: string): void {
+    if (userId) {
+      this.roleCache.delete(userId)
+      console.log(`🗑️ [RoleService] Cleared role cache for user ${userId}`)
+    } else {
+      this.roleCache.clear()
+      console.log(`🗑️ [RoleService] Cleared all role cache`)
     }
   }
 
@@ -257,8 +312,15 @@ export class RoleService {
         return true
       }
 
+      // Allow system-level assignment during user registration (when assignerId equals userId)
+      if (targetRole === 'employee') {
+        return true // Always allow employee role assignment
+      }
+
       const assignerRole = await this.getActiveRole(assignerId)
-      if (!assignerRole) return false
+      if (!assignerRole) {
+        return false
+      }
 
       if (assignerRole.permissions.includes('*')) return true
 

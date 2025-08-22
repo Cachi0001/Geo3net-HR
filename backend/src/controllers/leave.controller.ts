@@ -205,8 +205,8 @@ export class LeaveController {
         offset: req.query.offset ? parseInt(req.query.offset as string) : undefined
       }
 
-      // If user is not admin/hr, only show their own requests
-      if (!['admin', 'hr'].includes(userRole || '')) {
+      // If user is not admin/hr/super-admin, only show their own requests
+      if (!['admin', 'hr', 'super-admin'].includes(userRole || '')) {
         filters.employeeId = userId
       }
 
@@ -246,7 +246,7 @@ export class LeaveController {
         const leaveRequest = result.leaveRequest
 
         // Check if user has permission to view this request
-        if (!['admin', 'hr'].includes(userRole || '') && leaveRequest?.employeeId !== userId) {
+        if (!['admin', 'hr', 'super-admin'].includes(userRole || '') && leaveRequest?.employeeId !== userId) {
           return ResponseHandler.forbidden(res, 'You can only view your own leave requests')
         }
 
@@ -282,7 +282,7 @@ export class LeaveController {
 
       // Check permissions
       const isOwner = oldValues.employeeId === userId
-      const isHROrAdmin = ['admin', 'hr'].includes(userRole || '')
+      const isHROrAdmin = ['admin', 'hr', 'super-admin'].includes(userRole || '')
 
       // Only owner can update their own pending requests, HR/Admin can update any
       if (!isHROrAdmin && (!isOwner || oldValues.status !== 'pending')) {
@@ -346,7 +346,7 @@ export class LeaveController {
       const userRole = req.user?.role
 
       // Check permissions
-      if (!['admin', 'hr', 'manager'].includes(userRole || '')) {
+      if (!['admin', 'hr', 'manager', 'super-admin'].includes(userRole || '')) {
         return ResponseHandler.forbidden(res, 'You do not have permission to approve leave requests')
       }
 
@@ -403,7 +403,7 @@ export class LeaveController {
       const userRole = req.user?.role
 
       // Check permissions
-      if (!['admin', 'hr', 'manager'].includes(userRole || '')) {
+      if (!['admin', 'hr', 'manager', 'super-admin'].includes(userRole || '')) {
         return ResponseHandler.forbidden(res, 'You do not have permission to reject leave requests')
       }
 
@@ -529,7 +529,7 @@ export class LeaveController {
       const userRole = req.user?.role
 
       // Check permissions - users can only view their own balances
-      if (!['admin', 'hr'].includes(userRole || '') && employeeId !== userId) {
+      if (!['admin', 'hr', 'super-admin'].includes(userRole || '') && employeeId !== userId) {
         return ResponseHandler.forbidden(res, 'You can only view your own leave balances')
       }
 
@@ -562,8 +562,8 @@ export class LeaveController {
       const userId = req.user?.id!
       const userRole = req.user?.role
 
-      // Check permissions - only HR/Admin can initialize balances
-      if (!['admin', 'hr'].includes(userRole || '')) {
+      // Check permissions - only HR/Admin/Super-Admin can initialize balances
+      if (!['admin', 'hr', 'super-admin'].includes(userRole || '')) {
         return ResponseHandler.forbidden(res, 'You do not have permission to initialize leave balances')
       }
 
@@ -601,8 +601,8 @@ export class LeaveController {
       const userId = req.user?.id!
       const userRole = req.user?.role
 
-      // Check permissions - only HR/Admin can update balances
-      if (!['admin', 'hr'].includes(userRole || '')) {
+      // Check permissions - only HR/Admin/Super-Admin can update balances
+      if (!['admin', 'hr', 'super-admin'].includes(userRole || '')) {
         return ResponseHandler.forbidden(res, 'You do not have permission to update leave balances')
       }
 

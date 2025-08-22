@@ -24,7 +24,9 @@ import {
   Camera,
   Loader2,
   Eye,
-  EyeOff
+  EyeOff,
+  Trash2,
+  Upload
 } from 'lucide-react';
 
 interface UserProfile {
@@ -52,37 +54,39 @@ const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
   const { user } = useAuth();
   const { toast } = useToast();
 
   // Fallback profile data
-  const fallbackProfile: UserProfile = useMemo(() => ({
-    id: user?.id || '1',
-    firstName: user?.firstName || 'John',
-    lastName: user?.lastName || 'Doe',
-    email: user?.email || 'john.doe@company.com',
-    phone: '+234 801 234 5678',
-    address: '123 Victoria Island, Lagos, Nigeria',
-    dateOfBirth: '1990-05-15',
-    department: 'Engineering',
-    position: 'Senior Software Engineer',
-    role: user?.role || 'employee',
-    bio: 'Passionate software engineer with 5+ years of experience in full-stack development.',
-    joinDate: '2022-01-15',
-    emergencyContact: {
-      name: 'Jane Doe',
-      phone: '+234 802 345 6789',
-      relationship: 'Spouse'
-    }
-  }), [user?.id, user?.firstName, user?.lastName, user?.email, user?.role]);
+  const fallbackProfile: UserProfile = useMemo(() => {
+    const fullName = user?.fullName || 'John Doe';
+    const nameParts = fullName.split(' ');
+    const firstName = nameParts[0] || 'John';
+    const lastName = nameParts.slice(1).join(' ') || 'Doe';
+    
+    return {
+      id: user?.id || '1',
+      firstName,
+      lastName,
+      email: user?.email || 'john.doe@company.com',
+      phone: '+234 801 234 5678',
+      address: '123 Victoria Island, Lagos, Nigeria',
+      dateOfBirth: '1990-05-15',
+      department: 'Engineering',
+      position: 'Senior Software Engineer',
+      role: user?.role || 'employee',
+      bio: 'Passionate software engineer with 5+ years of experience in full-stack development.',
+      joinDate: '2022-01-15',
+      emergencyContact: {
+        name: 'Jane Doe',
+        phone: '+234 802 345 6789',
+        relationship: 'Spouse'
+      }
+    };
+  }, [user?.id, user?.fullName, user?.email, user?.role]);
 
   // Load user profile
   const loadProfile = useCallback(async () => {
@@ -162,11 +166,90 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handlePasswordChange = async () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
       toast({
         title: 'Error',
-        description: 'New passwords do not match',
+        description: 'Please select a valid image file',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Error',
+        description: 'Image size must be less than 5MB',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const response = await apiClient.uploadProfilePicture(file);
+      if (response.success && response.data) {
+        const updatedProfile = { ...profile!, avatar: response.data.profile_picture };
+        setProfile(updatedProfile);
+        setFormData(updatedProfile);
+        toast({
+          title: 'Success',
+          description: 'Profile picture updated successfully'
+        });
+      } else {
+        throw new Error(response.message || 'Failed to upload profile picture');
+      }
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to upload profile picture',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploadingAvatar(false);
+      // Reset the input
+      event.target.value = '';
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    setUploadingAvatar(true);
+    try {
+      const response = await apiClient.deleteProfilePicture();
+      if (response.success) {
+        const updatedProfile = { ...profile!, avatar: undefined };
+        setProfile(updatedProfile);
+        setFormData(updatedProfile);
+        toast({
+          title: 'Success',
+          description: 'Profile picture removed successfully'
+        });
+      } else {
+        throw new Error(response.message || 'Failed to delete profile picture');
+      }
+    } catch (error) {
+      console.error('Error deleting avatar:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to remove profile picture',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!profile?.email) {
+      toast({
+        title: 'Error',
+        description: 'Email address not found',
         variant: 'destructive'
       });
       return;
@@ -174,38 +257,20 @@ const ProfilePage: React.FC = () => {
 
     setSaving(true);
     try {
-      // Try to change password via API
-      try {
-        const response = await apiClient.changePassword({
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword
-        });
-        if (response.success) {
-          setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-          setShowPasswordForm(false);
-          toast({
-            title: 'Success',
-            description: 'Password updated successfully'
-          });
-        } else {
-          throw new Error(response.message || 'Failed to change password');
-        }
-      } catch (apiError) {
-        console.warn('API not available, simulating password change:', apiError);
-        // Simulate successful password change
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        setShowPasswordForm(false);
+      const response = await apiClient.forgotPassword(profile.email);
+      if (response.success) {
         toast({
-          title: 'Success',
-          description: 'Password updated successfully'
+          title: 'Password Reset Email Sent',
+          description: 'Check your email for password reset instructions'
         });
+      } else {
+        throw new Error(response.message || 'Failed to send reset email');
       }
     } catch (error) {
-      console.error('Error changing password:', error);
+      console.error('Error sending password reset email:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update password',
+        description: 'Failed to send password reset email. Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -301,19 +366,39 @@ const ProfilePage: React.FC = () => {
                     </AvatarFallback>
                   </Avatar>
                   {editing && (
-                    <Button
-                      size="sm"
-                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
-                      onClick={() => {
-                        // Handle avatar upload
-                        toast({
-                          title: 'Feature Coming Soon',
-                          description: 'Avatar upload will be available soon'
-                        });
-                      }}
-                    >
-                      <Camera className="h-4 w-4" />
-                    </Button>
+                    <div className="absolute -bottom-2 -right-2 flex gap-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                        id="avatar-upload"
+                        disabled={uploadingAvatar}
+                      />
+                      <Button
+                        size="sm"
+                        className="h-8 w-8 rounded-full"
+                        onClick={() => document.getElementById('avatar-upload')?.click()}
+                        disabled={uploadingAvatar}
+                      >
+                        {uploadingAvatar ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Camera className="h-4 w-4" />
+                        )}
+                      </Button>
+                      {profile.avatar && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-8 w-8 rounded-full"
+                          onClick={handleAvatarDelete}
+                          disabled={uploadingAvatar}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
                 
@@ -454,17 +539,23 @@ const ProfilePage: React.FC = () => {
                   <CardDescription>Manage your account security and password</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {!showPasswordForm ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                        <div>
-                          <h3 className="font-medium">Password</h3>
-                          <p className="text-sm text-muted-foreground">Last updated 30 days ago</p>
-                        </div>
-                        <Button onClick={() => setShowPasswordForm(true)}>
-                          Change Password
-                        </Button>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                      <div>
+                        <h3 className="font-medium">Password</h3>
+                        <p className="text-sm text-muted-foreground">For security, password changes are done via email reset</p>
                       </div>
+                      <Button onClick={handlePasswordReset} disabled={saving}>
+                        {saving ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          'Reset Password'
+                        )}
+                      </Button>
+                    </div>
                       
                       <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                         <div>
@@ -481,54 +572,6 @@ const ProfilePage: React.FC = () => {
                         </Button>
                       </div>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="currentPassword">Current Password</Label>
-                        <Input
-                          id="currentPassword"
-                          type="password"
-                          value={passwordData.currentPassword}
-                          onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="newPassword">New Password</Label>
-                        <Input
-                          id="newPassword"
-                          type="password"
-                          value={passwordData.newPassword}
-                          onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                        <Input
-                          id="confirmPassword"
-                          type="password"
-                          value={passwordData.confirmPassword}
-                          onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                        />
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Button onClick={handlePasswordChange} disabled={saving}>
-                          {saving ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : null}
-                          Update Password
-                        </Button>
-                        <Button variant="outline" onClick={() => {
-                          setShowPasswordForm(false);
-                          setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                        }}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </TabsContent>

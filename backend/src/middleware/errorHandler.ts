@@ -21,5 +21,7 @@ export const errorHandler = (
 }
 
 export const notFoundHandler = (req: Request, res: Response): Response => {
+  console.log('🔍 notFoundHandler - Route not found:', req.method, req.originalUrl)
+  console.log('🔍 notFoundHandler - Available routes should include /api/users/profile')
   return ResponseHandler.notFound(res, `Route ${req.originalUrl} not found`)
 }

@@ -120,7 +120,8 @@ export class PayrollService {
       const { data: existingPeriods, error: checkError } = await supabase
         .from('payroll_periods')
         .select('*')
-        .or(`start_date.lte.${data.endDate},end_date.gte.${data.startDate}`)
+        .lte('start_date', data.endDate)
+        .gte('end_date', data.startDate)
         .neq('status', 'cancelled')
 
       if (checkError) throw checkError
@@ -283,14 +284,7 @@ export class PayrollService {
           payment_method: data.paymentMethod || 'bank_transfer',
           notes: data.notes
         })
-        .select(`
-          *,
-          users!payroll_records_employee_id_fkey(
-            full_name,
-            employee_id,
-            departments(name)
-          )
-        `)
+        .select('*')
         .single()
 
       if (error) throw error
@@ -312,15 +306,7 @@ export class PayrollService {
     try {
       let query = supabase
         .from('payroll_records')
-        .select(`
-          *,
-          users!payroll_records_employee_id_fkey(
-            full_name,
-            employee_id,
-            departments(name)
-          ),
-          payroll_periods(name, start_date, end_date)
-        `, { count: 'exact' })
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
 
       if (filters.employeeId) {
@@ -369,15 +355,7 @@ export class PayrollService {
     try {
       const { data, error } = await supabase
         .from('payroll_records')
-        .select(`
-          *,
-          users!payroll_records_employee_id_fkey(
-            full_name,
-            employee_id,
-            departments(name)
-          ),
-          payroll_periods(name, start_date, end_date)
-        `)
+        .select('*')
         .eq('id', id)
         .single()
 
@@ -435,15 +413,7 @@ export class PayrollService {
         .from('payroll_records')
         .update(updateData)
         .eq('id', id)
-        .select(`
-          *,
-          users!payroll_records_employee_id_fkey(
-            full_name,
-            employee_id,
-            departments(name)
-          ),
-          payroll_periods(name, start_date, end_date)
-        `)
+        .select('*')
         .single()
 
       if (error) throw error
@@ -493,8 +463,8 @@ export class PayrollService {
 
       // Get employees to generate payroll for
       let employeeQuery = supabase
-        .from('users')
-        .select('id, full_name, employee_id, salary, departments(name)')
+        .from('employees')
+        .select('id, full_name, employee_id, salary')
         .eq('employment_status', 'active')
 
       if (employeeIds && employeeIds.length > 0) {

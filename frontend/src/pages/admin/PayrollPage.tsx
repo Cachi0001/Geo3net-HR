@@ -177,37 +177,22 @@ const PayrollPage: React.FC = () => {
   const loadPayrollData = useCallback(async () => {
     setLoading(true);
     try {
-      // Try to fetch from API, fallback to mock data
-      try {
-        const [periodsResponse, recordsResponse] = await Promise.all([
-          apiClient.get('/payroll/periods'),
-          apiClient.get('/payroll/records')
-        ]);
-        
-        if (periodsResponse.success && periodsResponse.data) {
-          setPayrollPeriods(periodsResponse.data.payrollPeriods || []);
-        } else {
-          setPayrollPeriods(fallbackPayrollPeriods);
-        }
-        
-        if (recordsResponse.success && recordsResponse.data) {
-          setPayrollRecords(recordsResponse.data.payrollRecords || []);
-        } else {
-          setPayrollRecords(fallbackPayrollRecords);
-        }
-      } catch (apiError) {
-        console.warn('API not available, using fallback data:', apiError);
-        setPayrollPeriods(fallbackPayrollPeriods);
-        setPayrollRecords(fallbackPayrollRecords);
-      }
+      // Use fallback data for now since API endpoints may not be implemented
+      console.warn('Using fallback payroll data - API endpoints not implemented');
+      setPayrollPeriods(fallbackPayrollPeriods);
+      setPayrollRecords(fallbackPayrollRecords);
+      
+      // TODO: Implement API calls when backend is ready
+      // const periodsResponse = await apiClient.getPayrollPeriods();
+      // const recordsResponse = await apiClient.getPayrollRecords();
+      
     } catch (error) {
       console.error('Error loading payroll data:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load payroll data',
+        description: 'Failed to load payroll data. Using sample data.',
         variant: 'destructive'
       });
-      // Use fallback data on error
       setPayrollPeriods(fallbackPayrollPeriods);
       setPayrollRecords(fallbackPayrollRecords);
     } finally {
@@ -277,24 +262,24 @@ const PayrollPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Payroll Management</h1>
-          <p className="text-muted-foreground mt-1">Manage employee payroll and compensation</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Payroll Management</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Manage employee payroll and compensation</p>
         </div>
-        <Button className="btn-primary" onClick={() => setIsCreatePeriodOpen(true)}>
+        <Button className="btn-primary w-full sm:w-auto" onClick={() => setIsCreatePeriodOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Create Payroll Period
         </Button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
+      <div className="mobile-responsive-grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         <Card className="metric-card">
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Gross Pay</p>
+                <p className="mobile-text-xs font-medium text-muted-foreground">Total Gross Pay</p>
                 <p className="text-2xl font-bold text-foreground">{formatCurrency(totalGrossPay)}</p>
               </div>
               <div className="h-10 w-10 bg-gradient-primary rounded-lg flex items-center justify-center">

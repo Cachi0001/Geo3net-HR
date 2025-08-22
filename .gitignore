@@ -14,7 +14,7 @@ go3net-pulse
 .env.production.local
 .env.example
 .trae
-
+.qodo
 
 # Build outputs
 dist/

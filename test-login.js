@@ -1,6 +1,5 @@
-const fetch = require('node-fetch');
-
 async function testLogin() {
+  const { default: fetch } = await import('node-fetch');
   try {
     console.log('Testing login API...');
     

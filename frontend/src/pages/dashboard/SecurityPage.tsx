@@ -93,120 +93,11 @@ const SecurityPage = () => {
   const { user } = useAuth()
   const { toast } = useToast()
 
-  // Fallback data
-  const fallbackLogs: SecurityLog[] = [
-    {
-      id: '1',
-      userId: 'user1',
-      userName: 'John Doe',
-      action: 'login',
-      ipAddress: '192.168.1.100',
-      userAgent: 'Chrome 120.0.0.0',
-      timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      status: 'success',
-      location: 'Lagos, Nigeria',
-      deviceType: 'desktop'
-    },
-    {
-      id: '2',
-      userId: 'user2',
-      userName: 'Jane Smith',
-      action: 'login',
-      ipAddress: '192.168.1.101',
-      userAgent: 'Firefox 119.0',
-      timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      status: 'failed',
-      location: 'Abuja, Nigeria',
-      deviceType: 'mobile'
-    },
-    {
-      id: '3',
-      userId: 'user3',
-      userName: 'Bob Wilson',
-      action: 'password_change',
-      ipAddress: '192.168.1.102',
-      userAgent: 'Safari 17.0',
-      timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      status: 'success',
-      location: 'Port Harcourt, Nigeria',
-      deviceType: 'desktop'
-    },
-    {
-      id: '4',
-      userId: 'user4',
-      userName: 'Alice Johnson',
-      action: 'login',
-      ipAddress: '10.0.0.50',
-      userAgent: 'Chrome 120.0.0.0',
-      timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-      status: 'blocked',
-      location: 'Unknown',
-      deviceType: 'mobile'
-    }
-  ]
+  // No fallback data - will show empty state if API fails
 
-  const fallbackSessions: ActiveSession[] = [
-    {
-      id: '1',
-      userId: 'user1',
-      userName: 'John Doe',
-      ipAddress: '192.168.1.100',
-      userAgent: 'Chrome 120.0.0.0',
-      loginTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      lastActivity: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      deviceType: 'desktop',
-      location: 'Lagos, Nigeria',
-      isCurrentSession: true
-    },
-    {
-      id: '2',
-      userId: 'user2',
-      userName: 'Jane Smith',
-      ipAddress: '192.168.1.101',
-      userAgent: 'Firefox 119.0',
-      loginTime: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      lastActivity: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      deviceType: 'mobile',
-      location: 'Abuja, Nigeria',
-      isCurrentSession: false
-    }
-  ]
 
-  const fallbackPolicies: SecurityPolicy[] = [
-    {
-      id: '1',
-      name: 'Password Policy',
-      description: 'Enforce strong password requirements',
-      enabled: true,
-      settings: {
-        passwordMinLength: 8,
-        passwordRequireUppercase: true,
-        passwordRequireLowercase: true,
-        passwordRequireNumbers: true,
-        passwordRequireSymbols: false
-      }
-    },
-    {
-      id: '2',
-      name: 'Session Management',
-      description: 'Control user session behavior',
-      enabled: true,
-      settings: {
-        sessionTimeout: 480,
-        maxLoginAttempts: 5,
-        lockoutDuration: 30
-      }
-    },
-    {
-      id: '3',
-      name: 'Two-Factor Authentication',
-      description: 'Require 2FA for enhanced security',
-      enabled: false,
-      settings: {
-        twoFactorRequired: false
-      }
-    }
-  ]
+
+
 
   // Load data on component mount
   useEffect(() => {
@@ -223,17 +114,11 @@ const SecurityPage = () => {
       if (response.success && response.data) {
         setSecurityLogs(response.data.logs || [])
       } else {
-        const filtered = logFilter !== 'all' 
-          ? fallbackLogs.filter(log => log.status === logFilter)
-          : fallbackLogs
-        setSecurityLogs(filtered)
+        setSecurityLogs([])
       }
     } catch (error) {
-      console.warn('API not available, using fallback data:', error)
-      const filtered = logFilter !== 'all' 
-        ? fallbackLogs.filter(log => log.status === logFilter)
-        : fallbackLogs
-      setSecurityLogs(filtered)
+      console.warn('API not available:', error)
+      setSecurityLogs([])
     } finally {
       setLogsLoading(false)
     }
@@ -246,11 +131,11 @@ const SecurityPage = () => {
       if (response.success && response.data) {
         setActiveSessions(response.data.sessions || [])
       } else {
-        setActiveSessions(fallbackSessions)
+        setActiveSessions([])
       }
     } catch (error) {
-      console.warn('API not available, using fallback data:', error)
-      setActiveSessions(fallbackSessions)
+      console.warn('API not available:', error)
+      setActiveSessions([])
     } finally {
       setSessionsLoading(false)
     }
@@ -263,11 +148,11 @@ const SecurityPage = () => {
       if (response.success && response.data) {
         setSecurityPolicies(response.data.policies || [])
       } else {
-        setSecurityPolicies(fallbackPolicies)
+        setSecurityPolicies([])
       }
     } catch (error) {
-      console.warn('API not available, using fallback data:', error)
-      setSecurityPolicies(fallbackPolicies)
+      console.warn('API not available:', error)
+      setSecurityPolicies([])
     } finally {
       setPoliciesLoading(false)
     }

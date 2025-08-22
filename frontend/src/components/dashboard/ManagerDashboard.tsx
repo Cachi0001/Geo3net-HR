@@ -1,85 +1,222 @@
-import React from 'react';
-import { Users, Target, Calendar, TrendingUp, Clock, CheckCircle, AlertCircle, Award } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, CheckSquare, Calendar, TrendingUp, Clock, Target, Award, FileText, BarChart3, UserCheck, AlertCircle, Star, Activity, ChevronRight } from 'lucide-react';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import styles from './ManagerDashboard.module.css';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/services/api';
+
+interface TeamMetrics {
+  totalTeamMembers: number;
+  activeTasks: number;
+  completedThisWeek: number;
+  teamPerformance: number;
+  attendanceRate: number;
+  productivityScore: number;
+  overdueTasks: number;
+  upcomingDeadlines: number;
+}
+
+interface TeamMember {
+  id: string;
+  name: string;
+  position: string;
+  performance: number;
+  tasksCompleted: number;
+  tasksActive: number;
+  attendanceRate: number;
+  lastActivity: string;
+  avatar: string;
+  status: 'online' | 'offline' | 'away';
+}
+
+interface TaskItem {
+  id: string;
+  title: string;
+  assignee: string;
+  status: 'pending' | 'in_progress' | 'review' | 'completed' | 'overdue';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  dueDate: string;
+  progress: number;
+  estimatedHours: number;
+}
+
+interface ScheduleItem {
+  id: string;
+  employeeName: string;
+  shift: string;
+  date: string;
+  status: 'scheduled' | 'confirmed' | 'absent' | 'late';
+  hours: number;
+}
 
 export const ManagerDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [teamMetrics, setTeamMetrics] = useState<TeamMetrics | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [activeTasks, setActiveTasks] = useState<TaskItem[]>([]);
+  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
 
-  const teamMetrics = [
+  // Load manager-specific data
+  useEffect(() => {
+    loadManagerDashboardData();
+  }, []);
+
+  const loadManagerDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load team metrics
+      const metricsResponse = await apiClient.getDashboardData?.() || { success: false };
+      if (metricsResponse.success) {
+        setTeamMetrics(metricsResponse.data);
+      } else {
+        // Fallback data
+        setTeamMetrics({
+          totalTeamMembers: 12,
+          activeTasks: 28,
+          completedThisWeek: 15,
+          teamPerformance: 87,
+          attendanceRate: 94,
+          productivityScore: 82,
+          overdueTasks: 3,
+          upcomingDeadlines: 8
+        });
+      }
+
+      // Load team members data
+      const teamResponse = await apiClient.getEmployees?.() || { success: false };
+      if (teamResponse.success) {
+        setTeamMembers(teamResponse.data?.employees?.slice(0, 6) || []);
+      } else {
+        // Fallback data
+        setTeamMembers([
+          { id: '1', name: 'John Doe', position: 'Senior Developer', performance: 92, tasksCompleted: 8, tasksActive: 3, attendanceRate: 96, lastActivity: '5 min ago', avatar: 'JD', status: 'online' },
+          { id: '2', name: 'Jane Smith', position: 'UI/UX Designer', performance: 88, tasksCompleted: 6, tasksActive: 2, attendanceRate: 94, lastActivity: '15 min ago', avatar: 'JS', status: 'online' },
+          { id: '3', name: 'Mike Johnson', position: 'Frontend Developer', performance: 85, tasksCompleted: 7, tasksActive: 4, attendanceRate: 90, lastActivity: '2 hours ago', avatar: 'MJ', status: 'away' },
+          { id: '4', name: 'Sarah Wilson', position: 'QA Engineer', performance: 90, tasksCompleted: 9, tasksActive: 2, attendanceRate: 98, lastActivity: '10 min ago', avatar: 'SW', status: 'online' },
+          { id: '5', name: 'Alex Chen', position: 'DevOps Engineer', performance: 91, tasksCompleted: 5, tasksActive: 3, attendanceRate: 92, lastActivity: '1 hour ago', avatar: 'AC', status: 'away' },
+          { id: '6', name: 'Maria Garcia', position: 'Product Manager', performance: 89, tasksCompleted: 11, tasksActive: 5, attendanceRate: 95, lastActivity: '30 min ago', avatar: 'MG', status: 'online' },
+        ]);
+      }
+
+      // Load active tasks
+      const tasksResponse = await apiClient.getTasks?.() || { success: false };
+      if (tasksResponse.success) {
+        setActiveTasks(tasksResponse.data?.slice(0, 5) || []);
+      } else {
+        // Fallback data
+        setActiveTasks([
+          { id: '1', title: 'Review Q1 Performance Reports', assignee: 'John Doe', status: 'in_progress', priority: 'high', dueDate: '2024-03-25', progress: 65, estimatedHours: 8 },
+          { id: '2', title: 'Update User Interface Components', assignee: 'Jane Smith', status: 'review', priority: 'medium', dueDate: '2024-03-23', progress: 90, estimatedHours: 12 },
+          { id: '3', title: 'Implement Authentication System', assignee: 'Mike Johnson', status: 'in_progress', priority: 'urgent', dueDate: '2024-03-22', progress: 45, estimatedHours: 16 },
+          { id: '4', title: 'Conduct User Testing Session', assignee: 'Sarah Wilson', status: 'pending', priority: 'high', dueDate: '2024-03-28', progress: 20, estimatedHours: 6 },
+          { id: '5', title: 'Setup CI/CD Pipeline', assignee: 'Alex Chen', status: 'overdue', priority: 'high', dueDate: '2024-03-20', progress: 80, estimatedHours: 10 },
+        ]);
+      }
+
+      // Load schedule data - using fallback for now
+      setScheduleItems([
+        { id: '1', employeeName: 'John Doe', shift: '09:00 - 17:00', date: '2024-03-22', status: 'confirmed', hours: 8 },
+        { id: '2', employeeName: 'Jane Smith', shift: '10:00 - 18:00', date: '2024-03-22', status: 'confirmed', hours: 8 },
+        { id: '3', employeeName: 'Mike Johnson', shift: '09:00 - 17:00', date: '2024-03-22', status: 'late', hours: 7.5 },
+        { id: '4', employeeName: 'Sarah Wilson', shift: '08:00 - 16:00', date: '2024-03-22', status: 'confirmed', hours: 8 },
+        { id: '5', employeeName: 'Alex Chen', shift: '11:00 - 19:00', date: '2024-03-22', status: 'absent', hours: 0 },
+      ]);
+    } catch (error) {
+      console.error('Failed to load manager dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const quickActions = [
+    { title: 'Assign Task', description: 'Create & assign new tasks', icon: CheckSquare, action: () => navigate('/dashboard/task-assignment'), color: 'bg-blue-500' },
+    { title: 'Team Analytics', description: 'View performance metrics', icon: BarChart3, action: () => navigate('/dashboard/analytics?view=team'), color: 'bg-green-500' },
+    { title: 'Schedule Management', description: 'Manage team schedules', icon: Calendar, action: () => navigate('/dashboard/schedule'), color: 'bg-purple-500' },
+    { title: 'Performance Reviews', description: 'Conduct team reviews', icon: Star, action: () => navigate('/dashboard/performance'), color: 'bg-orange-500' },
+    { title: 'Leave Approvals', description: 'Review leave requests', icon: FileText, action: () => navigate('/dashboard/leave-request'), color: 'bg-cyan-500' },
+    { title: 'Team Reports', description: 'Generate team reports', icon: TrendingUp, action: () => navigate('/dashboard/reports'), color: 'bg-red-500' },
+  ];
+
+  // Enhanced manager metrics
+  const managerMetrics = teamMetrics ? [
     {
       title: 'Team Members',
-      value: '24',
-      change: { value: '+2 this month', trend: 'up' as const },
+      value: teamMetrics.totalTeamMembers.toString(),
+      change: { value: `${teamMembers.filter(m => m.status === 'online').length} online now`, trend: 'up' as const },
       icon: Users
     },
     {
       title: 'Active Tasks',
-      value: '47',
-      change: { value: '12 completed today', trend: 'down' as const },
-      icon: Target
+      value: teamMetrics.activeTasks.toString(),
+      change: { value: `${teamMetrics.overdueTasks} overdue tasks`, trend: teamMetrics.overdueTasks > 0 ? 'down' as const : 'neutral' as const },
+      icon: CheckSquare
     },
     {
       title: 'Team Performance',
-      value: '92%',
-      change: { value: '+5% this quarter', trend: 'up' as const },
-      icon: TrendingUp
+      value: `${teamMetrics.teamPerformance}%`,
+      change: { value: `${teamMetrics.productivityScore}% productivity`, trend: 'up' as const },
+      icon: Target
     },
     {
-      title: 'Pending Approvals',
-      value: '8',
-      change: { value: '3 leave requests', trend: 'neutral' as const },
+      title: 'Attendance Rate',
+      value: `${teamMetrics.attendanceRate}%`,
+      change: { value: `${teamMetrics.completedThisWeek} tasks completed`, trend: 'up' as const },
+      icon: UserCheck
+    },
+    {
+      title: 'Completed Tasks',
+      value: teamMetrics.completedThisWeek.toString(),
+      change: { value: 'This week', trend: 'up' as const },
+      icon: Award
+    },
+    {
+      title: 'Upcoming Deadlines',
+      value: teamMetrics.upcomingDeadlines.toString(),
+      change: { value: 'Next 7 days', trend: 'neutral' as const },
       icon: Clock
     }
-  ];
+  ] : [];
 
-  const teamMembers = [
-    { id: 1, name: 'John Smith', role: 'Senior Developer', performance: 95, tasksCompleted: 12, status: 'active' },
-    { id: 2, name: 'Sarah Johnson', role: 'UI/UX Designer', performance: 88, tasksCompleted: 8, status: 'active' },
-    { id: 3, name: 'Mike Chen', role: 'Frontend Developer', performance: 92, tasksCompleted: 10, status: 'active' },
-    { id: 4, name: 'Emily Davis', role: 'QA Engineer', performance: 90, tasksCompleted: 15, status: 'on-leave' },
-  ];
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
-  const pendingApprovals = [
-    { id: 1, type: 'leave', employee: 'John Smith', request: 'Annual Leave - 3 days', date: 'Mar 15-17', priority: 'medium' },
-    { id: 2, type: 'overtime', employee: 'Sarah Johnson', request: 'Overtime Approval - 8 hours', date: 'Mar 12', priority: 'low' },
-    { id: 3, type: 'leave', employee: 'Mike Chen', request: 'Sick Leave - 1 day', date: 'Mar 14', priority: 'high' },
-  ];
-
-  const projectProgress = [
-    { name: 'Mobile App Redesign', progress: 75, deadline: '2024-04-15', status: 'on-track' },
-    { name: 'API Integration', progress: 60, deadline: '2024-03-30', status: 'at-risk' },
-    { name: 'User Dashboard', progress: 90, deadline: '2024-03-25', status: 'ahead' },
-    { name: 'Testing Framework', progress: 45, deadline: '2024-04-10', status: 'on-track' },
-  ];
-
-  const quickActions = [
-    { title: 'Approve Requests', description: 'Review pending approvals', icon: CheckCircle, action: () => navigate('/dashboard/approvals') },
-    { title: 'Assign Tasks', description: 'Create and assign new tasks', icon: Target, action: () => navigate('/dashboard/tasks') },
-    { title: 'Team Calendar', description: 'View team schedule', icon: Calendar, action: () => navigate('/dashboard/calendar') },
-    { title: 'Performance Review', description: 'Conduct team reviews', icon: Award, action: () => navigate('/dashboard/reviews') },
-  ];
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-500';
+      case 'high': return 'bg-orange-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'low': return 'bg-green-500';
+      default: return 'bg-gray-500';
+    }
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-          <Target className="h-8 w-8 text-primary" />
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+          <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
           Manager Dashboard
         </h1>
-        <p className="text-muted-foreground">Team management and departmental oversight</p>
+        <p className="text-muted-foreground text-sm sm:text-base">Manage your team performance, tasks, and workforce scheduling</p>
       </div>
 
-      {/* Team Metrics - Mobile First: 2x2, Desktop: 4x1 */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
-        {teamMetrics.map((metric, index) => {
-          const variants = ['primary', 'secondary', 'accent', 'success'] as const;
+      {/* Manager Metrics - Mobile First: 2x3 grid, Desktop: 3x2 */}
+      <div className="mobile-responsive-grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+        {managerMetrics.map((metric, index) => {
+          const variants = ['primary', 'secondary', 'accent', 'success', 'warning', 'info'] as const;
           return (
             <MetricCard
               key={index}
@@ -94,30 +231,32 @@ export const ManagerDashboard: React.FC = () => {
         })}
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions Hub */}
       <Card className="bg-gradient-card shadow-xl border-0">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
-            Quick Actions
+            <Target className="h-5 w-5" />
+            Management Hub
           </CardTitle>
-          <CardDescription>Common management tasks and shortcuts</CardDescription>
+          <CardDescription>Essential team management tools and actions</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
             {quickActions.map((action, index) => {
               const Icon = action.icon;
               return (
                 <Button
                   key={index}
                   variant="outline"
-                  className={`h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary/5 transition-all duration-200 ${styles.quickAction}`}
+                  className={`h-auto p-3 flex flex-col items-center gap-2 hover:bg-primary/5 transition-all duration-200`}
                   onClick={action.action}
                 >
-                  <Icon className="h-6 w-6 text-primary" />
+                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${action.color || 'bg-primary'} text-white`}>
+                    <Icon className="h-4 w-4" />
+                  </div>
                   <div className="text-center">
-                    <div className="font-medium text-sm">{action.title}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{action.description}</div>
+                    <div className="font-medium text-xs leading-tight">{action.title}</div>
+                    <div className="text-xs text-muted-foreground mt-1 hidden sm:block">{action.description}</div>
                   </div>
                 </Button>
               );
@@ -126,131 +265,248 @@ export const ManagerDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Main Content Grid */}
+      {/* Main Dashboard Content - Primary Management Tools */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Team Performance */}
-        <Card className="bg-gradient-card shadow-xl border-0">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Team Performance
-            </CardTitle>
-            <CardDescription>Individual team member performance and tasks</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {teamMembers.map((member) => (
-              <div key={member.id} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="font-medium">{member.name}</span>
-                    <p className="text-sm text-muted-foreground">{member.role}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                      {member.status === 'active' ? 'Active' : 'On Leave'}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {member.tasksCompleted} tasks
-                    </Badge>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Performance</span>
-                    <span className="font-medium">{member.performance}%</span>
-                  </div>
-                  <Progress value={member.performance} className="h-2" />
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Project Progress */}
+        {/* Team Performance Overview */}
         <Card className="bg-gradient-card shadow-xl border-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Project Progress
+              Team Performance
             </CardTitle>
-            <CardDescription>Current project status and deadlines</CardDescription>
+            <CardDescription>Individual team member performance metrics</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {projectProgress.map((project, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{project.name}</span>
-                  <Badge 
-                    variant={
-                      project.status === 'ahead' ? 'default' :
-                      project.status === 'at-risk' ? 'destructive' : 'secondary'
-                    }
-                    className="text-xs"
-                  >
-                    {project.status.replace('-', ' ')}
-                  </Badge>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Progress</span>
-                    <span className="font-medium">{project.progress}%</span>
+            {teamMembers.slice(0, 6).map((member) => {
+              const getStatusColor = (status: string) => {
+                switch (status) {
+                  case 'online': return 'bg-green-500';
+                  case 'away': return 'bg-yellow-500';
+                  case 'offline': return 'bg-gray-500';
+                  default: return 'bg-gray-500';
+                }
+              };
+              
+              return (
+                <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border bg-background/50">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="w-10 h-10 rounded-full bg-gradient-primary text-white flex items-center justify-center font-medium">
+                        {member.avatar}
+                      </div>
+                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${getStatusColor(member.status)}`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{member.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {member.position} • {member.lastActivity}
+                      </div>
+                    </div>
                   </div>
-                  <Progress value={project.progress} className="h-2" />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Deadline: {new Date(project.deadline).toLocaleDateString()}</span>
+                  <div className="text-right space-y-1">
+                    <div className="text-sm font-bold text-primary">{member.performance}%</div>
+                    <div className="text-xs text-muted-foreground">
+                      {member.tasksActive} active • {member.tasksCompleted} done
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => navigate('/dashboard/analytics?view=team')}
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Detailed Team Analytics
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Active Tasks Management */}
+        <Card className="bg-gradient-card shadow-xl border-0">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckSquare className="h-5 w-5" />
+              Active Tasks
+            </CardTitle>
+            <CardDescription>Current team tasks and their progress</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {activeTasks.map((task) => {
+              const getStatusColor = (status: string) => {
+                switch (status) {
+                  case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+                  case 'in_progress': return 'bg-blue-100 text-blue-800 border-blue-200';
+                  case 'review': return 'bg-purple-100 text-purple-800 border-purple-200';
+                  case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                  case 'overdue': return 'bg-red-100 text-red-800 border-red-200';
+                  default: return 'bg-gray-100 text-gray-800 border-gray-200';
+                }
+              };
+              
+              const getPriorityColor = (priority: string) => {
+                switch (priority) {
+                  case 'urgent': return 'bg-red-500 animate-pulse';
+                  case 'high': return 'bg-orange-500';
+                  case 'medium': return 'bg-yellow-500';
+                  case 'low': return 'bg-green-500';
+                  default: return 'bg-gray-500';
+                }
+              };
+              
+              return (
+                <div key={task.id} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)}`} />
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{task.title}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {task.assignee} • Due: {task.dueDate} • {task.estimatedHours}h
+                        </div>
+                      </div>
+                    </div>
+                    <Badge className={`text-xs ${getStatusColor(task.status)}`}>
+                      {task.status.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Progress</span>
+                      <span className="font-medium">{task.progress}%</span>
+                    </div>
+                    <Progress value={task.progress} className="h-2" />
+                  </div>
+                </div>
+              );
+            })}
+            <Button 
+              className="w-full"
+              onClick={() => navigate('/dashboard/task-assignment')}
+            >
+              <CheckSquare className="h-4 w-4 mr-2" />
+              Task Management
+            </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Pending Approvals */}
-      <Card className="bg-gradient-card shadow-xl border-0">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            Pending Approvals
-          </CardTitle>
-          <CardDescription>Requests awaiting your approval</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {pendingApprovals.map((approval) => (
-            <div key={approval.id} className="flex items-center justify-between p-3 rounded-lg border bg-background/50">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{approval.employee}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {approval.type}
+      {/* Secondary Management Tools */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Workforce Scheduling */}
+        <Card className="bg-gradient-card shadow-xl border-0">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Today's Schedule
+            </CardTitle>
+            <CardDescription>Team schedule and attendance overview</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {scheduleItems.map((schedule) => {
+              const getScheduleStatusColor = (status: string) => {
+                switch (status) {
+                  case 'confirmed': return 'bg-green-100 text-green-800 border-green-200';
+                  case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-200';
+                  case 'late': return 'bg-orange-100 text-orange-800 border-orange-200';
+                  case 'absent': return 'bg-red-100 text-red-800 border-red-200';
+                  default: return 'bg-gray-100 text-gray-800 border-gray-200';
+                }
+              };
+              
+              return (
+                <div key={schedule.id} className="flex items-center justify-between p-3 rounded-lg border bg-background/50">
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{schedule.employeeName}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {schedule.shift} • {schedule.hours}h scheduled
+                    </div>
+                  </div>
+                  <Badge className={`text-xs ${getScheduleStatusColor(schedule.status)}`}>
+                    {schedule.status}
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">{approval.request}</p>
-                <p className="text-xs text-muted-foreground">{approval.date}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge 
-                  variant={
-                    approval.priority === 'high' ? 'destructive' :
-                    approval.priority === 'medium' ? 'default' : 'secondary'
-                  }
-                  className="text-xs"
-                >
-                  {approval.priority}
-                </Badge>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="outline" className="h-8 px-3">
-                    Approve
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-8 px-3">
-                    Decline
-                  </Button>
+              );
+            })}
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => navigate('/dashboard/schedule')}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Manage Schedule
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Team Alerts & Notifications */}
+        <Card className="bg-gradient-card shadow-xl border-0">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Team Alerts
+            </CardTitle>
+            <CardDescription>Important notifications and action items</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Performance Alerts */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 rounded-lg border bg-background/50">
+                <div className="h-2 w-2 rounded-full mt-2 bg-red-500 animate-pulse" />
+                <div className="flex-1">
+                  <div className="font-medium text-sm">Performance Review Due</div>
+                  <div className="text-xs text-muted-foreground">
+                    Mike Johnson's quarterly review is overdue
+                  </div>
                 </div>
+                <Badge variant="destructive" className="text-xs">Urgent</Badge>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 rounded-lg border bg-background/50">
+                <div className="h-2 w-2 rounded-full mt-2 bg-yellow-500" />
+                <div className="flex-1">
+                  <div className="font-medium text-sm">Leave Request Pending</div>
+                  <div className="text-xs text-muted-foreground">
+                    Sarah Wilson requests 3 days leave next week
+                  </div>
+                </div>
+                <Badge variant="secondary" className="text-xs">Review</Badge>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 rounded-lg border bg-background/50">
+                <div className="h-2 w-2 rounded-full mt-2 bg-blue-500" />
+                <div className="flex-1">
+                  <div className="font-medium text-sm">Team Meeting Scheduled</div>
+                  <div className="text-xs text-muted-foreground">
+                    Weekly standup tomorrow at 10:00 AM
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-xs">Info</Badge>
               </div>
             </div>
-          ))}
-        </CardContent>
-      </Card>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/dashboard/leave-request')}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Leave Requests
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/dashboard/performance')}
+              >
+                <Star className="h-4 w-4 mr-2" />
+                Reviews
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

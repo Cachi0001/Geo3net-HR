@@ -21,7 +21,7 @@ router.post('/',
 )
 
 router.get('/', 
-  canReadEmployees,
+  permissionMiddleware.requireAnyPermission(['employee.read', 'profile.read']),
   employeeController.getEmployees.bind(employeeController)
 )
 
@@ -31,7 +31,7 @@ router.get('/statistics',
 )
 
 router.get('/org-structure',
-  canReadEmployees,
+  permissionMiddleware.requireAnyPermission(['employee.read', 'profile.read']),
   employeeController.getOrganizationalStructure.bind(employeeController)
 )
 
@@ -41,12 +41,12 @@ router.get('/manager/:managerId',
 )
 
 router.get('/department/:departmentId',
-  canReadEmployees,
+  permissionMiddleware.requireAnyPermission(['employee.read', 'profile.read']),
   employeeController.getEmployeesByDepartment.bind(employeeController)
 )
 
 router.get('/employee-id/:employeeId',
-  canReadEmployees,
+  permissionMiddleware.requireAnyPermission(['employee.read', 'profile.read']),
   employeeController.getEmployeeByEmployeeId.bind(employeeController)
 )
 
@@ -77,6 +77,21 @@ router.delete('/:id',
 router.post('/:id/invite',
   requireHRStaff,
   employeeController.sendInvitation.bind(employeeController)
+)
+
+router.post('/:id/send-invitation',
+  requireHRStaff,
+  employeeController.sendInvitation.bind(employeeController)
+)
+
+router.post('/:id/activate-account',
+  requireHRStaff,
+  employeeController.activateAccount.bind(employeeController)
+)
+
+router.post('/:id/link-user',
+  requireHRStaff,
+  employeeController.linkUserToEmployee.bind(employeeController)
 )
 
 export { router as employeeRoutes }

@@ -11,7 +11,11 @@ import {
   FileText,
   Clock,
   Briefcase,
-  CheckSquare
+  CheckSquare,
+  Calendar,
+  Target,
+  Award,
+  Activity
 } from 'lucide-react';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { useSidebar } from '@/components/ui/sidebar';
@@ -36,6 +40,7 @@ const navigationItems: NavigationSection[] = [
     title: 'Overview',
     items: [
       { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
+      { title: 'Time Tracking', url: '/dashboard/time-tracking', icon: Clock },
       { title: 'Analytics', url: '/dashboard/analytics', icon: BarChart3, roles: ['super-admin', 'hr-admin', 'manager'] },
     ]
   },
@@ -53,7 +58,16 @@ const navigationItems: NavigationSection[] = [
     items: [
       { title: 'Recruitment', url: '/dashboard/recruitment', icon: Briefcase, roles: ['super-admin', 'hr-admin', 'hr-staff'] },
       { title: 'Payroll', url: '/dashboard/payroll', icon: FileText, roles: ['super-admin', 'hr-admin'] },
-      { title: 'Attendance', url: '/dashboard/time-tracking', icon: Clock, roles: ['super-admin', 'hr-admin', 'manager', 'hr-staff'] },
+      { title: 'Leave Requests', url: '/dashboard/leave-request', icon: Calendar, roles: ['super-admin', 'hr-admin', 'manager', 'employee'] },
+      { title: 'Performance', url: '/dashboard/performance', icon: Target, roles: ['super-admin', 'hr-admin', 'manager'] },
+    ]
+  },
+  {
+    title: 'Personal',
+    items: [
+      { title: 'My Profile', url: '/dashboard/profile', icon: UserCheck },
+      { title: 'My Activities', url: '/dashboard/activities', icon: Activity },
+      { title: 'Schedule', url: '/dashboard/schedule', icon: Calendar, roles: ['super-admin', 'hr-admin', 'manager'] },
     ]
   },
   {

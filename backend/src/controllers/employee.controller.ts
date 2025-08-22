@@ -1,14 +1,17 @@
 import { Request, Response } from 'express'
-import { EmployeeService, CreateEmployeeData, UpdateEmployeeData, EmployeeSearchFilters, Employee } from '../services/employee.service'
+import { EmployeeService, CreateEmployeeData, UpdateEmployeeData, EmployeeSearchFilters, Employee, EmployeeAccessContext } from '../services/employee.service'
 import { ResponseHandler } from '../utils/response'
 import { ValidationError, NotFoundError, ConflictError } from '../utils/errors'
 import { AuthenticatedRequest } from '../middleware/permission'
+import { RoleService } from '../services/role.service'
 
 export class EmployeeController {
   private employeeService: EmployeeService
+  private roleService: RoleService
 
   constructor() {
     this.employeeService = new EmployeeService()
+    this.roleService = new RoleService()
   }
 
   /**
@@ -45,7 +48,7 @@ export class EmployeeController {
    * Get all employees with optional filtering
    * GET /api/employees
    */
-  async getEmployees(req: Request, res: Response): Promise<Response> {
+  async getEmployees(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
       const filters: EmployeeSearchFilters = {
         departmentId: req.query.departmentId as string,
@@ -57,7 +60,10 @@ export class EmployeeController {
         offset: req.query.offset ? parseInt(req.query.offset as string) : 0
       }
 
-      const result = await this.employeeService.searchEmployees(filters)
+      // Create access context for role-based filtering
+      const accessContext: EmployeeAccessContext = await this.createAccessContext(req)
+      
+      const result = await this.employeeService.searchEmployees(filters, accessContext)
 
       if (result.success) {
         return ResponseHandler.success(res, result.message, {
@@ -78,10 +84,14 @@ export class EmployeeController {
    * Get employee by ID
    * GET /api/employees/:id
    */
-  async getEmployeeById(req: Request, res: Response): Promise<Response> {
+  async getEmployeeById(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
       const { id } = req.params
-      const employee = await this.employeeService.getEmployeeById(id)
+      
+      // Create access context for role-based filtering
+      const accessContext: EmployeeAccessContext = await this.createAccessContext(req, id)
+      
+      const employee = await this.employeeService.getEmployeeById(id, accessContext)
 
       if (!employee) {
         return ResponseHandler.notFound(res, 'Employee not found')
@@ -97,10 +107,14 @@ export class EmployeeController {
    * Get employee by employee ID
    * GET /api/employees/employee-id/:employeeId
    */
-  async getEmployeeByEmployeeId(req: Request, res: Response): Promise<Response> {
+  async getEmployeeByEmployeeId(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
       const { employeeId } = req.params
-      const employee = await this.employeeService.getEmployeeByEmployeeId(employeeId)
+      
+      // Create access context for role-based filtering
+      const accessContext: EmployeeAccessContext = await this.createAccessContext(req)
+      
+      const employee = await this.employeeService.getEmployeeByEmployeeId(employeeId, accessContext)
 
       if (!employee) {
         return ResponseHandler.notFound(res, 'Employee not found')
@@ -198,7 +212,7 @@ export class EmployeeController {
       }
 
       const result = await this.employeeService.createEmployee(employeeData, invitedBy)
-
+      
       if (result.success) {
         return ResponseHandler.success(res, 'Invitation sent successfully', {
           temporaryPassword: result.temporaryPassword
@@ -207,7 +221,70 @@ export class EmployeeController {
 
       return ResponseHandler.badRequest(res, result.message)
     } catch (error) {
+      if (error instanceof NotFoundError) {
+        return ResponseHandler.notFound(res, error.message)
+      }
+      if (error instanceof ConflictError) {
+        return ResponseHandler.conflict(res, error.message)
+      }
       return ResponseHandler.internalError(res, 'Failed to send invitation')
+    }
+  }
+
+  /**
+   * Manually activate employee account
+   * POST /api/employees/:id/activate-account
+   */
+  async activateAccount(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const { id } = req.params
+      const activatedBy = req.user?.id!
+
+      const result = await this.employeeService.activateEmployeeAccount(id, activatedBy)
+      
+      if (result.success) {
+        return ResponseHandler.success(res, result.message, { employee: result.employee })
+      }
+
+      return ResponseHandler.badRequest(res, result.message)
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        return ResponseHandler.notFound(res, error.message)
+      }
+      if (error instanceof ConflictError) {
+        return ResponseHandler.conflict(res, error.message)
+      }
+      return ResponseHandler.internalError(res, 'Failed to activate account')
+    }
+  }
+  /**
+   * Link existing user to employee
+   * POST /api/employees/:id/link-user
+   */
+  async linkUserToEmployee(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const { id } = req.params
+      const { userId } = req.body
+
+      if (!userId) {
+        return ResponseHandler.badRequest(res, 'User ID is required')
+      }
+
+      const result = await this.employeeService.linkUserToEmployee(id, userId)
+
+      if (result.success) {
+        return ResponseHandler.success(res, result.message, { employee: result.employee })
+      }
+
+      return ResponseHandler.badRequest(res, result.message)
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        return ResponseHandler.notFound(res, error.message)
+      }
+      if (error instanceof ConflictError) {
+        return ResponseHandler.conflict(res, error.message)
+      }
+      return ResponseHandler.internalError(res, 'Failed to link user to employee')
     }
   }
 
@@ -338,5 +415,50 @@ export class EmployeeController {
     })
 
     return positionCounts
+  }
+
+  /**
+   * Create access context for role-based data filtering
+   */
+  private async createAccessContext(req: AuthenticatedRequest, targetEmployeeId?: string): Promise<EmployeeAccessContext> {
+    const userId = req.user?.id!
+    const userRole = req.user?.role || 'employee'
+    
+    // Get user's permissions from role service
+    const permissions: string[] = []
+    
+    // Check if user has specific permissions based on their role
+    switch (userRole) {
+      case 'super-admin':
+        permissions.push('employees:read:all', 'employees:read:salary', 'employees:read:emergency', 'employees:read:notes')
+        break
+      case 'hr-admin':
+        permissions.push('employees:read:hr', 'employees:read:salary', 'employees:read:emergency', 'employees:read:notes')
+        break
+      case 'manager':
+        permissions.push('employees:read:team', 'employees:read:salary')
+        break
+      case 'hr-staff':
+        permissions.push('employees:read:hr', 'employees:read:emergency')
+        break
+      default:
+        // Regular employee permissions
+        break
+    }
+    
+    // Check if user is accessing their own data
+    let isOwner = false
+    if (targetEmployeeId) {
+      // Get the employee record to check if it belongs to the current user
+      const employee = await this.employeeService.getEmployeeById(targetEmployeeId)
+      isOwner = employee?.userId === userId
+    }
+    
+    return {
+      userId,
+      role: userRole,
+      permissions,
+      isOwner
+    }
   }
 }

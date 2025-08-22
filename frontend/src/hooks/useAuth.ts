@@ -19,7 +19,7 @@ export const useAuth = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
-  // Get current user query
+  // Get current user query with enhanced error handling
   const {
     data: user,
     isLoading: isLoadingUser,
@@ -28,53 +28,81 @@ export const useAuth = () => {
     queryKey: ['currentUser'],
     queryFn: async () => {
       const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
-      if (!token) return null
+      
+      console.log('🔍 Fetching current user:', { hasToken: !!token })
+      
+      if (!token) {
+        console.log('❌ No token found, user not authenticated')
+        return null
+      }
       
       try {
         const response = await apiClient.getCurrentUser()
-        return response.data || null
-      } catch (error) {
-        // If token is invalid, clear it
-        apiClient.clearToken()
+        
+        if (response.success && response.data) {
+          console.log('✅ Current user fetched:', {
+            email: response.data.email,
+            role: response.data.role
+          })
+          return response.data
+        } else {
+          console.warn('⚠️ getCurrentUser returned unsuccessful response:', response.message)
+          return null
+        }
+      } catch (error: any) {
+        console.error('❌ getCurrentUser error:', error)
+        
+        // Handle specific error types
+        if (error.statusCode === 401 || error.statusCode === 403) {
+          console.log('🔄 Authentication error, clearing tokens')
+          apiClient.clearToken()
+        } else if (error.message?.includes('Network error')) {
+          console.log('🌐 Network error, keeping tokens for retry')
+          // Don't clear tokens for network errors
+        }
+        
         return null
       }
     },
-    retry: false,
+    retry: (failureCount, error: any) => {
+      // Don't retry auth errors, but retry network errors
+      if (error?.statusCode === 401 || error?.statusCode === 403) {
+        return false
+      }
+      return failureCount < 2
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   })
 
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: (data: LoginData) => apiClient.login(data),
     onSuccess: (response, variables) => {
+      console.log('🔐 Login mutation success:', response)
+      
       if (response.success && response.data) {
-        const { user, accessToken, refreshToken } = response.data
-        const rememberMe = variables.rememberMe || false
+        const { user } = response.data
         
-        // Store tokens with remember me preference
-        apiClient.setToken(accessToken, rememberMe)
-        
-        // Store refresh token in the same storage type as access token
-        if (rememberMe) {
-          localStorage.setItem('refreshToken', refreshToken)
-          sessionStorage.removeItem('refreshToken')
-        } else {
-          sessionStorage.setItem('refreshToken', refreshToken)
-          localStorage.removeItem('refreshToken')
-        }
-        
-        // Update query cache
+        // Update query cache with user data
         queryClient.setQueryData(['currentUser'], user)
         
-        toast.success('Login successful!')
+        toast.success(`Welcome back, ${user.fullName}!`)
         
-        // Navigate based on role
+        console.log('✅ Login successful, navigating to dashboard:', {
+          user: user.email,
+          role: user.role
+        })
+        
+        // Navigate to dashboard
         navigate('/dashboard')
       } else {
+        console.error('❌ Login failed:', response.message)
         toast.error(response.message || 'Login failed')
       }
     },
     onError: (error: Error) => {
+      console.error('❌ Login error:', error)
       toast.error(error.message || 'Login failed')
     },
   })
@@ -152,6 +180,20 @@ export const useAuth = () => {
   // Helper functions
   const isAuthenticated = !!user
   const isLoading = isLoadingUser || loginMutation.isPending || registerMutation.isPending
+
+  // Debug logging for authentication state
+  React.useEffect(() => {
+    console.log('🔍 [useAuth] Authentication state changed:', {
+      isAuthenticated,
+      isLoading,
+      user: user ? {
+        email: user.email,
+        role: user.role,
+        fullName: user.fullName
+      } : null,
+      userError: userError?.message
+    })
+  }, [isAuthenticated, isLoading, user, userError])
 
   const hasRole = (requiredRole: string | string[]) => {
     if (!user) return false

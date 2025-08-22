@@ -1,10 +1,19 @@
 #!/usr/bin/env ts-node
 
+// Load environment variables FIRST before any other imports
 import dotenv from 'dotenv'
-import { SystemService } from '../src/services/system.service'
+import path from 'path'
 
-// Load environment variables
-dotenv.config()
+const envPath = path.join(__dirname, '..', '.env')
+console.log('Loading .env from:', envPath)
+dotenv.config({ path: envPath })
+
+// Debug environment variables
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'Found' : 'Not found')
+console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Found' : 'Not found')
+
+// Now import services that depend on environment variables
+import { SystemService } from '../src/services/system.service'
 
 async function initializeSystem() {
   console.log('🚀 Initializing Go3net HR Management System...\n')
@@ -27,7 +36,7 @@ async function initializeSystem() {
     // Initialize system
     const result = await systemService.initializeSystem()
     
-    if (result.success && result.superAdminCreated && result.superAdminCredentials) {
+    if (result.superAdminCreated && result.superAdminCredentials) {
       console.log('\n🎉 SYSTEM INITIALIZATION SUCCESSFUL!\n')
       console.log('=' .repeat(50))
       console.log('📧 Super Admin Email:', result.superAdminCredentials.email)
@@ -40,9 +49,9 @@ async function initializeSystem() {
       console.log('   4. Use this account to create other admin accounts')
       console.log('\n🌐 You can now start the application and log in!')
       console.log('   Frontend: http://localhost:3000')
-      console.log('   Backend: http://localhost:5000')
+      console.log('   Backend: http://localhost:5003')
     } else {
-      console.error('❌ System initialization failed:', result.message)
+      console.error('❌ System initialization failed: Unknown error')
       process.exit(1)
     }
     

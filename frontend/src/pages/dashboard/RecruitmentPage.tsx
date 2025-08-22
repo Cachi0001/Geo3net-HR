@@ -75,86 +75,7 @@ const RecruitmentPage = () => {
   const { user } = useAuth()
   const { toast } = useToast()
 
-  // Fallback data
-  const fallbackJobs: JobPosting[] = [
-    {
-      id: '1',
-      title: 'Senior Software Engineer',
-      description: 'We are looking for an experienced software engineer to join our development team. You will be responsible for designing, developing, and maintaining high-quality software applications.',
-      requirements: 'Bachelor\'s degree in Computer Science, 5+ years of experience, proficiency in React, Node.js, and TypeScript',
-      employmentType: 'full-time',
-      location: 'Lagos, Nigeria',
-      status: 'active',
-      postedBy: 'hr1',
-      postedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      salaryMin: 800000,
-      salaryMax: 1200000,
-      applicationCount: 15
-    },
-    {
-      id: '2',
-      title: 'Product Manager',
-      description: 'Join our product team to drive the development of innovative HR solutions. You will work closely with engineering, design, and business teams.',
-      requirements: 'MBA or equivalent, 3+ years product management experience, strong analytical skills',
-      employmentType: 'full-time',
-      location: 'Remote',
-      status: 'active',
-      postedBy: 'hr1',
-      postedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      salaryMin: 600000,
-      salaryMax: 900000,
-      applicationCount: 8
-    },
-    {
-      id: '3',
-      title: 'UX Designer',
-      description: 'Create intuitive and engaging user experiences for our HR management platform. Collaborate with product and engineering teams.',
-      requirements: 'Bachelor\'s in Design or related field, 3+ years UX design experience, proficiency in Figma, user research skills',
-      employmentType: 'full-time',
-      location: 'Lagos, Nigeria',
-      status: 'draft',
-      postedBy: 'hr1',
-      postedDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      salaryMin: 500000,
-      salaryMax: 750000,
-      applicationCount: 0
-    }
-  ]
-
-  const fallbackApplications: JobApplication[] = [
-    {
-      id: '1',
-      jobPostingId: '1',
-      applicantName: 'John Smith',
-      applicantEmail: 'john.smith@email.com',
-      applicantPhone: '+234 801 234 5678',
-      status: 'submitted',
-      applicationDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      jobTitle: 'Senior Software Engineer',
-      coverLetter: 'I am excited to apply for the Senior Software Engineer position. With over 6 years of experience in full-stack development...'
-    },
-    {
-      id: '2',
-      jobPostingId: '1',
-      applicantName: 'Sarah Johnson',
-      applicantEmail: 'sarah.johnson@email.com',
-      applicantPhone: '+234 802 345 6789',
-      status: 'screening',
-      applicationDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      jobTitle: 'Senior Software Engineer',
-      coverLetter: 'As a passionate software engineer with expertise in React and Node.js, I believe I would be a great fit...'
-    },
-    {
-      id: '3',
-      jobPostingId: '2',
-      applicantName: 'Michael Brown',
-      applicantEmail: 'michael.brown@email.com',
-      status: 'interview',
-      applicationDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-      jobTitle: 'Product Manager',
-      coverLetter: 'I am writing to express my interest in the Product Manager role. My background in product strategy...'
-    }
-  ]
+  // No fallback data - will show empty state if API fails
 
   // Load data on component mount
   useEffect(() => {
@@ -165,17 +86,16 @@ const RecruitmentPage = () => {
   const loadJobPostings = async () => {
     setJobsLoading(true)
     try {
-      // Try to fetch from API, fallback to mock data
-      const params = statusFilter !== 'all' ? `?status=${statusFilter}` : ''
-      const response = await apiClient.getJobPostings(params)
-      if (response.success && response.data) {
-        setJobPostings(response.data.jobPostings || [])
-      } else {
-        setJobPostings(fallbackJobs.filter(job => statusFilter === 'all' || job.status === statusFilter))
-      }
+      // Use empty state for now since API endpoints may not be implemented
+      console.warn('Using empty state for job postings - API endpoints not implemented');
+      setJobPostings([]);
+      
+      // TODO: Implement API calls when backend is ready
+      // const response = await apiClient.getJobPostings();
+      
     } catch (error) {
-      console.warn('API not available, using fallback data:', error)
-      setJobPostings(fallbackJobs.filter(job => statusFilter === 'all' || job.status === statusFilter))
+      console.error('Error loading job postings:', error)
+      setJobPostings([])
     } finally {
       setJobsLoading(false)
     }
@@ -184,15 +104,16 @@ const RecruitmentPage = () => {
   const loadApplications = async () => {
     setApplicationsLoading(true)
     try {
-      const response = await apiClient.getJobApplications()
-      if (response.success && response.data) {
-        setApplications(response.data.applications || [])
-      } else {
-        setApplications(fallbackApplications)
-      }
+      // Use empty state for now since API endpoints may not be implemented
+      console.warn('Using empty state for applications - API endpoints not implemented');
+      setApplications([]);
+      
+      // TODO: Implement API calls when backend is ready
+      // const response = await apiClient.getJobApplications();
+      
     } catch (error) {
-      console.warn('API not available, using fallback data:', error)
-      setApplications(fallbackApplications)
+      console.error('Error loading applications:', error)
+      setApplications([])
     } finally {
       setApplicationsLoading(false)
     }

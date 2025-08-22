@@ -1,6 +1,6 @@
 import { supabase } from '../config/database'
 import { hashPassword, comparePassword, generateTemporaryPassword, generateResetToken } from '../utils/password'
-import { generateTokens, TokenPayload } from '../utils/jwt'
+import { generateTokens, generateAccessToken, verifyToken, TokenPayload } from '../utils/jwt'
 import { EmailService } from './email.service'
 import { RoleService } from './role.service'
 import { ConflictError, AuthenticationError, ValidationError, AppError } from '../utils/errors'
@@ -77,25 +77,7 @@ export class AuthService {
     }
   }
 
-  private async testConstraintValues() {
-    try {
-      console.log('🧪 Testing constraint values...')
 
-      // Test account_status values
-      const testValues = ['pending_setup', 'active', 'suspended']
-      for (const value of testValues) {
-        console.log(`Testing account_status: '${value}'`)
-      }
-
-      // Test status values  
-      const statusValues = ['active', 'inactive', 'terminated']
-      for (const value of statusValues) {
-        console.log(`Testing status: '${value}'`)
-      }
-    } catch (error) {
-      console.log('⚠️ Error testing values:', error)
-    }
-  }
   async registerWithEmail(data: RegisterData): Promise<AuthResult> {
     const { email, fullName, password } = data
 
@@ -235,78 +217,123 @@ export class AuthService {
   async loginWithEmail(data: LoginData): Promise<AuthResult> {
     const { email, password, rememberMe } = data
 
-    // First get the user
-    const { data: user, error } = await supabase
-      .from('users')
-      .select(`
-        id, email, full_name, password_hash, employee_id, account_status, status
-      `)
-      .eq('email', email)
-      .single()
+    console.log(`🔍 [AuthService] Login attempt for email: ${email}`)
 
-    if (error || !user) {
-      throw new AuthenticationError('Invalid email or password')
-    }
+    try {
+      // First get the user
+      const { data: user, error } = await supabase
+        .from('users')
+        .select(`
+          id, email, full_name, password_hash, employee_id, account_status, status
+        `)
+        .eq('email', email)
+        .single()
 
-    const isValidPassword = await comparePassword(password, user.password_hash)
-    if (!isValidPassword) {
-      throw new AuthenticationError('Invalid email or password')
-    }
+      console.log(`🔍 [AuthService] Database query result:`, { 
+        userFound: !!user, 
+        error: error?.message,
+        userStatus: user?.status,
+        accountStatus: user?.account_status 
+      })
 
-    // Check if account is suspended
-    if (user.account_status === 'suspended') {
-      throw new AuthenticationError('Account has been suspended. Please contact support.')
-    }
-
-    // Check if user is terminated
-    if (user.status === 'terminated') {
-      throw new AuthenticationError('Account has been terminated. Please contact support.')
-    }
-
-    // Get user roles separately
-    const { data: userRoles } = await supabase
-      .from('user_roles')
-      .select('role_name, is_active')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-
-    let activeRole = null
-    if (userRoles && userRoles.length > 0) {
-      activeRole = userRoles[0] // Take the first active role
-    }
-    
-    if (!activeRole) {
-      // Assign default employee role if none exists
-      const roleResult = await this.roleService.assignRole(user.id, 'employee', user.id)
-      if (roleResult.success) {
-        activeRole = { role_name: 'employee', is_active: true }
-      } else {
-        throw new AuthenticationError('Unable to assign user role. Please contact support.')
+      if (error || !user) {
+        console.log(`❌ [AuthService] User not found for email: ${email}`, error?.message)
+        throw new AuthenticationError('Invalid email or password')
       }
-    }
 
-    const tokenPayload: TokenPayload = {
-      userId: user.id,
-      email: user.email,
-      role: activeRole.role_name
-    }
+      const isValidPassword = await comparePassword(password, user.password_hash)
+      console.log(`🔍 [AuthService] Password validation result: ${isValidPassword}`)
+      
+      if (!isValidPassword) {
+        console.log(`❌ [AuthService] Invalid password for email: ${email}`)
+        throw new AuthenticationError('Invalid email or password')
+      }
 
-    const tokens = generateTokens(tokenPayload)
+      // Check if account is suspended
+      if (user.account_status === 'suspended') {
+        console.log(`❌ [AuthService] Account suspended for email: ${email}`)
+        throw new AuthenticationError('Account has been suspended. Please contact support.')
+      }
 
-    const userPayload = {
-      id: user.id,
-      email: user.email,
-      fullName: user.full_name,
-      employeeId: user.employee_id,
-      accountStatus: user.account_status,
-      role: activeRole.role_name
-    }
+      // Check if user is terminated
+      if (user.status === 'terminated') {
+        console.log(`❌ [AuthService] Account terminated for email: ${email}`)
+        throw new AuthenticationError('Account has been terminated. Please contact support.')
+      }
 
-    console.log('[AuthService] loginWithEmail - Returning user payload:', userPayload)
+      // Get user roles separately
+      const { data: userRoles, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role_name, is_active')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
 
-    return {
-      user: userPayload,
-      tokens
+      console.log(`🔍 [AuthService] User roles query:`, { 
+        rolesFound: userRoles?.length || 0, 
+        roleError: roleError?.message,
+        roles: userRoles 
+      })
+
+      let activeRole = null
+      if (userRoles && userRoles.length > 0) {
+        activeRole = userRoles[0] // Take the first active role
+      }
+      
+      if (!activeRole) {
+        console.log(`⚠️ [AuthService] No active role found, assigning default employee role for: ${email}`)
+        // Assign default employee role if none exists
+        const roleResult = await this.roleService.assignRole(user.id, 'employee', user.id)
+        if (roleResult.success) {
+          activeRole = { role_name: 'employee', is_active: true }
+          console.log(`✅ [AuthService] Assigned employee role to: ${email}`)
+        } else {
+          console.log(`❌ [AuthService] Failed to assign employee role to: ${email}`, roleResult.message)
+          throw new AuthenticationError('Unable to assign user role. Please contact support.')
+        }
+      }
+
+      const tokenPayload: TokenPayload = {
+        userId: user.id,
+        email: user.email,
+        role: activeRole.role_name
+      }
+
+      const tokens = generateTokens(tokenPayload)
+
+      const userPayload = {
+        id: user.id,
+        email: user.email,
+        fullName: user.full_name,
+        employeeId: user.employee_id,
+        accountStatus: user.account_status,
+        role: activeRole.role_name
+      }
+
+      console.log(`✅ [AuthService] Login successful for:`, { 
+        email: userPayload.email, 
+        role: userPayload.role,
+        employeeId: userPayload.employeeId 
+      })
+
+      return {
+        user: userPayload,
+        tokens
+      }
+    } catch (error: any) {
+      // Handle database connectivity issues
+      if (error.message?.includes('fetch failed') || error.message?.includes('Failed to fetch')) {
+        console.error(`❌ [AuthService] Database connectivity issue during login for ${email}:`, error.message)
+        throw new AuthenticationError('Service temporarily unavailable. Please try again in a few moments.')
+      }
+      
+      // Re-throw authentication errors as-is
+      if (error instanceof AuthenticationError) {
+        throw error
+      }
+      
+      // Handle other unexpected errors
+      console.error(`❌ [AuthService] Unexpected error during login for ${email}:`, error)
+      throw new AuthenticationError('Login failed. Please try again.')
     }
   }
 
@@ -541,6 +568,50 @@ export class AuthService {
 
     if (!result.success) {
       throw new ValidationError(result.message || 'Email verification failed')
+    }
+  }
+
+  async refreshToken(refreshToken: string): Promise<{ accessToken: string }> {
+    try {
+      const decoded = verifyToken(refreshToken) as TokenPayload
+      
+      // Verify user still exists and is active
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('id, email, account_status, status')
+        .eq('id', decoded.userId)
+        .single()
+      
+      if (error || !user) {
+        throw new AuthenticationError('User not found')
+      }
+      
+      if (user.account_status === 'suspended' || user.status === 'terminated') {
+        throw new AuthenticationError('Account is inactive')
+      }
+      
+      // Get current role
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('role_name')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single()
+      
+      const role = userRoles?.role_name || 'employee'
+      
+      // Generate new access token
+      const newTokenPayload: TokenPayload = {
+        userId: user.id,
+        email: user.email,
+        role: role
+      }
+      
+      const accessToken = generateAccessToken(newTokenPayload)
+      
+      return { accessToken }
+    } catch (error) {
+      throw new AuthenticationError('Invalid refresh token')
     }
   }
 }

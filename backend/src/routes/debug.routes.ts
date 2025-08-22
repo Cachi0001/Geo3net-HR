@@ -19,8 +19,7 @@ router.post('/check-user', async (req: Request, res: Response) => {
     const { data: user, error } = await supabase
       .from('users')
       .select(`
-        id, email, full_name, password_hash, employee_id, account_status, status,
-        user_roles(role_name, is_active)
+        id, email, full_name, password_hash, employee_id, account_status, status
       `)
       .eq('email', email)
       .single()
@@ -52,8 +51,7 @@ router.post('/check-user', async (req: Request, res: Response) => {
         full_name: user.full_name,
         employee_id: user.employee_id,
         account_status: user.account_status,
-        status: user.status,
-        roles: user.user_roles
+        status: user.status
       },
       passwordMatch,
       passwordHashPrefix: user.password_hash.substring(0, 20) + '...'

@@ -67,21 +67,21 @@ const DashboardHome = () => {
     {
       title: 'Add Employee',
       description: 'Register a new employee',
-      href: '/dashboard/employees/new',
+      href: '/dashboard/employees/add',
       icon: Users,
       color: 'bg-blue-500'
     },
     {
       title: 'Create Task',
       description: 'Assign a new task',
-      href: '/dashboard/tasks/new',
+      href: '/dashboard/task-assignment',
       icon: Plus,
       color: 'bg-green-500'
     },
     {
       title: 'View Reports',
       description: 'Generate analytics',
-      href: '/dashboard/reports',
+      href: '/dashboard/analytics',
       icon: TrendingUp,
       color: 'bg-purple-500'
     },
@@ -97,67 +97,67 @@ const DashboardHome = () => {
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 rounded-xl border border-blue-100">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
-          <p className="text-gray-600 mt-2 text-lg">Here's what's happening at your company today.</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Welcome back!</h1>
+          <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base md:text-lg">Here's what's happening at your company today.</p>
         </div>
-        <div className="mt-4 sm:mt-0">
-          <Button size="lg" className="shadow-md hover:shadow-lg transition-shadow">
-            <Plus className="mr-2 h-5 w-5" />
+        <div className="mt-3 sm:mt-0">
+          <Button size="sm" className="w-full sm:w-auto shadow-md hover:shadow-lg transition-shadow">
+            <Plus className="mr-2 h-4 w-4" />
             Quick Action
           </Button>
         </div>
       </div>
 
       {/* Stats Overview Grid - Mobile First: 2x2, Tablet: 2x2, Desktop: 4x1 */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+      <div className="mobile-responsive-grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+        <Card className="metric-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2">
+            <CardTitle className="mobile-text-xs font-medium">Total Employees</CardTitle>
+            <Users className="mobile-icon text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEmployees}</div>
+          <CardContent className="p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold">{stats.totalEmployees}</div>
             <p className="text-xs text-muted-foreground">
               +2 from last month
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Present Today</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+        <Card className="metric-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2">
+            <CardTitle className="mobile-text-xs font-medium">Present Today</CardTitle>
+            <CheckCircle className="mobile-icon text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.presentToday}</div>
+          <CardContent className="p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold">{stats.presentToday}</div>
             <p className="text-xs text-muted-foreground">
               {((stats.presentToday / stats.totalEmployees) * 100).toFixed(1)}% attendance
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">On Leave</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+        <Card className="metric-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2">
+            <CardTitle className="mobile-text-xs font-medium">On Leave</CardTitle>
+            <Calendar className="mobile-icon text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.onLeave}</div>
+          <CardContent className="p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold">{stats.onLeave}</div>
             <p className="text-xs text-muted-foreground">
               {stats.pendingLeaveRequests} pending requests
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Tasks</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        <Card className="metric-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2">
+            <CardTitle className="mobile-text-xs font-medium">Active Tasks</CardTitle>
+            <TrendingUp className="mobile-icon text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingTasks}</div>
+          <CardContent className="p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold">{stats.pendingTasks}</div>
             <p className="text-xs text-muted-foreground">
               {stats.completedTasks} completed this week
             </p>
@@ -166,31 +166,31 @@ const DashboardHome = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
         {/* Recent Activities */}
-        <Card className="xl:col-span-2">
-          <CardHeader>
-            <CardTitle>Recent Activities</CardTitle>
-            <CardDescription>
+        <Card className="lg:col-span-2">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="mobile-text-base">Recent Activities</CardTitle>
+            <CardDescription className="mobile-text-sm">
               Latest updates from your team
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-6">
+          <CardContent className="p-4 sm:p-6 pt-2 sm:pt-6">
+            <div className="space-y-4 sm:space-y-6">
               {recentActivities.map((activity) => {
                 const Icon = activity.icon
                 return (
                   <div key={activity.id} className="flex items-center space-x-3">
-                    <Icon className={`h-5 w-5 ${activity.color}`} />
+                    <Icon className={`mobile-icon ${activity.color}`} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="mobile-text-sm font-medium text-gray-900">
                         {activity.user}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs sm:text-sm text-gray-500">
                         {activity.action}
                       </p>
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-xs sm:text-sm text-gray-500">
                       {activity.time}
                     </div>
                   </div>
@@ -200,7 +200,7 @@ const DashboardHome = () => {
             <div className="mt-4">
               <Link 
                 to="/dashboard/activities" 
-                className="text-sm text-primary hover:underline flex items-center"
+                className="text-xs sm:text-sm text-primary hover:underline flex items-center"
               >
                 View all activities
                 <ArrowRight className="ml-1 h-3 w-3" />
@@ -210,29 +210,29 @@ const DashboardHome = () => {
         </Card>
 
         {/* Quick Actions */}
-        <Card className="xl:col-span-1">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>
+        <Card className="lg:col-span-1">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="mobile-text-base">Quick Actions</CardTitle>
+            <CardDescription className="mobile-text-sm">
               Common tasks and shortcuts
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 gap-4">
+          <CardContent className="p-4 sm:p-6 pt-2 sm:pt-6">
+            <div className="grid grid-cols-1 gap-3">
               {quickActions.map((action) => {
                 const Icon = action.icon
                 return (
                   <Link
                     key={action.title}
                     to={action.href}
-                    className="p-4 border rounded-xl hover:bg-gray-50 hover:shadow-md transition-all duration-200 group flex items-center space-x-4"
+                    className="quick-action-card flex items-center space-x-3 min-h-[60px] mobile-content"
                   >
-                    <div className={`w-8 h-8 ${action.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0`}>
-                      <Icon className="h-4 w-4 text-white" />
+                    <div className={`w-6 h-6 sm:w-8 sm:h-8 ${action.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0`}>
+                      <Icon className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 text-sm">{action.title}</h3>
-                      <p className="text-xs text-gray-500">{action.description}</p>
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <h3 className="font-medium text-gray-900 text-xs sm:text-sm group-hover:text-primary transition-colors duration-200 overflow-hidden text-ellipsis whitespace-nowrap">{action.title}</h3>
+                      <p className="text-xs text-gray-500 group-hover:text-foreground/80 transition-colors duration-200 overflow-hidden text-ellipsis line-clamp-1 hidden sm:block">{action.description}</p>
                     </div>
                   </Link>
                 )

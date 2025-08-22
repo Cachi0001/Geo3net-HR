@@ -1,5 +1,13 @@
 .dashboard {
   @apply space-y-6;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.dashboard h1 {
+  background: linear-gradient(135deg, hsl(207 90% 54%) 0%, hsl(142 76% 36%) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .quickAction {
@@ -8,15 +16,19 @@
   overflow: hidden;
   word-wrap: break-word;
   hyphens: auto;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+  backdrop-filter: blur(5px);
 }
 
 .quickAction:hover {
   @apply border-primary/30 bg-primary/5 shadow-md;
   transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%);
 }
 
 .quickAction:hover .quickActionIcon {
   @apply scale-110;
+  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.25));
 }
 
 .quickAction:hover .quickActionTitle {
@@ -57,18 +69,91 @@
 }
 
 .activityItem {
-  @apply flex items-center justify-between p-3 border-b border-gray-100 last:border-b-0;
+  @apply flex items-center justify-between p-3 border-b border-gray-100 last:border-b-0 transition-colors duration-200;
 }
 
-/* iPad and tablet responsiveness */
-@media (min-width: 768px) and (max-width: 1024px) {
+.activityItem:hover {
+  @apply bg-muted/50;
+}
+
+/* Payroll management specific styles */
+.payrollCard {
+  @apply relative overflow-hidden;
+}
+
+.payrollCard::before {
+  content: '';
+  @apply absolute inset-0 opacity-20;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+}
+
+.recruitmentPipeline {
+  @apply relative;
+}
+
+.pipelineStage {
+  @apply transition-all duration-300;
+}
+
+.pipelineStage:hover {
+  transform: translateY(-1px);
+  @apply shadow-sm;
+}
+
+/* Enhanced responsive breakpoints */
+
+/* Small mobile devices (320px - 479px) */
+@media (max-width: 479px) {
+  .dashboard {
+    @apply space-y-3;
+  }
+  
+  .dashboard h1 {
+    @apply text-lg;
+  }
+  
   .quickAction {
-    min-height: 100px;
+    min-height: 70px;
+    @apply p-2;
+  }
+  
+  .quickActionTitle {
+    @apply text-xs;
+    -webkit-line-clamp: 1;
+  }
+  
+  .quickActionDescription {
+    display: none;
+  }
+  
+  .activityItem {
+    @apply p-2 flex-col items-start gap-2;
+  }
+
+  .payrollCard,
+  .recruitmentPipeline {
+    @apply px-2 py-3;
+  }
+}
+
+/* Mobile devices (480px - 767px) */
+@media (min-width: 480px) and (max-width: 767px) {
+  .dashboard {
+    @apply space-y-4;
+  }
+  
+  .dashboard h1 {
+    @apply text-xl;
+  }
+  
+  .quickAction {
+    min-height: 80px;
     @apply p-3;
   }
   
   .quickActionTitle {
     @apply text-xs;
+    -webkit-line-clamp: 1;
   }
   
   .quickActionDescription {
@@ -77,18 +162,45 @@
   }
 }
 
-/* Mobile responsiveness */
-@media (max-width: 767px) {
+/* Tablets (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .dashboard {
+    @apply space-y-5;
+  }
+  
+  .dashboard h1 {
+    @apply text-2xl;
+  }
+  
   .quickAction {
-    min-height: 80px;
+    min-height: 100px;
     @apply p-3;
   }
   
   .quickActionTitle {
-    @apply text-xs;
+    @apply text-sm;
   }
   
   .quickActionDescription {
-    display: none;
+    @apply text-xs;
+    -webkit-line-clamp: 2;
+  }
+}
+
+/* Large tablets and small desktops (1024px - 1279px) */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .quickAction {
+    min-height: 110px;
+  }
+}
+
+/* Desktop and larger (1280px+) */
+@media (min-width: 1280px) {
+  .quickAction {
+    min-height: 120px;
+  }
+  
+  .quickAction:hover {
+    transform: translateY(-3px);
   }
 }

@@ -78,8 +78,11 @@ export const me = async (req: AuthenticatedRequest, res: Response, next: NextFun
       return ResponseHandler.unauthorized(res, 'Authentication required')
     }
 
-    const { id: userId, role } = req.user
+    const { id: userId } = req.user
 
+    console.log(`🔍 [AuthController] Fetching current user data for: ${userId}`)
+
+    // Fetch user data from database
     const { data: user, error } = await supabase
       .from('users')
       .select('id, email, full_name, employee_id, account_status, status')
@@ -87,20 +90,46 @@ export const me = async (req: AuthenticatedRequest, res: Response, next: NextFun
       .single()
 
     if (error || !user) {
+      console.log(`❌ [AuthController] User not found: ${userId}`, error?.message)
       return ResponseHandler.notFound(res, 'User not found')
     }
 
+    // Fetch current role from database (not from token)
+    const { data: userRole, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role_name, is_active')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .single()
+
+    let currentRole = 'employee' // Default role
+    if (userRole && !roleError) {
+      currentRole = userRole.role_name
+      console.log(`✅ [AuthController] Current role found: ${currentRole}`)
+    } else {
+      console.log(`⚠️ [AuthController] No active role found, using default: ${currentRole}`)
+    }
+
+    const userData = {
+      id: user.id,
+      email: user.email,
+      fullName: user.full_name,
+      employeeId: user.employee_id,
+      accountStatus: user.account_status,
+      role: currentRole
+    }
+
+    console.log(`✅ [AuthController] Current user data:`, {
+      email: userData.email,
+      role: userData.role,
+      employeeId: userData.employeeId
+    })
+
     return ResponseHandler.success(res, 'Current user', {
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.full_name,
-        employeeId: user.employee_id,
-        accountStatus: user.account_status,
-        role: role
-      }
+      user: userData
     })
   } catch (error) {
+    console.error(`❌ [AuthController] Error in me endpoint:`, error)
     next(error)
   }
 }
@@ -241,5 +270,75 @@ export const resendVerification = async (req: Request, res: Response, next: Next
     return ResponseHandler.success(res, 'Verification email sent')
   } catch (error) {
     next(error)
+  }
+}
+
+export const refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { refreshToken } = req.body
+    
+    if (!refreshToken) {
+      throw new ValidationError('Refresh token is required')
+    }
+
+    const result = await authService.refreshToken(refreshToken)
+    
+    return ResponseHandler.success(res, 'Token refreshed successfully', {
+      accessToken: result.accessToken
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// Debug endpoint to check database connectivity and users
+export const debugAuth = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    console.log('🔍 [DEBUG] Checking database connectivity and users...')
+    
+    // Test basic database connection
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, email, full_name, account_status, status, created_at')
+      .limit(10)
+    
+    if (usersError) {
+      console.error('❌ [DEBUG] Users query failed:', usersError)
+      return ResponseHandler.badRequest(res, `Database query failed: ${usersError.message}`)
+    }
+    
+    console.log(`✅ [DEBUG] Found ${users?.length || 0} users in database`)
+    
+    // Test roles table
+    const { data: roles, error: rolesError } = await supabase
+      .from('user_roles')
+      .select('user_id, role_name, is_active')
+      .limit(10)
+    
+    if (rolesError) {
+      console.error('⚠️ [DEBUG] Roles query failed:', rolesError)
+    }
+    
+    console.log(`✅ [DEBUG] Found ${roles?.length || 0} user roles in database`)
+    
+    return ResponseHandler.success(res, 'Database debug info retrieved', {
+      users: users?.map(user => ({
+        id: user.id,
+        email: user.email,
+        fullName: user.full_name,
+        accountStatus: user.account_status,
+        status: user.status,
+        createdAt: user.created_at
+      })) || [],
+      userRoles: roles?.map(role => ({
+        userId: role.user_id,
+        roleName: role.role_name,
+        isActive: role.is_active
+      })) || [],
+      connectionStatus: 'Connected'
+    })
+  } catch (error: any) {
+    console.error('❌ [DEBUG] Database debug failed:', error)
+    return ResponseHandler.internalError(res, `Debug failed: ${error.message}`)
   }
 }

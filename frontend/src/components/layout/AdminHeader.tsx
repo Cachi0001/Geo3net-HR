@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { Bell, Search, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export const AdminHeader: React.FC = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
 
   const notifications = [
@@ -16,6 +19,10 @@ export const AdminHeader: React.FC = () => {
     { id: 2, title: 'Payroll Reminder', message: 'Monthly payroll processing due tomorrow', time: '4 hours ago' },
     { id: 3, title: 'Leave Request', message: '3 pending leave requests require approval', time: '1 day ago' }
   ];
+
+  const getInitials = (name: string) => {
+    return name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
+  };
 
   const handleLogout = () => {
     toast({
@@ -75,12 +82,15 @@ export const AdminHeader: React.FC = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2">
-              <div className="h-8 w-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                <User className="h-4 w-4 text-primary-foreground" />
-              </div>
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user?.avatar} alt={user?.fullName || 'User'} />
+                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-sm font-medium">
+                  {getInitials(user?.fullName || 'User')}
+                </AvatarFallback>
+              </Avatar>
               <div className="text-left">
-                <p className="text-sm font-medium">Admin User</p>
-                <p className="text-xs text-muted-foreground">Super Admin</p>
+                <p className="text-sm font-medium">{user?.fullName || 'Admin User'}</p>
+                <p className="text-xs text-muted-foreground capitalize">{user?.role || 'Admin'}</p>
               </div>
             </Button>
           </DropdownMenuTrigger>

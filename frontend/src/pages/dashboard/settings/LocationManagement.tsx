@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { apiClient } from '@/services/api'
 
 interface Location {
   id: string
@@ -57,42 +58,60 @@ const LocationManagement = () => {
 
   const queryClient = useQueryClient()
 
+  // Initialize default location if none exists
+  const initializeDefaultLocation = async () => {
+    try {
+      const response = await apiClient.getLocations()
+      if (response.success && response.data && response.data.locations.length === 0) {
+        // Create default company location
+        await apiClient.createLocation({
+          name: 'Go3net Main Office',
+          address: '7, Francis Aghedo close, berger bus stop beside rain oil filling station',
+          latitude: 6.5244, // Lagos coordinates (approximate)
+          longitude: 3.3792,
+          radius_meters: 100
+        })
+        queryClient.invalidateQueries({ queryKey: ['locations'] })
+        toast.success('Default company location created')
+      }
+    } catch (error) {
+      console.error('Error initializing default location:', error)
+    }
+  }
+
+  // Initialize default location on component mount
+  React.useEffect(() => {
+    if (locationsData?.data?.locations?.length === 0) {
+      initializeDefaultLocation()
+    }
+  }, [locationsData, initializeDefaultLocation])
+
   // Fetch locations
   const { data: locationsData, isLoading } = useQuery({
     queryKey: ['locations'],
     queryFn: async () => {
-      const response = await fetch('/api/settings/locations', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      if (!response.ok) throw new Error('Failed to fetch locations')
-      return response.json()
+      const response = await apiClient.getLocations()
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch locations')
+      }
+      return response
     }
   })
 
   // Create location mutation
   const createLocationMutation = useMutation({
     mutationFn: async (data: LocationFormData) => {
-      const response = await fetch('/api/settings/locations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          name: data.name,
-          address: data.address,
-          latitude: parseFloat(data.latitude),
-          longitude: parseFloat(data.longitude),
-          radius: parseInt(data.radius)
-        })
+      const response = await apiClient.createLocation({
+        name: data.name,
+        address: data.address,
+        latitude: parseFloat(data.latitude),
+        longitude: parseFloat(data.longitude),
+        radius_meters: parseInt(data.radius)
       })
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Failed to create location')
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to create location')
       }
-      return response.json()
+      return response
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['locations'] })
@@ -108,21 +127,17 @@ const LocationManagement = () => {
   // Update location mutation
   const updateLocationMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: Partial<LocationFormData> }) => {
-      const response = await fetch(`/api/settings/locations/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          ...data,
-          latitude: data.latitude ? parseFloat(data.latitude) : undefined,
-          longitude: data.longitude ? parseFloat(data.longitude) : undefined,
-          radius: data.radius ? parseInt(data.radius) : undefined
-        })
+      const response = await apiClient.updateLocation(id, {
+        name: data.name,
+        address: data.address,
+        latitude: data.latitude ? parseFloat(data.latitude) : undefined,
+        longitude: data.longitude ? parseFloat(data.longitude) : undefined,
+        radius_meters: data.radius ? parseInt(data.radius) : undefined
       })
-      if (!response.ok) throw new Error('Failed to update location')
-      return response.json()
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to update location')
+      }
+      return response
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['locations'] })
@@ -138,14 +153,11 @@ const LocationManagement = () => {
   // Delete location mutation
   const deleteLocationMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/settings/locations/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      if (!response.ok) throw new Error('Failed to delete location')
-      return response.json()
+      const response = await apiClient.deleteLocation(id)
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete location')
+      }
+      return response
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['locations'] })

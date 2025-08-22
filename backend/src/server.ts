@@ -10,6 +10,7 @@ import morgan from 'morgan'
 import { testConnection } from './config/database'
 import authRoutes from './routes/auth.routes'
 import roleRoutes from './routes/role.routes'
+import { userRoutes } from './routes/user.routes'
 import { employeeRoutes } from './routes/employee.routes'
 import { timeTrackingRoutes } from './routes/timeTracking.routes'
 import taskRoutes from './routes/task.routes'
@@ -23,6 +24,7 @@ import leaveRoutes from './routes/leave.routes'
 import auditRoutes from './routes/audit.routes'
 import { settingsRoutes } from './routes/settings.routes'
 import dashboardRoutes from './routes/dashboard.routes'
+import { departmentRoutes } from './routes/department.routes'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -50,6 +52,7 @@ app.get('/health', (req, res) => {
 app.use('/api/system', systemRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/roles', roleRoutes)
+app.use('/api/users', userRoutes)
 app.use('/api/employees', employeeRoutes)
 app.use('/api/time-tracking', timeTrackingRoutes)
 app.use('/api/tasks', taskRoutes)
@@ -61,6 +64,7 @@ app.use('/api/leave', leaveRoutes)
 app.use('/api/audit', auditRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/dashboard', dashboardRoutes)
+app.use('/api/departments', departmentRoutes)
 app.use('/api/debug', debugRoutes)
 
 app.use(notFoundHandler)

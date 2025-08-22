@@ -551,11 +551,7 @@ export class LeaveService {
     try {
       let query = supabase
         .from('leave_balances')
-        .select(`
-          *,
-          users!leave_balances_employee_id_fkey(full_name),
-          leave_types(name)
-        `, { count: 'exact' })
+        .select('*', { count: 'exact' })
         .order('year', { ascending: false })
 
       if (filters.employeeId) {
@@ -610,11 +606,7 @@ export class LeaveService {
           carried_forward: data.carriedForward || 0,
           used_days: 0
         })
-        .select(`
-          *,
-          users!leave_balances_employee_id_fkey(full_name),
-          leave_types(name)
-        `)
+        .select('*')
         .single()
 
       if (error) throw error
@@ -832,11 +824,7 @@ export class LeaveService {
       // Get current balance
       const { data: currentBalance, error: fetchError } = await supabase
         .from('leave_balances')
-        .select(`
-          *,
-          users!leave_balances_employee_id_fkey(full_name),
-          leave_types(name)
-        `)
+        .select('*')
         .eq('id', id)
         .single()
 
@@ -856,11 +844,7 @@ export class LeaveService {
         .from('leave_balances')
         .update(updates)
         .eq('id', id)
-        .select(`
-          *,
-          users!leave_balances_employee_id_fkey(full_name),
-          leave_types(name)
-        `)
+        .select('*')
         .single()
 
       if (error) throw error
@@ -982,11 +966,11 @@ export class LeaveService {
       allocatedDays: data.allocated_days,
       usedDays: data.used_days,
       carriedForward: data.carried_forward,
-      remainingDays: data.remaining_days,
+      remainingDays: data.allocated_days + (data.carried_forward || 0) - data.used_days,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-      employeeName: data.users?.full_name,
-      leaveTypeName: data.leave_types?.name
+      employeeName: data.users?.full_name || undefined,
+      leaveTypeName: data.leave_types?.name || undefined
     }
   }
 }

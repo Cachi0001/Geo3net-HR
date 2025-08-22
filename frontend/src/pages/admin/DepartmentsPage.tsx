@@ -6,6 +6,24 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/services/api';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
   Building2, 
   Users, 
@@ -26,211 +44,168 @@ interface Department {
   id: string;
   name: string;
   description: string;
-  manager: {
-    name: string;
+  manager_id?: string;
+  manager?: {
+    id: string;
+    full_name: string;
     email: string;
-    phone: string;
   };
-  employeeCount: number;
-  budget: number;
-  budgetUsed: number;
-  projects: {
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Additional computed fields for display
+  employeeCount?: number;
+  budget?: number;
+  budgetUsed?: number;
+  projects?: {
     active: number;
     completed: number;
     total: number;
   };
-  performance: number;
-  location: string;
-  established: string;
-  color: string;
+  performance?: number;
+  location?: string;
+  color?: string;
 }
 
-interface DepartmentStats {
-  department: string;
-  employees: number;
-  present: number;
-  absent: number;
-  performance: number;
-}
 
-// Fallback data for when API is unavailable
-const fallbackDepartments: Department[] = [
-  {
-    id: '1',
-    name: 'Engineering',
-    description: 'Software development and technical innovation',
-    manager: {
-      name: 'John Doe',
-      email: 'john.doe@go3net.com',
-      phone: '+234 801 234 5678'
-    },
-    employeeCount: 15,
-    budget: 5000000,
-    budgetUsed: 3200000,
-    projects: {
-      active: 8,
-      completed: 24,
-      total: 32
-    },
-    performance: 87,
-    location: 'Lagos Office - Floor 3',
-    established: '2020-01-15',
-    color: 'bg-blue-500'
-  },
-  {
-    id: '2',
-    name: 'Design',
-    description: 'UI/UX design and creative solutions',
-    manager: {
-      name: 'Jane Smith',
-      email: 'jane.smith@go3net.com',
-      phone: '+234 802 345 6789'
-    },
-    employeeCount: 8,
-    budget: 2500000,
-    budgetUsed: 1800000,
-    projects: {
-      active: 5,
-      completed: 18,
-      total: 23
-    },
-    performance: 93,
-    location: 'Lagos Office - Floor 2',
-    established: '2020-03-20',
-    color: 'bg-purple-500'
-  },
-  {
-    id: '3',
-    name: 'Marketing',
-    description: 'Brand promotion and customer acquisition',
-    manager: {
-      name: 'Mike Johnson',
-      email: 'mike.johnson@go3net.com',
-      phone: '+234 803 456 7890'
-    },
-    employeeCount: 12,
-    budget: 3500000,
-    budgetUsed: 2900000,
-    projects: {
-      active: 6,
-      completed: 15,
-      total: 21
-    },
-    performance: 88,
-    location: 'Abuja Office - Floor 1',
-    established: '2020-05-10',
-    color: 'bg-orange-500'
-  },
-  {
-    id: '4',
-    name: 'Human Resources',
-    description: 'Employee management and organizational development',
-    manager: {
-      name: 'Sarah Wilson',
-      email: 'sarah.wilson@go3net.com',
-      phone: '+234 804 567 8901'
-    },
-    employeeCount: 6,
-    budget: 2000000,
-    budgetUsed: 1400000,
-    projects: {
-      active: 3,
-      completed: 12,
-      total: 15
-    },
-    performance: 90,
-    location: 'Lagos Office - Floor 1',
-    established: '2020-02-01',
-    color: 'bg-cyan-500'
-  },
-  {
-    id: '5',
-    name: 'Sales',
-    description: 'Revenue generation and client relationships',
-    manager: {
-      name: 'David Brown',
-      email: 'david.brown@go3net.com',
-      phone: '+234 805 678 9012'
-    },
-    employeeCount: 10,
-    budget: 3000000,
-    budgetUsed: 2100000,
-    projects: {
-      active: 7,
-      completed: 20,
-      total: 27
-    },
-    performance: 85,
-    location: 'Port Harcourt Office',
-    established: '2020-04-15',
-    color: 'bg-pink-500'
-  }
-];
 
 const DepartmentsPage: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadDepartments();
-  }, []);
+  const [newDepartment, setNewDepartment] = useState({
+    name: '',
+    description: '',
+    manager_id: ''
+  });
 
   const loadDepartments = useCallback(async () => {
     try {
       setLoading(true);
-      // Try to get department stats from dashboard API
-      const departmentStats = await apiClient.getDepartmentStats();
+      const response = await apiClient.getDepartments();
       
-      // Convert department stats to department format
-      const departmentsFromStats = departmentStats.map((stat: DepartmentStats, index: number) => ({
-        id: (index + 1).toString(),
-        name: stat.department,
-        description: `${stat.department} department operations`,
-        manager: {
-          name: 'Department Manager',
-          email: `manager@${stat.department.toLowerCase().replace(/\s+/g, '')}.go3net.com`,
-          phone: '+234 80' + (1000000 + index * 111111).toString().slice(0, 8)
-        },
-        employeeCount: stat.employees,
-        budget: stat.employees * 200000, // Estimated budget per employee
-        budgetUsed: Math.floor(stat.employees * 200000 * 0.7), // 70% utilization
-        projects: {
-          active: Math.floor(stat.employees / 3),
-          completed: Math.floor(stat.employees / 2),
-          total: Math.floor(stat.employees / 2) + Math.floor(stat.employees / 3)
-        },
-        performance: stat.performance,
-        location: index % 2 === 0 ? 'Lagos Office' : 'Abuja Office',
-        established: '2020-0' + (index + 1) + '-15',
-        color: ['bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-cyan-500', 'bg-pink-500'][index % 5]
-      }));
-      
-      setDepartments(departmentsFromStats);
+      if (response.success && response.data) {
+        // Transform backend data to frontend format
+        const transformedDepartments = response.data.map((dept: any, index: number) => ({
+          ...dept,
+          manager: dept.manager ? {
+            name: dept.manager.full_name,
+            email: dept.manager.email,
+            phone: '+234 80' + (1000000 + index * 111111).toString().slice(0, 8)
+          } : {
+            name: 'No Manager Assigned',
+            email: 'no-manager@go3net.com',
+            phone: '+234 800 000 0000'
+          },
+          employeeCount: Math.floor(Math.random() * 20) + 5, // Will be replaced with actual data
+          budget: Math.floor(Math.random() * 5000000) + 1000000,
+          budgetUsed: Math.floor(Math.random() * 3000000) + 500000,
+          projects: {
+            active: Math.floor(Math.random() * 10) + 2,
+            completed: Math.floor(Math.random() * 25) + 10,
+            total: Math.floor(Math.random() * 35) + 15
+          },
+          performance: Math.floor(Math.random() * 30) + 70,
+          location: index % 2 === 0 ? 'Lagos Office' : 'Abuja Office',
+          established: dept.created_at,
+          color: ['bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-cyan-500', 'bg-pink-500'][index % 5]
+        }));
+        
+        setDepartments(transformedDepartments);
+      } else {
+        console.warn('No department data received from API');
+        setDepartments([]);
+        toast({
+          title: 'Info',
+          description: 'No departments found. Create your first department.',
+          variant: 'default'
+        });
+      }
     } catch (error) {
       console.error('Failed to load departments:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load departments. Using fallback data.',
+        description: 'Failed to load departments. Please check your connection.',
         variant: 'destructive'
       });
-      setDepartments(fallbackDepartments);
+      setDepartments([]);
     } finally {
       setLoading(false);
     }
   }, [toast]);
 
+  const loadEmployees = useCallback(async () => {
+    try {
+      const response = await apiClient.getEmployees();
+      if (response.success && response.data) {
+        setEmployees(response.data.employees || []);
+      }
+    } catch (error) {
+      console.error('Failed to load employees:', error);
+    }
+  }, []);
+
+  const handleCreateDepartment = async () => {
+    if (!newDepartment.name || !newDepartment.description) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await apiClient.createDepartment({
+        name: newDepartment.name,
+        description: newDepartment.description,
+        manager_id: newDepartment.manager_id || null
+      });
+      
+      if (response.success) {
+        toast({
+          title: 'Success',
+          description: 'Department created successfully!'
+        });
+        setIsCreateModalOpen(false);
+        setNewDepartment({ name: '', description: '', manager_id: '' });
+        loadDepartments();
+      } else {
+        throw new Error(response.message || 'Failed to create department');
+      }
+    } catch (error) {
+      console.error('Error creating department:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create department.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDepartments();
+    loadEmployees();
+  }, [loadDepartments, loadEmployees]);
+
   const filteredDepartments = departments.filter(dept => 
     dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     dept.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    dept.manager.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (dept.manager?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalEmployees = departments.reduce((sum, dept) => sum + dept.employeeCount, 0);
-  const totalBudget = departments.reduce((sum, dept) => sum + dept.budget, 0);
-  const totalBudgetUsed = departments.reduce((sum, dept) => sum + dept.budgetUsed, 0);
-  const avgPerformance = departments.reduce((sum, dept) => sum + dept.performance, 0) / departments.length;
+  const totalEmployees = departments.reduce((sum, dept) => sum + (dept.employeeCount || 0), 0);
+  const totalBudget = departments.reduce((sum, dept) => sum + (dept.budget || 0), 0);
+  const totalBudgetUsed = departments.reduce((sum, dept) => sum + (dept.budgetUsed || 0), 0);
+  const avgPerformance = departments.length > 0 ? departments.reduce((sum, dept) => sum + (dept.performance || 0), 0) / departments.length : 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', {
@@ -255,20 +230,94 @@ const DepartmentsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Departments</h1>
-          <p className="text-muted-foreground mt-1">Manage organizational departments and their performance</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Departments</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Manage organizational departments and their performance</p>
         </div>
-        <Button className="btn-primary">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Department
-        </Button>
+        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+          <DialogTrigger asChild>
+            <Button className="btn-primary w-full sm:w-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Department
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Create New Department</DialogTitle>
+              <DialogDescription>
+                Add a new department to your organization.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name">Department Name *</Label>
+                <Input
+                  id="name"
+                  placeholder="e.g., Engineering, Marketing"
+                  value={newDepartment.name}
+                  onChange={(e) => setNewDepartment({ ...newDepartment, name: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="description">Description *</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Brief description of the department's role and responsibilities"
+                  value={newDepartment.description}
+                  onChange={(e) => setNewDepartment({ ...newDepartment, description: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="manager">Department Manager (Optional)</Label>
+                <Select 
+                  value={newDepartment.manager_id} 
+                  onValueChange={(value) => setNewDepartment({ ...newDepartment, manager_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a manager" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.fullName || employee.full_name} - {employee.position || 'Employee'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCreateModalOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCreateDepartment}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Department'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search */}
       <Card className="bg-gradient-card shadow-lg border-0">
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -281,59 +330,59 @@ const DepartmentsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Overview Stats - Mobile First: 2x2, Tablet: 2x2, Desktop: 4x1 */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
+      {/* Overview Stats - Mobile First: 2x2, Desktop: 4x1 */}
+      <div className="mobile-responsive-grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         <Card className="metric-card">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Total Departments</p>
-                <p className="text-3xl font-bold text-foreground">{departments.length}</p>
+                <p className="mobile-text-xs font-medium text-muted-foreground mb-1">Total Departments</p>
+                <p className="text-lg sm:text-2xl md:text-3xl font-bold text-foreground">{departments.length}</p>
               </div>
-              <div className="h-12 w-12 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-white" />
+              <div className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 bg-gradient-primary rounded-lg flex items-center justify-center">
+                <Building2 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card className="metric-card">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Total Employees</p>
-                <p className="text-3xl font-bold text-foreground">{totalEmployees}</p>
+                <p className="mobile-text-xs font-medium text-muted-foreground mb-1">Total Employees</p>
+                <p className="text-lg sm:text-2xl md:text-3xl font-bold text-foreground">{totalEmployees}</p>
               </div>
-              <div className="h-12 w-12 bg-gradient-secondary rounded-lg flex items-center justify-center">
-                <Users className="h-6 w-6 text-white" />
+              <div className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 bg-gradient-secondary rounded-lg flex items-center justify-center">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card className="metric-card">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Budget Utilization</p>
-                <p className="text-3xl font-bold text-foreground">{Math.round((totalBudgetUsed / totalBudget) * 100)}%</p>
+                <p className="mobile-text-xs font-medium text-muted-foreground mb-1">Budget Used</p>
+                <p className="text-lg sm:text-2xl md:text-3xl font-bold text-foreground">{Math.round((totalBudgetUsed / totalBudget) * 100)}%</p>
               </div>
-              <div className="h-12 w-12 bg-gradient-accent rounded-lg flex items-center justify-center">
-                <Target className="h-6 w-6 text-white" />
+              <div className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 bg-gradient-accent rounded-lg flex items-center justify-center">
+                <Target className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card className="metric-card">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Avg Performance</p>
-                <p className="text-3xl font-bold text-foreground">{Math.round(avgPerformance)}%</p>
+                <p className="mobile-text-xs font-medium text-muted-foreground mb-1">Avg Performance</p>
+                <p className="text-lg sm:text-2xl md:text-3xl font-bold text-foreground">{Math.round(avgPerformance)}%</p>
               </div>
-              <div className="h-12 w-12 bg-cyan-500 rounded-lg flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-white" />
+              <div className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 bg-cyan-500 rounded-lg flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
               </div>
             </div>
           </CardContent>
@@ -341,95 +390,99 @@ const DepartmentsPage: React.FC = () => {
       </div>
 
       {/* Departments Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="mobile-responsive-grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
         {filteredDepartments.map((department) => (
           <Card key={department.id} className="bg-gradient-card shadow-xl border-0 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader className="pb-4">
+            <CardHeader className="p-4 pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`h-12 w-12 ${department.color} rounded-xl flex items-center justify-center text-white font-bold text-lg`}>
+                  <div className={`h-10 w-10 sm:h-12 sm:w-12 ${department.color} rounded-xl flex items-center justify-center text-white font-bold text-sm sm:text-lg`}>
                     {department.name.charAt(0)}
                   </div>
-                  <div>
-                    <CardTitle className="text-xl">{department.name}</CardTitle>
-                    <CardDescription className="text-sm mt-1">{department.description}</CardDescription>
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="mobile-text-base truncate">{department.name}</CardTitle>
+                    <CardDescription className="mobile-text-xs mt-1 line-clamp-1">{department.description}</CardDescription>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="flex-shrink-0">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </div>
             </CardHeader>
             
-            <CardContent className="space-y-6">
+            <CardContent className="p-4 pt-0 space-y-4">
               {/* Manager Info */}
-              <div className="bg-gradient-to-r from-gray-50 to-white p-4 rounded-lg border">
-                <h4 className="font-semibold text-sm text-muted-foreground mb-3">Department Manager</h4>
+              <div className="bg-gradient-to-r from-gray-50 to-white p-3 rounded-lg border">
+                <h4 className="font-semibold mobile-text-xs text-muted-foreground mb-2">Department Manager</h4>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 bg-gradient-primary rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                      {department.manager.name.split(' ').map(n => n[0]).join('')}
+                    <div className="h-6 w-6 sm:h-8 sm:w-8 bg-gradient-primary rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-semibold">
+                      {(department.manager?.full_name || 'N/A').split(' ').map((n: string) => n[0]).join('')}
                     </div>
-                    <span className="font-medium">{department.manager.name}</span>
+                    <span className="font-medium mobile-text-sm truncate">{department.manager?.full_name || 'No Manager Assigned'}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Mail className="h-3 w-3" />
-                    <span>{department.manager.email}</span>
+                  <div className="flex items-center gap-2 mobile-text-xs text-muted-foreground">
+                    <Mail className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">{department.manager?.email || 'N/A'}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Phone className="h-3 w-3" />
-                    <span>{department.manager.phone}</span>
+                  <div className="flex items-center gap-2 mobile-text-xs text-muted-foreground">
+                    <Phone className="h-3 w-3 flex-shrink-0" />
+                    <span>{(department.manager as any)?.phone || 'N/A'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">{department.employeeCount}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-2 sm:p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
+                  <p className="text-lg sm:text-2xl font-bold text-blue-600">{department.employeeCount || 0}</p>
                   <p className="text-xs text-blue-600">Employees</p>
                 </div>
-                <div className="text-center p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">{department.performance}%</p>
+                <div className="text-center p-2 sm:p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
+                  <p className="text-lg sm:text-2xl font-bold text-green-600">{department.performance || 0}%</p>
                   <p className="text-xs text-green-600">Performance</p>
                 </div>
               </div>
 
               {/* Projects */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Projects</span>
-                  <span className="text-sm text-muted-foreground">{department.projects.completed}/{department.projects.total}</span>
+              {department.projects && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Projects</span>
+                    <span className="text-sm text-muted-foreground">{department.projects.completed}/{department.projects.total}</span>
+                  </div>
+                  <Progress value={(department.projects.completed / department.projects.total) * 100} className="h-2 mb-2" />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{department.projects.active} active</span>
+                    <span>{department.projects.completed} completed</span>
+                  </div>
                 </div>
-                <Progress value={(department.projects.completed / department.projects.total) * 100} className="h-2 mb-2" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{department.projects.active} active</span>
-                  <span>{department.projects.completed} completed</span>
-                </div>
-              </div>
+              )}
 
               {/* Budget */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Budget Utilization</span>
-                  <span className="text-sm text-muted-foreground">{Math.round((department.budgetUsed / department.budget) * 100)}%</span>
+              {department.budget && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Budget Utilization</span>
+                    <span className="text-sm text-muted-foreground">{Math.round(((department.budgetUsed || 0) / department.budget) * 100)}%</span>
+                  </div>
+                  <Progress value={((department.budgetUsed || 0) / department.budget) * 100} className="h-2 mb-2" />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Used: {formatCurrency(department.budgetUsed || 0)}</span>
+                    <span>Total: {formatCurrency(department.budget)}</span>
+                  </div>
                 </div>
-                <Progress value={(department.budgetUsed / department.budget) * 100} className="h-2 mb-2" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Used: {formatCurrency(department.budgetUsed)}</span>
-                  <span>Total: {formatCurrency(department.budget)}</span>
-                </div>
-              </div>
+              )}
 
               {/* Additional Info */}
               <div className="flex items-center justify-between pt-2 border-t border-border/50">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <MapPin className="h-3 w-3" />
-                  <span>{department.location}</span>
+                  <span>{department.location || 'Not specified'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Calendar className="h-3 w-3" />
-                  <span>Est. {new Date(department.established).getFullYear()}</span>
+                  <span>Est. {new Date(department.created_at).getFullYear()}</span>
                 </div>
               </div>
             </CardContent>

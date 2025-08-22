@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import styles from './HRStaffDashboard.module.css';
 
 export const HRStaffDashboard: React.FC = () => {
   const navigate = useNavigate();

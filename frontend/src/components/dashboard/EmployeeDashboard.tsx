@@ -1,244 +1,178 @@
 import React from 'react';
-import { User, Calendar, Clock, Target, CheckCircle, AlertCircle, Award, FileText } from 'lucide-react';
-import { MetricCard } from '@/components/dashboard/MetricCard';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
-import styles from './EmployeeDashboard.module.css';
+import { useAuth } from '@/hooks/useAuth';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Clock, Calendar, CheckCircle, AlertCircle, User, FileText } from 'lucide-react';
 
 export const EmployeeDashboard: React.FC = () => {
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const personalMetrics = [
+  console.log('👤 EmployeeDashboard rendered for user:', user?.email, 'role:', user?.role);
+
+  const stats = [
     {
-      title: 'Tasks Completed',
-      value: '28',
-      change: { value: '+4 this week', trend: 'up' as const },
-      icon: CheckCircle
-    },
-    {
-      title: 'Hours Worked',
-      value: '156h',
-      change: { value: '38h this week', trend: 'up' as const },
-      icon: Clock
-    },
-    {
-      title: 'Performance Score',
-      value: '94%',
-      change: { value: '+2% this month', trend: 'up' as const },
-      icon: Award
+      title: 'Hours This Week',
+      value: '32.5',
+      change: '7.5 hours today',
+      icon: Clock,
+      color: 'text-blue-600'
     },
     {
       title: 'Leave Balance',
       value: '18',
-      change: { value: '5 days pending', trend: 'neutral' as const },
-      icon: Calendar
+      change: '5 days used',
+      icon: Calendar,
+      color: 'text-green-600'
+    },
+    {
+      title: 'Tasks Completed',
+      value: '12',
+      change: '3 this week',
+      icon: CheckCircle,
+      color: 'text-purple-600'
+    },
+    {
+      title: 'Pending Tasks',
+      value: '4',
+      change: '2 due today',
+      icon: AlertCircle,
+      color: 'text-orange-600'
     }
   ];
 
-  const myTasks = [
-    { id: 1, title: 'Complete project documentation', priority: 'high', dueDate: '2024-03-20', status: 'in-progress', progress: 75 },
-    { id: 2, title: 'Review code for mobile app', priority: 'medium', dueDate: '2024-03-18', status: 'pending', progress: 0 },
-    { id: 3, title: 'Attend team meeting', priority: 'low', dueDate: '2024-03-15', status: 'completed', progress: 100 },
-    { id: 4, title: 'Update user interface designs', priority: 'medium', dueDate: '2024-03-22', status: 'in-progress', progress: 45 },
+  const recentTasks = [
+    { id: 1, title: 'Complete project documentation', status: 'pending', priority: 'high', dueDate: 'Today' },
+    { id: 2, title: 'Review team presentation', status: 'completed', priority: 'medium', dueDate: 'Yesterday' },
+    { id: 3, title: 'Update client requirements', status: 'pending', priority: 'low', dueDate: 'Tomorrow' },
+    { id: 4, title: 'Attend team meeting', status: 'completed', priority: 'medium', dueDate: '2 days ago' }
   ];
 
   const upcomingEvents = [
-    { id: 1, title: 'Team Standup', time: '09:00 AM', date: 'Today', type: 'meeting' },
-    { id: 2, title: 'Project Review', time: '02:00 PM', date: 'Tomorrow', type: 'review' },
-    { id: 3, title: 'Training Session', time: '10:00 AM', date: 'Mar 20', type: 'training' },
-    { id: 4, title: 'One-on-One', time: '03:00 PM', date: 'Mar 22', type: 'meeting' },
-  ];
-
-  const recentActivities = [
-    { id: 1, action: 'Completed task: API Integration', time: '2 hours ago', type: 'task' },
-    { id: 2, action: 'Submitted leave request', time: '1 day ago', type: 'request' },
-    { id: 3, action: 'Updated profile information', time: '3 days ago', type: 'profile' },
-    { id: 4, action: 'Attended training session', time: '1 week ago', type: 'training' },
-  ];
-
-  const quickActions = [
-    { title: 'Request Leave', description: 'Submit time off request', icon: Calendar, action: () => navigate('/dashboard/leave-request') },
-    { title: 'View Payslip', description: 'Download pay statements', icon: FileText, action: () => navigate('/dashboard/payroll') },
-    { title: 'Update Profile', description: 'Edit personal information', icon: User, action: () => navigate('/dashboard/profile') },
-    { title: 'My Goals', description: 'Track performance goals', icon: Target, action: () => navigate('/dashboard/goals') },
+    { id: 1, title: 'Team Standup', time: '9:00 AM', type: 'meeting' },
+    { id: 2, title: 'Project Review', time: '2:00 PM', type: 'review' },
+    { id: 3, title: 'Training Session', time: '4:00 PM', type: 'training' }
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-          <User className="h-8 w-8 text-primary" />
-          My Dashboard
-        </h1>
-        <p className="text-muted-foreground">Personal workspace and task management</p>
+      {/* Welcome Header */}
+      <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white p-6 rounded-lg">
+        <h1 className="text-2xl font-bold">Good morning, {user?.fullName || 'Employee'}!</h1>
+        <p className="text-green-100 mt-2">Ready to make today productive? Here's your overview.</p>
       </div>
 
-      {/* Personal Metrics - Mobile First: 2x2, Desktop: 4x1 */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
-        {personalMetrics.map((metric, index) => {
-          const variants = ['primary', 'secondary', 'accent', 'success'] as const;
-          return (
-            <MetricCard
-              key={index}
-              title={metric.title}
-              value={metric.value}
-              change={metric.change}
-              icon={metric.icon}
-              variant={variants[index % variants.length]}
-              className="animate-fade-in"
-            />
-          );
-        })}
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat, index) => (
+          <Card key={index} className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
+                </div>
+                <stat.icon className={`h-8 w-8 ${stat.color}`} />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Quick Actions */}
-      <Card className="bg-gradient-card shadow-xl border-0">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Quick Actions
-          </CardTitle>
-          <CardDescription>Common tasks and self-service options</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => {
-              const Icon = action.icon;
-              return (
-                <Button
-                  key={index}
-                  variant="outline"
-                  className={`h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary/5 transition-all duration-200 ${styles.quickAction}`}
-                  onClick={action.action}
-                >
-                  <Icon className="h-6 w-6 text-primary" />
-                  <div className="text-center">
-                    <div className="font-medium text-sm">{action.title}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{action.description}</div>
-                  </div>
-                </Button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* My Tasks */}
-        <Card className="bg-gradient-card shadow-xl border-0">
+        {/* Recent Tasks */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5" />
               My Tasks
             </CardTitle>
-            <CardDescription>Current assignments and progress</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {myTasks.map((task) => (
-              <div key={task.id} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{task.title}</span>
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant={
-                        task.priority === 'high' ? 'destructive' :
-                        task.priority === 'medium' ? 'default' : 'secondary'
-                      }
-                      className="text-xs"
-                    >
-                      {task.priority}
-                    </Badge>
-                    <Badge 
-                      variant={
-                        task.status === 'completed' ? 'default' :
-                        task.status === 'in-progress' ? 'secondary' : 'outline'
-                      }
-                      className="text-xs"
-                    >
-                      {task.status.replace('-', ' ')}
-                    </Badge>
+          <CardContent>
+            <div className="space-y-3">
+              {recentTasks.map((task) => (
+                <div key={task.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${
+                      task.status === 'completed' ? 'bg-green-500' : 
+                      task.priority === 'high' ? 'bg-red-500' :
+                      task.priority === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'
+                    }`} />
+                    <div>
+                      <p className={`font-medium ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+                        {task.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Due: {task.dueDate}</p>
+                    </div>
                   </div>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    task.priority === 'high' ? 'bg-red-100 text-red-700' :
+                    task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-blue-100 text-blue-700'
+                  }`}>
+                    {task.priority}
+                  </span>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Progress</span>
-                    <span className="font-medium">{task.progress}%</span>
-                  </div>
-                  <Progress value={task.progress} className="h-2" />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Upcoming Events */}
-        <Card className="bg-gradient-card shadow-xl border-0">
+        {/* Today's Schedule */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Upcoming Events
+              Today's Schedule
             </CardTitle>
-            <CardDescription>Schedule and important dates</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {upcomingEvents.map((event) => (
-              <div key={event.id} className="flex items-center justify-between p-3 rounded-lg border bg-background/50">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{event.title}</span>
-                    <Badge variant="outline" className="text-xs">
-                      {event.type}
-                    </Badge>
+          <CardContent>
+            <div className="space-y-4">
+              {upcomingEvents.map((event) => (
+                <div key={event.id} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-blue-600" />
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-muted-foreground">{event.date}</span>
-                    <span className="text-xs text-muted-foreground">•</span>
-                    <span className="text-xs text-muted-foreground">{event.time}</span>
+                  <div className="flex-1">
+                    <p className="font-medium">{event.title}</p>
+                    <p className="text-sm text-muted-foreground">{event.time}</p>
                   </div>
+                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                    {event.type}
+                  </span>
                 </div>
-                <Button size="sm" variant="ghost" className="h-8 px-3">
-                  View
-                </Button>
-              </div>
-            ))}
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Activities */}
-      <Card className="bg-gradient-card shadow-xl border-0">
+      {/* Quick Actions */}
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            Recent Activities
+            <User className="h-5 w-5" />
+            Quick Actions
           </CardTitle>
-          <CardDescription>Your recent actions and updates</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {recentActivities.map((activity) => (
-            <div key={activity.id} className="flex items-center gap-3 p-3 rounded-lg border bg-background/50">
-              <div className="flex-shrink-0">
-                <div className="w-2 h-2 rounded-full bg-primary"></div>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">{activity.action}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-muted-foreground">{activity.time}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {activity.type}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          ))}
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-center transition-colors">
+              <Clock className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+              <p className="font-medium">Check In/Out</p>
+            </button>
+            <button className="p-4 bg-green-50 hover:bg-green-100 rounded-lg text-center transition-colors">
+              <Calendar className="h-6 w-6 text-green-600 mx-auto mb-2" />
+              <p className="font-medium">Request Leave</p>
+            </button>
+            <button className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-center transition-colors">
+              <CheckCircle className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+              <p className="font-medium">View Tasks</p>
+            </button>
+            <button className="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg text-center transition-colors">
+              <FileText className="h-6 w-6 text-orange-600 mx-auto mb-2" />
+              <p className="font-medium">My Profile</p>
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>

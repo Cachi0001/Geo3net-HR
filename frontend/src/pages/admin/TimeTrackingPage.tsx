@@ -228,25 +228,6 @@ const TimeTrackingPage: React.FC = () => {
   const [attendanceReport, setAttendanceReport] = useState<any>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadTimeTrackingData();
-  }, [selectedDate, loadTimeTrackingData]);
-
-  const loadTimeTrackingData = useCallback(async () => {
-    try {
-      setLoading(true);
-      await Promise.all([
-        loadTimeEntries(),
-        loadAttendanceReport(),
-        loadWeeklyStats()
-      ]);
-    } catch (error) {
-      console.error('Failed to load time tracking data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedDate, loadTimeEntries, loadAttendanceReport, loadWeeklyStats]);
-
   const loadTimeEntries = useCallback(async () => {
     try {
       const response = await apiClient.getAllTimeEntries({
@@ -323,6 +304,25 @@ const TimeTrackingPage: React.FC = () => {
       setWeeklyStats(fallbackWeeklyStats);
     }
   }, [selectedDate]);
+
+  const loadTimeTrackingData = useCallback(async () => {
+    try {
+      setLoading(true);
+      await Promise.all([
+        loadTimeEntries(),
+        loadAttendanceReport(),
+        loadWeeklyStats()
+      ]);
+    } catch (error) {
+      console.error('Failed to load time tracking data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDate, loadTimeEntries, loadAttendanceReport, loadWeeklyStats]);
+
+  useEffect(() => {
+    loadTimeTrackingData();
+  }, [selectedDate, loadTimeTrackingData]);
 
   const filteredEntries = timeEntries.filter(entry => {
     const matchesSearch = entry.employee?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

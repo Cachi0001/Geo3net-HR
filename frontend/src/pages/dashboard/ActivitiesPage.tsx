@@ -44,91 +44,7 @@ interface ActivityLog {
   metadata?: Record<string, any>;
 }
 
-// Fallback activity data
-const fallbackActivities: ActivityLog[] = [
-  {
-    id: '1',
-    type: 'login',
-    action: 'User Login',
-    description: 'Successfully logged into the system',
-    userId: 'user1',
-    userName: 'John Doe',
-    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
-    ipAddress: '192.168.1.100',
-    userAgent: 'Chrome 120.0.0.0'
-  },
-  {
-    id: '2',
-    type: 'create',
-    action: 'Employee Created',
-    description: 'Created new employee record for Jane Smith',
-    userId: 'user2',
-    userName: 'HR Admin',
-    timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(), // 15 minutes ago
-    resource: 'employee',
-    resourceId: 'emp123'
-  },
-  {
-    id: '3',
-    type: 'update',
-    action: 'Profile Updated',
-    description: 'Updated personal information',
-    userId: 'user3',
-    userName: 'Alice Johnson',
-    timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
-    resource: 'profile'
-  },
-  {
-    id: '4',
-    type: 'security',
-    action: 'Password Changed',
-    description: 'Successfully changed account password',
-    userId: 'user4',
-    userName: 'Bob Wilson',
-    timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(), // 45 minutes ago
-  },
-  {
-    id: '5',
-    type: 'view',
-    action: 'Report Accessed',
-    description: 'Viewed monthly analytics report',
-    userId: 'user5',
-    userName: 'Manager Smith',
-    timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(), // 1 hour ago
-    resource: 'report',
-    resourceId: 'monthly-analytics'
-  },
-  {
-    id: '6',
-    type: 'system',
-    action: 'System Backup',
-    description: 'Automated system backup completed successfully',
-    userId: 'system',
-    userName: 'System',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-  },
-  {
-    id: '7',
-    type: 'delete',
-    action: 'Task Deleted',
-    description: 'Removed completed task from assignment list',
-    userId: 'user6',
-    userName: 'Project Lead',
-    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
-    resource: 'task',
-    resourceId: 'task456'
-  },
-  {
-    id: '8',
-    type: 'login',
-    action: 'User Login',
-    description: 'Successfully logged into the system',
-    userId: 'user7',
-    userName: 'Sarah Connor',
-    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
-    ipAddress: '192.168.1.105'
-  }
-];
+// No fallback data - will show empty state if API fails
 
 const ActivitiesPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -142,27 +58,15 @@ const ActivitiesPage: React.FC = () => {
   const loadActivities = useCallback(async () => {
     setLoading(true);
     try {
-      // Try to fetch from API, fallback to mock data
-      try {
-        const response = await apiClient.getActivities();
-        if (response.success && response.data) {
-          setActivities(response.data.activities || response.data || []);
-        } else {
-          setActivities(fallbackActivities);
-        }
-      } catch (apiError) {
-        console.warn('API not available, using fallback data:', apiError);
-        setActivities(fallbackActivities);
+      const response = await apiClient.get('/activities');
+      if (response.success && response.data) {
+        setActivities(response.data.activities || []);
+      } else {
+        setActivities([]);
       }
     } catch (error) {
-      console.error('Error loading activities:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load activity data',
-        variant: 'destructive'
-      });
-      // Use fallback data on error
-      setActivities(fallbackActivities);
+      console.warn('API not available:', error);
+      setActivities([]);
     } finally {
       setLoading(false);
     }

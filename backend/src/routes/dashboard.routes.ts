@@ -38,6 +38,12 @@ router.get('/data',
   dashboardController.getDashboardData.bind(dashboardController)
 );
 
+// Get super admin specific dashboard data
+router.get('/super-admin',
+  permissionMiddleware.requireMinimumRole('super-admin'),
+  dashboardController.getSuperAdminDashboard.bind(dashboardController)
+);
+
 /**
  * Real-time Dashboard Routes
  */
