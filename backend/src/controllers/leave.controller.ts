@@ -1,14 +1,17 @@
 import { Request, Response } from 'express'
 import { LeaveService } from '../services/leave.service'
+import { EmployeeService } from '../services/employee.service'
 import { ResponseHandler } from '../utils/response'
 import { ValidationError, NotFoundError, ConflictError } from '../utils/errors'
 import { AuthenticatedRequest } from '../middleware/permission'
 
 export class LeaveController {
   private leaveService: LeaveService
+  private employeeService: EmployeeService
 
   constructor() {
     this.leaveService = new LeaveService()
+    this.employeeService = new EmployeeService()
   }
 
   // Leave Type Methods
@@ -228,25 +231,46 @@ export class LeaveController {
    */
   async createLeaveRequest(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
+      console.log('🔍 [LeaveController] createLeaveRequest called')
       const requestData = req.body
-      const employeeId = req.user?.id!
+      const userId = req.user?.id!
       const userRole = req.user?.role
+
+      console.log('🔍 [LeaveController] Request data:', JSON.stringify(requestData))
+      console.log('🔍 [LeaveController] User ID:', userId)
+      console.log('🔍 [LeaveController] User role:', userRole)
 
       // Super-admin cannot submit leave requests
       if (userRole === 'super-admin') {
+        console.log('❌ [LeaveController] Super-admin cannot submit leave requests')
         return ResponseHandler.forbidden(res, 'Super administrators cannot submit leave requests')
       }
 
-      const result = await this.leaveService.createLeaveRequest(requestData, employeeId)
+      // Get employee record by userId to get the actual employeeId
+      console.log('🔍 [LeaveController] Getting employee by userId:', userId)
+      const employee = await this.employeeService.getEmployeeByUserId(userId)
+      console.log('🔍 [LeaveController] Employee found:', employee ? `ID: ${employee.id}, Name: ${employee.fullName}` : 'null')
+      
+      if (!employee) {
+        console.log('❌ [LeaveController] Employee record not found')
+        return ResponseHandler.notFound(res, 'Employee record not found for this user')
+      }
+
+      console.log('🔍 [LeaveController] Calling leaveService.createLeaveRequest with employeeId:', employee.id)
+      const result = await this.leaveService.createLeaveRequest(requestData, employee.id)
+      console.log('🔍 [LeaveController] Leave service result:', JSON.stringify(result))
 
       if (result.success) {
+        console.log('✅ [LeaveController] Leave request created successfully')
         return ResponseHandler.created(res, result.message, {
           leaveRequest: result.leaveRequest
         })
       }
 
+      console.log('❌ [LeaveController] Leave request failed:', result.message)
       return ResponseHandler.badRequest(res, result.message)
     } catch (error) {
+      console.log('❌ [LeaveController] Exception in createLeaveRequest:', error)
       if (error instanceof ValidationError) {
         return ResponseHandler.validationError(res, error.errors || [error.message])
       }

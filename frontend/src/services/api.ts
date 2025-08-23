@@ -1,5 +1,5 @@
-const API_BASE_URL = 'http://localhost:5003/api'
-const WS_BASE_URL = 'ws://localhost:5003'
+const API_BASE_URL = 'http://localhost:5004/api'
+const WS_BASE_URL = 'ws://localhost:5004'
 
 // Enhanced API Response types
 export interface ApiResponse<T = any> {
@@ -1130,11 +1130,11 @@ class ApiClient {
   // Recruitment endpoints
   async getJobPostings(params?: any): Promise<ApiResponse> {
     const queryString = params ? '?' + new URLSearchParams(params).toString() : ''
-    return this.request(`/recruitment/job-postings${queryString}`)
+    return this.request(`/recruitment/jobs${queryString}`)
   }
 
   async createJobPosting(data: any): Promise<ApiResponse> {
-    return this.request('/recruitment/job-postings', {
+    return this.request('/recruitment/jobs', {
       method: 'POST',
       body: JSON.stringify(data),
     })
@@ -1181,6 +1181,11 @@ class ApiClient {
   async getLeaveRequests(params?: any): Promise<ApiResponse> {
     const queryString = params ? '?' + new URLSearchParams(params).toString() : ''
     return this.request(`/leave/requests${queryString}`)
+  }
+
+  async getMyLeaveRequests(params?: any): Promise<ApiResponse> {
+    const queryString = params ? '?' + new URLSearchParams(params).toString() : ''
+    return this.request(`/leave/my-requests${queryString}`)
   }
 
   async createLeaveRequest(data: any): Promise<ApiResponse> {

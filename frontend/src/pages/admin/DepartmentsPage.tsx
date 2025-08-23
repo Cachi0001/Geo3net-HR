@@ -81,7 +81,7 @@ const DepartmentsPage: React.FC = () => {
   const [newDepartment, setNewDepartment] = useState({
     name: '',
     description: '',
-    manager_id: ''
+    manager_id: 'no-manager'
   });
 
   const loadDepartments = useCallback(async () => {
@@ -165,7 +165,7 @@ const DepartmentsPage: React.FC = () => {
       const response = await apiClient.createDepartment({
         name: newDepartment.name,
         description: newDepartment.description,
-        manager_id: newDepartment.manager_id || null
+        manager_id: newDepartment.manager_id === 'no-manager' || !newDepartment.manager_id ? null : newDepartment.manager_id
       });
       
       if (response.success) {
@@ -174,7 +174,7 @@ const DepartmentsPage: React.FC = () => {
           description: 'Department created successfully!'
         });
         setIsCreateModalOpen(false);
-        setNewDepartment({ name: '', description: '', manager_id: '' });
+        setNewDepartment({ name: '', description: '', manager_id: 'no-manager' });
         loadDepartments();
       } else {
         throw new Error(response.message || 'Failed to create department');
@@ -278,6 +278,7 @@ const DepartmentsPage: React.FC = () => {
                     <SelectValue placeholder="Select a manager" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="no-manager">No manager</SelectItem>
                     {employees.map((employee) => (
                       <SelectItem key={employee.id} value={employee.id}>
                         {employee.fullName || employee.full_name} - {employee.position || 'Employee'}

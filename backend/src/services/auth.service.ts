@@ -314,6 +314,17 @@ export class AuthService {
     console.log(`🔍 [AuthService] Login attempt for email: ${email}`)
 
     try {
+      // Check for rate limiting before processing login
+      await this.checkLoginRateLimit(email, ipAddress)
+      
+      // Validate input data
+      if (!email || !password) {
+        throw new ValidationError('Email and password are required')
+      }
+
+      if (!this.isValidEmail(email)) {
+        throw new ValidationError('Invalid email format')
+      }
       // First get the user
       const { data: user, error } = await supabase
         .from('users')
@@ -529,8 +540,13 @@ export class AuthService {
         tokens
       }
     } catch (error: any) {
+      // Enhanced error handling with specific error types
+      
       // Handle database connectivity issues
-      if (error.message?.includes('fetch failed') || error.message?.includes('Failed to fetch')) {
+      if (error.message?.includes('fetch failed') || 
+          error.message?.includes('Failed to fetch') ||
+          error.message?.includes('ECONNREFUSED') ||
+          error.message?.includes('ETIMEDOUT')) {
         console.error(`❌ [AuthService] Database connectivity issue during login for ${email}:`, error.message)
         await this.authLogger.logLoginAttempt(
           email,
@@ -543,13 +559,59 @@ export class AuthService {
         throw new AuthenticationError('Service temporarily unavailable. Please try again in a few moments.')
       }
 
+      // Handle rate limiting
+      if (error.message?.includes('rate limit') || error.message?.includes('too many requests')) {
+        console.error(`❌ [AuthService] Rate limit exceeded for ${email}:`, error.message)
+        await this.authLogger.logLoginAttempt(
+          email,
+          false,
+          'Rate limit exceeded',
+          undefined,
+          ipAddress,
+          userAgent
+        )
+        throw new AuthenticationError('Too many login attempts. Please try again later.')
+      }
+
+      // Handle validation errors
+      if (error instanceof ValidationError) {
+        console.error(`❌ [AuthService] Validation error during login for ${email}:`, error.message)
+        await this.authLogger.logLoginAttempt(
+          email,
+          false,
+          `Validation error: ${error.message}`,
+          undefined,
+          ipAddress,
+          userAgent
+        )
+        throw error
+      }
+
       // Re-throw authentication errors as-is (already logged above)
       if (error instanceof AuthenticationError) {
         throw error
       }
 
-      // Handle other unexpected errors
-      console.error(`❌ [AuthService] Unexpected error during login for ${email}:`, error)
+      // Handle database constraint errors
+      if (error.code === '23505' || error.message?.includes('duplicate key')) {
+        console.error(`❌ [AuthService] Duplicate key error during login for ${email}:`, error.message)
+        await this.authLogger.logLoginAttempt(
+          email,
+          false,
+          'Database constraint violation',
+          undefined,
+          ipAddress,
+          userAgent
+        )
+        throw new AuthenticationError('Account data conflict. Please contact support.')
+      }
+
+      // Handle other unexpected errors with better logging
+      console.error(`❌ [AuthService] Unexpected error during login for ${email}:`, {
+        message: error.message,
+        code: error.code,
+        stack: error.stack?.substring(0, 500)
+      })
       await this.authLogger.logLoginAttempt(
         email,
         false,
@@ -979,6 +1041,54 @@ export class AuthService {
     if (!result.success) {
       throw new ValidationError(result.message || 'Email verification failed')
     }
+  }
+
+  /**
+   * Check login rate limiting
+   */
+  private async checkLoginRateLimit(email: string, ipAddress?: string): Promise<void> {
+    const fiveMinutesAgo = new Date()
+    fiveMinutesAgo.setMinutes(fiveMinutesAgo.getMinutes() - 5)
+
+    // Check email-based rate limiting (5 attempts per 5 minutes)
+    const { data: emailAttempts, error: emailError } = await supabase
+      .from('auth_logs')
+      .select('id')
+      .eq('email', email)
+      .eq('action', 'login_attempt')
+      .eq('status', 'failure')
+      .gte('created_at', fiveMinutesAgo.toISOString())
+
+    if (emailError) {
+      console.warn('⚠️ Failed to check email rate limit:', emailError.message)
+    } else if (emailAttempts && emailAttempts.length >= 5) {
+      throw new ValidationError('Too many failed login attempts. Please try again in 5 minutes.')
+    }
+
+    // Check IP-based rate limiting (10 attempts per 5 minutes)
+    if (ipAddress) {
+      const { data: ipAttempts, error: ipError } = await supabase
+        .from('auth_logs')
+        .select('id')
+        .eq('ip_address', ipAddress)
+        .eq('action', 'login_attempt')
+        .eq('status', 'failure')
+        .gte('created_at', fiveMinutesAgo.toISOString())
+
+      if (ipError) {
+        console.warn('⚠️ Failed to check IP rate limit:', ipError.message)
+      } else if (ipAttempts && ipAttempts.length >= 10) {
+        throw new ValidationError('Too many failed login attempts from this location. Please try again in 5 minutes.')
+      }
+    }
+  }
+
+  /**
+   * Validate email format
+   */
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
   }
 
   /**

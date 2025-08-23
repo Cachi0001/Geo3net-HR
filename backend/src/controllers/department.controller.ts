@@ -8,14 +8,20 @@ import { ValidationError } from '../utils/errors'
 const createDepartmentSchema = Joi.object({
   name: Joi.string().min(2).max(100).required(),
   description: Joi.string().max(500).optional(),
-  manager_id: Joi.string().uuid().optional(),
+  manager_id: Joi.alternatives().try(
+    Joi.string().uuid(),
+    Joi.allow(null)
+  ).optional(),
   is_active: Joi.boolean().default(true)
 })
 
 const updateDepartmentSchema = Joi.object({
   name: Joi.string().min(2).max(100).optional(),
   description: Joi.string().max(500).optional(),
-  manager_id: Joi.string().uuid().optional().allow(null),
+  manager_id: Joi.alternatives().try(
+    Joi.string().uuid(),
+    Joi.allow(null)
+  ).optional(),
   is_active: Joi.boolean().optional()
 })
 

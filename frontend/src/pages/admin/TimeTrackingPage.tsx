@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/services/api';
 import { 
   Clock, 
@@ -218,6 +219,7 @@ const fallbackWeeklyStats: WeeklyStats[] = [
 ];
 
 const TimeTrackingPage: React.FC = () => {
+  const { user, isLoadingUser } = useAuth();
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -228,6 +230,29 @@ const TimeTrackingPage: React.FC = () => {
   const [attendanceReport, setAttendanceReport] = useState<any>(null);
   const { toast } = useToast();
 
+  // Show loading state while checking authentication
+  if (isLoadingUser) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading...</span>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+          <p className="text-muted-foreground">Please log in to access the time tracking system.</p>
+        </div>
+      </div>
+    );
+  }
+
   const loadTimeEntries = useCallback(async () => {
     try {
       const response = await apiClient.getAllTimeEntries({
@@ -236,9 +261,9 @@ const TimeTrackingPage: React.FC = () => {
         limit: 100
       });
       
-      if (response.success && response.data) {
+      if (response.success && response.data && response.data.entries) {
         // Transform API data to match our interface
-        const transformedEntries = response.data.map((entry: any) => ({
+        const transformedEntries = response.data.entries.map((entry: any) => ({
           ...entry,
           date: entry.checkInTime ? entry.checkInTime.split('T')[0] : selectedDate,
           clockIn: entry.checkInTime ? new Date(entry.checkInTime).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) : '',

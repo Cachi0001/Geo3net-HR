@@ -77,9 +77,9 @@ const TaskProgressMonitor: React.FC = () => {
       setLoading(true);
       const response = await apiClient.getTasks();
       
-      if (response.success && response.data) {
+      if (response.success && response.data && response.data.tasks) {
         // Transform tasks to include progress tracking data
-        const tasksWithProgress = response.data.map((task: any) => ({
+        const tasksWithProgress = response.data.tasks.map((task: any) => ({
           ...task,
           timeSpent: task.actualHours || 0,
           efficiency: task.estimatedHours > 0 ? 

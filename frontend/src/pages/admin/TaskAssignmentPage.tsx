@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/services/api';
 import { 
   CheckSquare, 
@@ -58,6 +59,7 @@ interface Task {
 }
 
 const TaskAssignmentPage: React.FC = () => {
+  const { user, isLoadingUser } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -69,6 +71,29 @@ const TaskAssignmentPage: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // Show loading state while checking authentication
+  if (isLoadingUser) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading...</span>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+          <p className="text-muted-foreground">Please log in to access the task assignment system.</p>
+        </div>
+      </div>
+    );
+  }
 
   const [newTask, setNewTask] = useState({
     title: '',
@@ -84,8 +109,8 @@ const TaskAssignmentPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await apiClient.getTasks();
-      if (response.success && response.data) {
-        setTasks(response.data);
+      if (response.success && response.data && response.data.tasks) {
+        setTasks(response.data.tasks);
       } else {
         console.warn('No task data received from API');
         setTasks([]);
@@ -124,7 +149,7 @@ const TaskAssignmentPage: React.FC = () => {
     loadEmployees();
   }, [loadTasks, loadEmployees]);
 
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = (tasks || []).filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter;

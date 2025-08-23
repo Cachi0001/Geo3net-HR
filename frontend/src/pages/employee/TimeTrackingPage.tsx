@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/services/api';
 import { 
   Clock, 
@@ -72,6 +73,7 @@ interface CheckOutData {
 }
 
 const EmployeeTimeTrackingPage: React.FC = () => {
+  const { user, isLoadingUser } = useAuth();
   const [activeEntry, setActiveEntry] = useState<TimeEntry | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,6 +86,29 @@ const EmployeeTimeTrackingPage: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [workingTime, setWorkingTime] = useState('00:00:00');
   const { toast } = useToast();
+
+  // Show loading state while checking authentication
+  if (isLoadingUser) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading...</span>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+          <p className="text-muted-foreground">Please log in to access time tracking.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Update current time every second
   useEffect(() => {

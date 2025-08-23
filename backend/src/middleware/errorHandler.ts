@@ -8,7 +8,19 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ): Response | void => {
+  console.log('🔍 [ErrorHandler] Error caught:', {
+    name: error.name,
+    message: error.message,
+    isValidationError: error instanceof ValidationError,
+    errors: error instanceof ValidationError ? error.errors : undefined
+  })
+  
   if (error instanceof ValidationError) {
+    console.log('🔍 [ErrorHandler] ValidationError details:', {
+      message: error.message,
+      errors: error.errors,
+      errorsLength: error.errors?.length
+    })
     return ResponseHandler.validationError(res, error.errors)
   }
 

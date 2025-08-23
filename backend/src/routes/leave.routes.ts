@@ -4,7 +4,8 @@ import { authenticateToken } from '../middleware/auth'
 import { 
   permissionMiddleware,
   requireHRStaff,
-  requireManager
+  requireManager,
+  AuthenticatedRequest
 } from '../middleware/permission'
 
 const router = Router()
@@ -55,7 +56,22 @@ router.put('/policies/:id',
 
 // Leave Request Routes
 router.post('/requests', 
-  leaveController.createLeaveRequest.bind(leaveController)
+  (req: AuthenticatedRequest, res, next) => {
+    console.log('🔍 [LeaveRoutes] POST /requests route hit')
+    console.log('🔍 [LeaveRoutes] Request body:', JSON.stringify(req.body))
+    console.log('🔍 [LeaveRoutes] Request headers:', JSON.stringify(req.headers))
+    console.log('🔍 [LeaveRoutes] User from auth:', req.user)
+    next()
+  },
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      console.log('🔍 [LeaveRoutes] About to call controller method')
+      await leaveController.createLeaveRequest(req, res)
+    } catch (error) {
+      console.log('🔍 [LeaveRoutes] Error in controller call:', error)
+      next(error)
+    }
+  }
 )
 
 router.get('/requests', 

@@ -203,18 +203,28 @@ export const ManagerDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="dashboard-container space-y-4 sm:space-y-6 p-4 sm:p-6">
       {/* Header */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
-          <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-          Manager Dashboard
-        </h1>
-        <p className="text-muted-foreground text-sm sm:text-base">Manage your team performance, tasks, and workforce scheduling</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="mobile-text-lg sm:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Users className="mobile-icon-lg sm:h-8 sm:w-8 text-primary" />
+            Manager Dashboard
+          </h1>
+          <p className="mobile-text-sm text-muted-foreground">
+            Manage your team performance, tasks, and workforce scheduling
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="mobile-text-xs sm:text-sm">
+            <Users className="mobile-icon sm:h-4 sm:w-4 mr-1" />
+            {teamMembers.length} Team Members
+          </Badge>
+        </div>
       </div>
 
-      {/* Manager Metrics - Mobile First: 2x3 grid, Desktop: 3x2 */}
-      <div className="mobile-responsive-grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+      {/* Manager Metrics */}
+      <div className="mobile-responsive-grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {managerMetrics.map((metric, index) => {
           const variants = ['primary', 'secondary', 'accent', 'success', 'warning', 'info'] as const;
           return (
@@ -232,13 +242,13 @@ export const ManagerDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions Hub */}
-      <Card className="bg-gradient-card shadow-xl border-0">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
+      <Card className="mobile-card bg-gradient-card shadow-xl border-0">
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 mobile-text-base">
+            <Target className="mobile-icon-lg" />
             Management Hub
           </CardTitle>
-          <CardDescription>Essential team management tools and actions</CardDescription>
+          <CardDescription className="mobile-text-xs">Essential team management tools and actions</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
@@ -248,15 +258,15 @@ export const ManagerDashboard: React.FC = () => {
                 <Button
                   key={index}
                   variant="outline"
-                  className={`h-auto p-3 flex flex-col items-center gap-2 hover:bg-primary/5 transition-all duration-200`}
+                  className={`touch-target h-auto p-3 flex flex-col items-center gap-2 hover:bg-primary/5 active:bg-primary/10 transition-all duration-200`}
                   onClick={action.action}
                 >
-                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${action.color || 'bg-primary'} text-white`}>
-                    <Icon className="h-4 w-4" />
+                  <div className={`h-6 w-6 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center ${action.color || 'bg-primary'} text-white`}>
+                    <Icon className="mobile-icon sm:h-4 sm:w-4" />
                   </div>
                   <div className="text-center">
-                    <div className="font-medium text-xs leading-tight">{action.title}</div>
-                    <div className="text-xs text-muted-foreground mt-1 hidden sm:block">{action.description}</div>
+                    <div className="font-medium mobile-text-xs sm:text-xs leading-tight">{action.title}</div>
+                    <div className="mobile-text-xs text-muted-foreground mt-1 hidden sm:block">{action.description}</div>
                   </div>
                 </Button>
               );
@@ -266,17 +276,17 @@ export const ManagerDashboard: React.FC = () => {
       </Card>
 
       {/* Main Dashboard Content - Primary Management Tools */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Team Performance Overview */}
-        <Card className="bg-gradient-card shadow-xl border-0">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
+        <Card className="mobile-card bg-gradient-card shadow-xl border-0">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 mobile-text-base">
+              <TrendingUp className="mobile-icon-lg" />
               Team Performance
             </CardTitle>
-            <CardDescription>Individual team member performance metrics</CardDescription>
+            <CardDescription className="mobile-text-xs">Individual team member performance metrics</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4">
             {teamMembers.slice(0, 6).map((member) => {
               const getStatusColor = (status: string) => {
                 switch (status) {
@@ -291,21 +301,21 @@ export const ManagerDashboard: React.FC = () => {
                 <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border bg-background/50">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <div className="w-10 h-10 rounded-full bg-gradient-primary text-white flex items-center justify-center font-medium">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-primary text-white flex items-center justify-center font-medium mobile-text-xs">
                         {member.avatar}
                       </div>
-                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${getStatusColor(member.status)}`} />
+                      <div className={`absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-white ${getStatusColor(member.status)}`} />
                     </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{member.name}</div>
-                      <div className="text-xs text-muted-foreground">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium mobile-text-xs sm:text-sm truncate">{member.name}</div>
+                      <div className="mobile-text-xs text-muted-foreground">
                         {member.position} • {member.lastActivity}
                       </div>
                     </div>
                   </div>
                   <div className="text-right space-y-1">
-                    <div className="text-sm font-bold text-primary">{member.performance}%</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="mobile-text-xs sm:text-sm font-bold text-primary">{member.performance}%</div>
+                    <div className="mobile-text-xs text-muted-foreground">
                       {member.tasksActive} active • {member.tasksCompleted} done
                     </div>
                   </div>
@@ -314,25 +324,25 @@ export const ManagerDashboard: React.FC = () => {
             })}
             <Button 
               variant="outline" 
-              className="w-full"
+              className="touch-target w-full"
               onClick={() => navigate('/dashboard/analytics?view=team')}
             >
-              <BarChart3 className="h-4 w-4 mr-2" />
+              <BarChart3 className="mobile-icon sm:h-4 sm:w-4 mr-2" />
               Detailed Team Analytics
             </Button>
           </CardContent>
         </Card>
 
         {/* Active Tasks Management */}
-        <Card className="bg-gradient-card shadow-xl border-0">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckSquare className="h-5 w-5" />
+        <Card className="mobile-card bg-gradient-card shadow-xl border-0">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 mobile-text-base">
+              <CheckSquare className="mobile-icon-lg" />
               Active Tasks
             </CardTitle>
-            <CardDescription>Current team tasks and their progress</CardDescription>
+            <CardDescription className="mobile-text-xs">Current team tasks and their progress</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4">
             {activeTasks.map((task) => {
               const getStatusColor = (status: string) => {
                 switch (status) {
@@ -356,23 +366,23 @@ export const ManagerDashboard: React.FC = () => {
               };
               
               return (
-                <div key={task.id} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)}`} />
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{task.title}</div>
-                        <div className="text-xs text-muted-foreground">
+                <div key={task.id} className="space-y-2 sm:space-y-3">
+                  <div className="flex items-start sm:items-center justify-between gap-2">
+                    <div className="flex items-start sm:items-center gap-2 flex-1">
+                      <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full mt-1 sm:mt-0 ${getPriorityColor(task.priority)}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium mobile-text-xs sm:text-sm truncate">{task.title}</div>
+                        <div className="mobile-text-xs text-muted-foreground">
                           {task.assignee} • Due: {task.dueDate} • {task.estimatedHours}h
                         </div>
                       </div>
                     </div>
-                    <Badge className={`text-xs ${getStatusColor(task.status)}`}>
+                    <Badge className={`mobile-text-xs flex-shrink-0 ${getStatusColor(task.status)}`}>
                       {task.status.replace('_', ' ')}
                     </Badge>
                   </div>
                   <div className="space-y-1">
-                    <div className="flex justify-between text-xs">
+                    <div className="flex justify-between mobile-text-xs">
                       <span className="text-muted-foreground">Progress</span>
                       <span className="font-medium">{task.progress}%</span>
                     </div>
@@ -382,10 +392,10 @@ export const ManagerDashboard: React.FC = () => {
               );
             })}
             <Button 
-              className="w-full"
+              className="touch-target w-full"
               onClick={() => navigate('/dashboard/task-assignment')}
             >
-              <CheckSquare className="h-4 w-4 mr-2" />
+              <CheckSquare className="mobile-icon sm:h-4 sm:w-4 mr-2" />
               Task Management
             </Button>
           </CardContent>
@@ -393,17 +403,17 @@ export const ManagerDashboard: React.FC = () => {
       </div>
 
       {/* Secondary Management Tools */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Workforce Scheduling */}
-        <Card className="bg-gradient-card shadow-xl border-0">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+        <Card className="mobile-card bg-gradient-card shadow-xl border-0">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 mobile-text-base">
+              <Calendar className="mobile-icon-lg" />
               Today's Schedule
             </CardTitle>
-            <CardDescription>Team schedule and attendance overview</CardDescription>
+            <CardDescription className="mobile-text-xs">Team schedule and attendance overview</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4">
             {scheduleItems.map((schedule) => {
               const getScheduleStatusColor = (status: string) => {
                 switch (status) {
@@ -417,13 +427,13 @@ export const ManagerDashboard: React.FC = () => {
               
               return (
                 <div key={schedule.id} className="flex items-center justify-between p-3 rounded-lg border bg-background/50">
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{schedule.employeeName}</div>
-                    <div className="text-xs text-muted-foreground">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium mobile-text-xs sm:text-sm truncate">{schedule.employeeName}</div>
+                    <div className="mobile-text-xs text-muted-foreground">
                       {schedule.shift} • {schedule.hours}h scheduled
                     </div>
                   </div>
-                  <Badge className={`text-xs ${getScheduleStatusColor(schedule.status)}`}>
+                  <Badge className={`mobile-text-xs flex-shrink-0 ${getScheduleStatusColor(schedule.status)}`}>
                     {schedule.status}
                   </Badge>
                 </div>
@@ -431,58 +441,58 @@ export const ManagerDashboard: React.FC = () => {
             })}
             <Button 
               variant="outline" 
-              className="w-full"
+              className="touch-target w-full"
               onClick={() => navigate('/dashboard/schedule')}
             >
-              <Calendar className="h-4 w-4 mr-2" />
+              <Calendar className="mobile-icon sm:h-4 sm:w-4 mr-2" />
               Manage Schedule
             </Button>
           </CardContent>
         </Card>
 
         {/* Team Alerts & Notifications */}
-        <Card className="bg-gradient-card shadow-xl border-0">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
+        <Card className="mobile-card bg-gradient-card shadow-xl border-0">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 mobile-text-base">
+              <AlertCircle className="mobile-icon-lg" />
               Team Alerts
             </CardTitle>
-            <CardDescription>Important notifications and action items</CardDescription>
+            <CardDescription className="mobile-text-xs">Important notifications and action items</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4">
             {/* Performance Alerts */}
             <div className="space-y-3">
               <div className="flex items-start gap-3 p-3 rounded-lg border bg-background/50">
                 <div className="h-2 w-2 rounded-full mt-2 bg-red-500 animate-pulse" />
-                <div className="flex-1">
-                  <div className="font-medium text-sm">Performance Review Due</div>
-                  <div className="text-xs text-muted-foreground">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium mobile-text-xs sm:text-sm">Performance Review Due</div>
+                  <div className="mobile-text-xs text-muted-foreground">
                     Mike Johnson's quarterly review is overdue
                   </div>
                 </div>
-                <Badge variant="destructive" className="text-xs">Urgent</Badge>
+                <Badge variant="destructive" className="mobile-text-xs flex-shrink-0">Urgent</Badge>
               </div>
               
               <div className="flex items-start gap-3 p-3 rounded-lg border bg-background/50">
                 <div className="h-2 w-2 rounded-full mt-2 bg-yellow-500" />
-                <div className="flex-1">
-                  <div className="font-medium text-sm">Leave Request Pending</div>
-                  <div className="text-xs text-muted-foreground">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium mobile-text-xs sm:text-sm">Leave Request Pending</div>
+                  <div className="mobile-text-xs text-muted-foreground">
                     Sarah Wilson requests 3 days leave next week
                   </div>
                 </div>
-                <Badge variant="secondary" className="text-xs">Review</Badge>
+                <Badge variant="secondary" className="mobile-text-xs flex-shrink-0">Review</Badge>
               </div>
               
               <div className="flex items-start gap-3 p-3 rounded-lg border bg-background/50">
                 <div className="h-2 w-2 rounded-full mt-2 bg-blue-500" />
-                <div className="flex-1">
-                  <div className="font-medium text-sm">Team Meeting Scheduled</div>
-                  <div className="text-xs text-muted-foreground">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium mobile-text-xs sm:text-sm">Team Meeting Scheduled</div>
+                  <div className="mobile-text-xs text-muted-foreground">
                     Weekly standup tomorrow at 10:00 AM
                   </div>
                 </div>
-                <Badge variant="outline" className="text-xs">Info</Badge>
+                <Badge variant="outline" className="mobile-text-xs flex-shrink-0">Info</Badge>
               </div>
             </div>
             
@@ -490,18 +500,20 @@ export const ManagerDashboard: React.FC = () => {
               <Button 
                 variant="outline" 
                 size="sm"
+                className="touch-target"
                 onClick={() => navigate('/dashboard/leave-request')}
               >
-                <FileText className="h-4 w-4 mr-2" />
-                Leave Requests
+                <FileText className="mobile-icon sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="mobile-text-xs">Leave Requests</span>
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
+                className="touch-target"
                 onClick={() => navigate('/dashboard/performance')}
               >
-                <Star className="h-4 w-4 mr-2" />
-                Reviews
+                <Star className="mobile-icon sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="mobile-text-xs">Reviews</span>
               </Button>
             </div>
           </CardContent>

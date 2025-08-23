@@ -1,6 +1,9 @@
 .dashboard {
   @apply space-y-6;
   animation: fadeIn 0.6s ease-out;
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .dashboard h1 {
@@ -18,12 +21,18 @@
   hyphens: auto;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
   backdrop-filter: blur(5px);
+  position: relative;
 }
 
 .quickAction:hover {
   @apply border-primary/30 bg-primary/5 shadow-md;
   transform: translateY(-2px);
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%);
+}
+
+.quickAction:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .quickAction:hover .quickActionIcon {
@@ -69,11 +78,14 @@
 }
 
 .activityItem {
-  @apply flex items-center justify-between p-3 border-b border-gray-100 last:border-b-0 transition-colors duration-200;
+  @apply flex items-center justify-between p-3 border-b border-gray-100 last:border-b-0 transition-all duration-200;
+  border: 1px solid transparent;
 }
 
 .activityItem:hover {
   @apply bg-muted/50;
+  border-color: rgba(0, 0, 0, 0.1);
+  transform: translateX(2px);
 }
 
 /* Payroll management specific styles */
@@ -102,10 +114,34 @@
 
 /* Enhanced responsive breakpoints */
 
+/* Loading State */
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.loadingSpinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Small mobile devices (320px - 479px) */
 @media (max-width: 479px) {
   .dashboard {
     @apply space-y-3;
+    padding: 1rem;
   }
   
   .dashboard h1 {
@@ -124,6 +160,11 @@
   
   .quickActionDescription {
     display: none;
+  }
+  
+  .quickActionIcon {
+    width: 1.25rem;
+    height: 1.25rem;
   }
   
   .activityItem {

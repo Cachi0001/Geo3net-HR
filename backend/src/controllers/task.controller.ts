@@ -50,14 +50,14 @@ export class TaskController {
         .from('tasks')
         .select(`
           *,
-          assigned_to_user:assigned_to (
+          assigned_to_user:users!assigned_to (
             id,
-            fullName,
+            full_name,
             email
           ),
-          assigned_by_user:assigned_by (
+          assigned_by_user:users!assigned_by (
             id,
-            fullName,
+            full_name,
             email
           )
         `);

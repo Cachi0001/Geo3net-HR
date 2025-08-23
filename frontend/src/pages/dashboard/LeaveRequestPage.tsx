@@ -43,8 +43,16 @@ const LeaveRequestPage: React.FC = () => {
   // Fetch leave requests
   const { data: leaveRequests, isLoading } = useQuery({
     queryKey: ['leaveRequests'],
-    queryFn: () => apiClient.getLeaveRequests(),
+    queryFn: () => apiClient.getMyLeaveRequests(),
   });
+
+  // Fetch leave types
+  const { data: leaveTypesResponse } = useQuery({
+    queryKey: ['leaveTypes'],
+    queryFn: () => apiClient.getLeaveTypes(),
+  });
+
+  const leaveTypes = leaveTypesResponse?.data?.leaveTypes || [];
 
   // Create leave request mutation
   const createLeaveRequest = useMutation({
@@ -115,7 +123,27 @@ const LeaveRequestPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    createLeaveRequest.mutate(formData);
+    
+    // Find the selected leave type ID
+    const selectedLeaveType = leaveTypes.find(lt => lt.name === formData.type);
+    if (!selectedLeaveType) {
+      toast({
+        title: 'Error',
+        description: 'Invalid leave type selected',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Transform form data to match backend expectations
+    const requestData = {
+      leaveTypeId: selectedLeaveType.id,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      reason: formData.reason
+    };
+    
+    createLeaveRequest.mutate(requestData);
   };
 
   const getStatusBadge = (status: string) => {
@@ -129,7 +157,8 @@ const LeaveRequestPage: React.FC = () => {
     }
   };
 
-  const leaveTypes = [
+  // Static fallback leave types if API fails
+  const fallbackLeaveTypes = [
     'Annual Leave',
     'Sick Leave',
     'Personal Leave',
@@ -137,6 +166,9 @@ const LeaveRequestPage: React.FC = () => {
     'Emergency Leave',
     'Bereavement Leave'
   ];
+  
+  // Use API leave types or fallback
+  const availableLeaveTypes = leaveTypes.length > 0 ? leaveTypes.map(lt => lt.name) : fallbackLeaveTypes;
 
   return (
     <div className="space-y-6">
@@ -183,7 +215,7 @@ const LeaveRequestPage: React.FC = () => {
                       <SelectValue placeholder="Select leave type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {leaveTypes.map((type) => (
+                      {availableLeaveTypes.map((type) => (
                         <SelectItem key={type} value={type}>
                           {type}
                         </SelectItem>

@@ -3,10 +3,31 @@
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
   backdrop-filter: blur(12px);
   animation: scale-in 0.3s ease-out;
-  min-height: 120px;
+  min-height: 100px;
   overflow: hidden;
   position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Mobile-first responsive design */
+@media (min-width: 480px) {
+  .metricCard {
+    min-height: 110px;
+  }
+}
+
+@media (min-width: 640px) {
+  .metricCard {
+    min-height: 120px;
+  }
+}
+
+@media (min-width: 768px) {
+  .metricCard {
+    min-height: 130px;
+  }
 }
 
 .metricCard::before {
@@ -22,10 +43,24 @@
 }
 
 .metricCard:hover {
-  transform: translateY(-3px) scale(1.02);
   @apply shadow-xl;
   background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(248, 250, 252, 1) 100%);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Only apply transform on larger screens to avoid mobile touch issues */
+@media (min-width: 768px) {
+  .metricCard:hover {
+    transform: translateY(-3px) scale(1.02);
+  }
+}
+
+/* Touch-friendly active state for mobile */
+@media (max-width: 767px) {
+  .metricCard:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
 }
 
 .metricCard .cardContent {

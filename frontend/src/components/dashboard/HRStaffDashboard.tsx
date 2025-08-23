@@ -73,18 +73,18 @@ export const HRStaffDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="dashboard-container space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-          <Users className="h-8 w-8 text-primary" />
+        <h1 className="mobile-text-lg md:text-2xl lg:text-3xl font-bold text-foreground flex items-center gap-2">
+          <Users className="mobile-icon-lg md:h-7 md:w-7 lg:h-8 lg:w-8 text-primary" />
           HR Staff Dashboard
         </h1>
-        <p className="text-muted-foreground">Employee management and HR operations</p>
+        <p className="mobile-text-sm md:text-base text-muted-foreground">Employee management and HR operations</p>
       </div>
 
       {/* HR Metrics - Mobile First: 2x2, Desktop: 4x1 */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
+      <div className="mobile-responsive-grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
         {hrMetrics.map((metric, index) => {
           const variants = ['primary', 'secondary', 'accent', 'success'] as const;
           return (
@@ -102,29 +102,29 @@ export const HRStaffDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card className="bg-gradient-card shadow-xl border-0">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
+      <Card className="mobile-card bg-gradient-card shadow-xl border-0">
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="flex items-center gap-2 mobile-text-base md:text-lg">
+            <CheckCircle className="mobile-icon md:h-5 md:w-5" />
             Quick Actions
           </CardTitle>
-          <CardDescription>Common HR tasks and operations</CardDescription>
+          <CardDescription className="mobile-text-xs md:text-sm">Common HR tasks and operations</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="mobile-responsive-grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {quickActions.map((action, index) => {
               const Icon = action.icon;
               return (
                 <Button
                   key={index}
                   variant="outline"
-                  className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary/5 transition-all duration-200"
+                  className="touch-target h-auto p-3 md:p-4 flex flex-col items-center gap-2 hover:bg-primary/5 active:bg-primary/10 transition-all duration-200"
                   onClick={action.action}
                 >
-                  <Icon className="h-6 w-6 text-primary" />
+                  <Icon className="mobile-icon md:h-6 md:w-6 text-primary" />
                   <div className="text-center">
-                    <div className="font-medium text-sm">{action.title}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{action.description}</div>
+                    <div className="font-medium mobile-text-xs md:text-sm">{action.title}</div>
+                    <div className="mobile-text-xs md:text-xs text-muted-foreground mt-1">{action.description}</div>
                   </div>
                 </Button>
               );
@@ -134,44 +134,44 @@ export const HRStaffDashboard: React.FC = () => {
       </Card>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Pending Requests */}
-        <Card className="bg-gradient-card shadow-xl border-0">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
+        <Card className="mobile-card bg-gradient-card shadow-xl border-0">
+          <CardHeader className="pb-3 md:pb-6">
+            <CardTitle className="flex items-center gap-2 mobile-text-base md:text-lg">
+              <Clock className="mobile-icon md:h-5 md:w-5" />
               Pending Requests
             </CardTitle>
-            <CardDescription>Employee requests awaiting approval</CardDescription>
+            <CardDescription className="mobile-text-xs md:text-sm">Employee requests awaiting approval</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 md:space-y-4">
             {pendingRequests.map((request) => (
               <div key={request.id} className="space-y-2 p-3 rounded-lg border bg-background/50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-medium text-sm">{request.employee}</span>
-                    <p className="text-xs text-muted-foreground">{request.department}</p>
+                    <span className="font-medium mobile-text-xs md:text-sm">{request.employee}</span>
+                    <p className="mobile-text-xs text-muted-foreground">{request.department}</p>
                   </div>
                   <Badge 
                     variant={
                       request.priority === 'high' ? 'destructive' :
                       request.priority === 'medium' ? 'default' : 'secondary'
                     }
-                    className="text-xs"
+                    className="mobile-text-xs"
                   >
                     {request.priority}
                   </Badge>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">{request.type}</Badge>
-                    <span className="text-xs text-muted-foreground">{request.duration}</span>
+                    <Badge variant="outline" className="mobile-text-xs">{request.type}</Badge>
+                    <span className="mobile-text-xs text-muted-foreground">{request.duration}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">{request.date}</p>
+                  <p className="mobile-text-xs text-muted-foreground">{request.date}</p>
                 </div>
                 <div className="flex gap-2 pt-2">
-                  <Button size="sm" className="h-7 px-3 text-xs">Approve</Button>
-                  <Button size="sm" variant="outline" className="h-7 px-3 text-xs">Review</Button>
+                  <Button size="sm" className="touch-target h-8 px-3 mobile-text-xs">Approve</Button>
+                  <Button size="sm" variant="outline" className="touch-target h-8 px-3 mobile-text-xs">Review</Button>
                 </div>
               </div>
             ))}
@@ -179,75 +179,75 @@ export const HRStaffDashboard: React.FC = () => {
         </Card>
 
         {/* Recent Hires */}
-        <Card className="bg-gradient-card shadow-xl border-0">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5" />
+        <Card className="mobile-card bg-gradient-card shadow-xl border-0">
+          <CardHeader className="pb-3 md:pb-6">
+            <CardTitle className="flex items-center gap-2 mobile-text-base md:text-lg">
+              <UserPlus className="mobile-icon md:h-5 md:w-5" />
               Recent Hires
             </CardTitle>
-            <CardDescription>New employees and onboarding status</CardDescription>
+            <CardDescription className="mobile-text-xs md:text-sm">New employees and onboarding status</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {recentHires.map((hire) => (
-              <div key={hire.id} className="space-y-2 p-3 rounded-lg border bg-background/50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="font-medium text-sm">{hire.name}</span>
-                    <p className="text-xs text-muted-foreground">{hire.position}</p>
-                  </div>
-                  <Badge 
-                    variant={
-                      hire.status === 'completed' ? 'default' :
-                      hire.status === 'onboarding' ? 'secondary' : 'outline'
-                    }
-                    className="text-xs"
-                  >
-                    {hire.status}
-                  </Badge>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">{hire.department}</Badge>
-                    <span className="text-xs text-muted-foreground">Started: {new Date(hire.startDate).toLocaleDateString()}</span>
-                  </div>
-                </div>
-                <Button size="sm" variant="ghost" className="h-7 px-3 text-xs w-full">
-                  View Profile
-                </Button>
-              </div>
-            ))}
+          <CardContent className="space-y-3 md:space-y-4">
+             {recentHires.map((hire) => (
+               <div key={hire.id} className="space-y-2 p-3 rounded-lg border bg-background/50">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <span className="font-medium mobile-text-xs md:text-sm">{hire.name}</span>
+                     <p className="mobile-text-xs text-muted-foreground">{hire.position}</p>
+                   </div>
+                   <Badge 
+                     variant={
+                       hire.status === 'completed' ? 'default' :
+                       hire.status === 'onboarding' ? 'secondary' : 'outline'
+                     }
+                     className="mobile-text-xs"
+                   >
+                     {hire.status}
+                   </Badge>
+                 </div>
+                 <div className="space-y-1">
+                   <div className="flex items-center gap-2">
+                     <Badge variant="outline" className="mobile-text-xs">{hire.department}</Badge>
+                     <span className="mobile-text-xs text-muted-foreground">Started: {new Date(hire.startDate).toLocaleDateString()}</span>
+                   </div>
+                 </div>
+                 <Button size="sm" variant="ghost" className="touch-target h-8 px-3 mobile-text-xs w-full">
+                   View Profile
+                 </Button>
+               </div>
+             ))}
           </CardContent>
         </Card>
       </div>
 
       {/* Department Statistics */}
-      <Card className="bg-gradient-card shadow-xl border-0">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+      <Card className="mobile-card bg-gradient-card shadow-xl border-0">
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="flex items-center gap-2 mobile-text-base md:text-lg">
+            <TrendingUp className="mobile-icon md:h-5 md:w-5" />
             Department Statistics
           </CardTitle>
-          <CardDescription>Employee metrics by department</CardDescription>
+          <CardDescription className="mobile-text-xs md:text-sm">Employee metrics by department</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 md:space-y-4">
           {departmentStats.map((dept, index) => (
             <div key={index} className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="font-medium">{dept.name}</span>
-                <Badge variant="outline" className="text-xs">
+                <span className="font-medium mobile-text-sm md:text-base">{dept.name}</span>
+                <Badge variant="outline" className="mobile-text-xs">
                   {dept.employees} employees
                 </Badge>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between mobile-text-xs md:text-sm">
                     <span className="text-muted-foreground">Attendance</span>
                     <span className="font-medium">{dept.attendance}%</span>
                   </div>
                   <Progress value={dept.attendance} className="h-2" />
                 </div>
                 <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between mobile-text-xs md:text-sm">
                     <span className="text-muted-foreground">Satisfaction</span>
                     <span className="font-medium">{dept.satisfaction}%</span>
                   </div>
@@ -260,37 +260,37 @@ export const HRStaffDashboard: React.FC = () => {
       </Card>
 
       {/* Upcoming Tasks */}
-      <Card className="bg-gradient-card shadow-xl border-0">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
+      <Card className="mobile-card bg-gradient-card shadow-xl border-0">
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="flex items-center gap-2 mobile-text-base md:text-lg">
+            <AlertTriangle className="mobile-icon md:h-5 md:w-5" />
             Upcoming Tasks
           </CardTitle>
-          <CardDescription>Important HR tasks and deadlines</CardDescription>
+          <CardDescription className="mobile-text-xs md:text-sm">Important HR tasks and deadlines</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {upcomingTasks.map((task) => (
-            <div key={task.id} className="flex items-center justify-between p-3 rounded-lg border bg-background/50">
+            <div key={task.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 rounded-lg border bg-background/50 gap-3">
               <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm">{task.task}</span>
-                  <Badge variant="outline" className="text-xs">
+                <div className="flex flex-col md:flex-row md:items-center gap-2">
+                  <span className="font-medium mobile-text-xs md:text-sm">{task.task}</span>
+                  <Badge variant="outline" className="mobile-text-xs w-fit">
                     {task.type}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-muted-foreground">Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                <div className="flex flex-col md:flex-row md:items-center gap-2 mt-1">
+                  <span className="mobile-text-xs text-muted-foreground">Due: {new Date(task.dueDate).toLocaleDateString()}</span>
                   <Badge 
                     variant={
                       task.priority === 'high' ? 'destructive' : 'secondary'
                     }
-                    className="text-xs"
+                    className="mobile-text-xs w-fit"
                   >
                     {task.priority}
                   </Badge>
                 </div>
               </div>
-              <Button size="sm" variant="outline" className="h-8 px-3">
+              <Button size="sm" variant="outline" className="touch-target h-8 px-3 mobile-text-xs w-full md:w-auto">
                 Start
               </Button>
             </div>

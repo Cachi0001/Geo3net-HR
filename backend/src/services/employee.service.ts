@@ -250,6 +250,43 @@ export class EmployeeService {
     }
   }
 
+  async getEmployeeByUserId(userId: string, accessContext?: EmployeeAccessContext): Promise<Employee | null> {
+    try {
+      console.log('🔍 [EmployeeService] getEmployeeByUserId called with userId:', userId)
+      
+      const { data, error } = await supabase
+        .from('employees')
+        .select(`
+          *,
+          department:departments(id, name),
+          position:positions(id, title),
+          manager:employees!manager_id(id, full_name, employee_id)
+        `)
+        .eq('user_id', userId)
+        .single()
+
+      console.log('🔍 [EmployeeService] Supabase query result:', { data: !!data, error: error?.message })
+      
+      if (error || !data) {
+        console.log('❌ [EmployeeService] No employee found for userId:', userId)
+        return null
+      }
+
+      const employee = this.mapDatabaseToEmployee(data)
+      console.log('✅ [EmployeeService] Employee found:', { id: employee.id, fullName: employee.fullName })
+      
+      // Apply role-based data filtering if access context is provided
+      if (accessContext) {
+        return this.filterEmployeeDataByRole(employee, accessContext)
+      }
+      
+      return employee
+    } catch (error) {
+      console.log('❌ [EmployeeService] Exception in getEmployeeByUserId:', error)
+      return null
+    }
+  }
+
   async updateEmployee(id: string, data: UpdateEmployeeData, updatedBy: string): Promise<EmployeeResult> {
     try {
       // Check if employee exists

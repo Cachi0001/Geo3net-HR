@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/services/api';
 import { 
   Clock, 
@@ -58,6 +59,7 @@ interface WorkLocation {
 }
 
 const TimeTrackingPage: React.FC = () => {
+  const { user, isLoadingUser } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeEntry, setActiveEntry] = useState<TimeEntry | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
@@ -73,6 +75,29 @@ const TimeTrackingPage: React.FC = () => {
   const [workingTime, setWorkingTime] = useState('00:00:00');
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const { toast } = useToast();
+
+  // Show loading state while checking authentication
+  if (isLoadingUser) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading...</span>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+          <p className="text-muted-foreground">Please log in to access time tracking.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Update current time every second
   useEffect(() => {
@@ -102,6 +127,11 @@ const TimeTrackingPage: React.FC = () => {
       setWorkingTime('00:00:00');
     }
   }, [activeEntry]);
+
+  // Load data on component mount
+  useEffect(() => {
+    loadTimeTrackingData();
+  }, [loadTimeTrackingData]);
 
   // Get user location
   const getCurrentLocation = useCallback((): Promise<GeolocationPosition> => {
@@ -264,7 +294,7 @@ const TimeTrackingPage: React.FC = () => {
 
       // Call the actual API endpoint
       console.log('🔄 Calling check-in API...');
-      const response = await apiClient.checkIn(checkInData.location);
+      const response = await apiClient.checkIn(checkInData);
       
       if (response.success && response.data) {
         console.log('✅ Check-in successful:', response.data);
@@ -302,6 +332,18 @@ const TimeTrackingPage: React.FC = () => {
       });
     } finally {
       setIsCheckingIn(false);
+    }
+  };
+
+  // Handle location modal retry
+  const handleLocationRetry = async () => {
+    try {
+      setIsLocationModalOpen(false);
+      await getCurrentLocation();
+      // Retry check-in after getting location
+      await handleCheckIn();
+    } catch (error) {
+      console.error('Location retry failed:', error);
     }
   };
 
@@ -682,10 +724,7 @@ const TimeTrackingPage: React.FC = () => {
               <Button variant="outline" onClick={() => setIsLocationModalOpen(false)} className="flex-1">
                 Cancel
               </Button>
-              <Button onClick={() => {
-                setIsLocationModalOpen(false);
-                getCurrentLocation();
-              }} className="flex-1">
+              <Button onClick={handleLocationRetry} className="flex-1">
                 Retry Location
               </Button>
             </div>

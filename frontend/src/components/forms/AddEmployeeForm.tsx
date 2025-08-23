@@ -214,7 +214,7 @@ const AddEmployeeForm: React.FC = () => {
         emergencyPhone: formData.emergencyPhone || undefined,
         departmentId: formData.departmentId || undefined,
         positionId: formData.positionId || undefined,
-        managerId: formData.managerId || undefined,
+        managerId: formData.managerId && formData.managerId !== 'no-manager' ? formData.managerId : undefined,
         hireDate: formData.hireDate,
         salary: formData.salary ? parseFloat(formData.salary) : undefined,
         skills: formData.skills,
@@ -411,7 +411,7 @@ const AddEmployeeForm: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {loadingData ? (
-                      <SelectItem value="loading" disabled>Loading departments...</SelectItem>
+                      <SelectItem value="loading-departments" disabled>Loading departments...</SelectItem>
                     ) : departments.length > 0 ? (
                       departments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id}>
@@ -419,7 +419,7 @@ const AddEmployeeForm: React.FC = () => {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="none" disabled>No departments available</SelectItem>
+                      <SelectItem value="no-departments" disabled>No departments available</SelectItem>
                     )}
                   </SelectContent>
                 </Select>
@@ -432,7 +432,7 @@ const AddEmployeeForm: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {loadingData ? (
-                      <SelectItem value="loading" disabled>Loading positions...</SelectItem>
+                      <SelectItem value="loading-positions" disabled>Loading positions...</SelectItem>
                     ) : positions.length > 0 ? (
                       positions.map((pos) => (
                         <SelectItem key={pos.id} value={pos.id}>
@@ -440,7 +440,7 @@ const AddEmployeeForm: React.FC = () => {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="none" disabled>No positions available</SelectItem>
+                      <SelectItem value="no-positions" disabled>No positions available</SelectItem>
                     )}
                   </SelectContent>
                 </Select>
@@ -452,9 +452,9 @@ const AddEmployeeForm: React.FC = () => {
                     <SelectValue placeholder="Select manager" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No manager</SelectItem>
+                    <SelectItem value="no-manager">No manager</SelectItem>
                     {loadingData ? (
-                      <SelectItem value="loading" disabled>Loading managers...</SelectItem>
+                      <SelectItem value="loading-managers" disabled>Loading managers...</SelectItem>
                     ) : managers.length > 0 ? (
                       managers.map((mgr) => (
                         <SelectItem key={mgr.id} value={mgr.id}>
@@ -462,7 +462,7 @@ const AddEmployeeForm: React.FC = () => {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="none" disabled>No managers available</SelectItem>
+                      <SelectItem value="no-managers" disabled>No managers available</SelectItem>
                     )}
                   </SelectContent>
                 </Select>

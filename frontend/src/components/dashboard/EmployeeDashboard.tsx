@@ -1,12 +1,34 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Calendar, CheckCircle, AlertCircle, User, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   console.log('👤 EmployeeDashboard rendered for user:', user?.email, 'role:', user?.role);
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'check-in-out':
+        navigate('/dashboard/time-tracking');
+        break;
+      case 'request-leave':
+        navigate('/dashboard/leave-request');
+        break;
+      case 'view-tasks':
+        navigate('/dashboard/tasks');
+        break;
+      case 'my-profile':
+        navigate('/dashboard/profile');
+        break;
+      default:
+        toast.error('Feature coming soon!');
+    }
+  };
 
   const stats = [
     {
@@ -53,58 +75,58 @@ export const EmployeeDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="dashboard-container space-y-4 sm:space-y-6">
       {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white p-6 rounded-lg">
-        <h1 className="text-2xl font-bold">Good morning, {user?.fullName || 'Employee'}!</h1>
-        <p className="text-green-100 mt-2">Ready to make today productive? Here's your overview.</p>
+      <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white p-4 sm:p-6 rounded-lg">
+        <h1 className="mobile-text-lg sm:text-2xl font-bold">Good morning, {user?.fullName || 'Employee'}!</h1>
+        <p className="text-green-100 mt-2 mobile-text-sm sm:text-base">Ready to make today productive? Here's your overview.</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="mobile-responsive-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {stats.map((stat, index) => (
-          <Card key={index} className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
+          <Card key={index} className="mobile-card hover:shadow-lg transition-shadow">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
+                  <p className="mobile-text-xs sm:text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  <p className="mobile-text-lg sm:text-2xl font-bold">{stat.value}</p>
+                  <p className="mobile-text-xs text-muted-foreground mt-1">{stat.change}</p>
                 </div>
-                <stat.icon className={`h-8 w-8 ${stat.color}`} />
+                <stat.icon className={`mobile-icon-lg sm:h-8 sm:w-8 ${stat.color}`} />
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Recent Tasks */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
+        <Card className="mobile-card">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 mobile-text-base sm:text-lg">
+              <CheckCircle className="mobile-icon sm:h-5 sm:w-5" />
               My Tasks
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="pt-0">
+            <div className="space-y-2 sm:space-y-3">
               {recentTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${
+                <div key={task.id} className="flex items-center justify-between p-2 sm:p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${
                       task.status === 'completed' ? 'bg-green-500' : 
                       task.priority === 'high' ? 'bg-red-500' :
                       task.priority === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'
                     }`} />
-                    <div>
-                      <p className={`font-medium ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+                    <div className="min-w-0 flex-1">
+                      <p className={`mobile-text-xs sm:text-sm font-medium truncate ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
                         {task.title}
                       </p>
-                      <p className="text-sm text-muted-foreground">Due: {task.dueDate}</p>
+                      <p className="mobile-text-xs text-muted-foreground">Due: {task.dueDate}</p>
                     </div>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
+                  <span className={`mobile-text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full flex-shrink-0 ml-2 ${
                     task.priority === 'high' ? 'bg-red-100 text-red-700' :
                     task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
                     'bg-blue-100 text-blue-700'
@@ -118,25 +140,25 @@ export const EmployeeDashboard: React.FC = () => {
         </Card>
 
         {/* Today's Schedule */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+        <Card className="mobile-card">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 mobile-text-base sm:text-lg">
+              <Calendar className="mobile-icon sm:h-5 sm:w-5" />
               Today's Schedule
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="pt-0">
+            <div className="space-y-3 sm:space-y-4">
               {upcomingEvents.map((event) => (
-                <div key={event.id} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Clock className="h-6 w-6 text-blue-600" />
+                <div key={event.id} className="flex items-center gap-3 sm:gap-4 p-2 sm:p-3 bg-muted/50 rounded-lg">
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Clock className="mobile-icon sm:h-6 sm:w-6 text-blue-600" />
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{event.title}</p>
-                    <p className="text-sm text-muted-foreground">{event.time}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="mobile-text-xs sm:text-sm font-medium truncate">{event.title}</p>
+                    <p className="mobile-text-xs text-muted-foreground">{event.time}</p>
                   </div>
-                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                  <span className="mobile-text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 bg-blue-100 text-blue-700 rounded-full flex-shrink-0">
                     {event.type}
                   </span>
                 </div>
@@ -147,30 +169,42 @@ export const EmployeeDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
+      <Card className="mobile-card">
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 mobile-text-base sm:text-lg">
+            <User className="mobile-icon sm:h-5 sm:w-5" />
             Quick Actions
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-center transition-colors">
-              <Clock className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-              <p className="font-medium">Check In/Out</p>
+        <CardContent className="pt-0">
+          <div className="mobile-responsive-grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <button 
+              className="touch-target p-3 sm:p-4 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 rounded-lg text-center transition-colors"
+              onClick={() => handleQuickAction('check-in-out')}
+            >
+              <Clock className="mobile-icon-lg sm:h-6 sm:w-6 text-blue-600 mx-auto mb-1 sm:mb-2" />
+              <p className="mobile-text-xs sm:text-sm font-medium">Check In/Out</p>
             </button>
-            <button className="p-4 bg-green-50 hover:bg-green-100 rounded-lg text-center transition-colors">
-              <Calendar className="h-6 w-6 text-green-600 mx-auto mb-2" />
-              <p className="font-medium">Request Leave</p>
+            <button 
+              className="touch-target p-3 sm:p-4 bg-green-50 hover:bg-green-100 active:bg-green-200 rounded-lg text-center transition-colors"
+              onClick={() => handleQuickAction('request-leave')}
+            >
+              <Calendar className="mobile-icon-lg sm:h-6 sm:w-6 text-green-600 mx-auto mb-1 sm:mb-2" />
+              <p className="mobile-text-xs sm:text-sm font-medium">Request Leave</p>
             </button>
-            <button className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-center transition-colors">
-              <CheckCircle className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-              <p className="font-medium">View Tasks</p>
+            <button 
+              className="touch-target p-3 sm:p-4 bg-purple-50 hover:bg-purple-100 active:bg-purple-200 rounded-lg text-center transition-colors"
+              onClick={() => handleQuickAction('view-tasks')}
+            >
+              <CheckCircle className="mobile-icon-lg sm:h-6 sm:w-6 text-purple-600 mx-auto mb-1 sm:mb-2" />
+              <p className="mobile-text-xs sm:text-sm font-medium">View Tasks</p>
             </button>
-            <button className="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg text-center transition-colors">
-              <FileText className="h-6 w-6 text-orange-600 mx-auto mb-2" />
-              <p className="font-medium">My Profile</p>
+            <button 
+              className="touch-target p-3 sm:p-4 bg-orange-50 hover:bg-orange-100 active:bg-orange-200 rounded-lg text-center transition-colors"
+              onClick={() => handleQuickAction('my-profile')}
+            >
+              <FileText className="mobile-icon-lg sm:h-6 sm:w-6 text-orange-600 mx-auto mb-1 sm:mb-2" />
+              <p className="mobile-text-xs sm:text-sm font-medium">My Profile</p>
             </button>
           </div>
         </CardContent>

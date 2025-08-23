@@ -20,6 +20,7 @@ import { RoleBasedDashboard } from './components/dashboard/RoleBasedDashboard'
 import EmployeesPage from './pages/admin/EmployeesPage'
 import AddEmployeeForm from './components/forms/AddEmployeeForm'
 import RoleBasedTimeTracking from './components/RoleBasedTimeTracking'
+import TasksPage from './pages/employee/TasksPage'
 import TaskAssignmentPage from './pages/admin/TaskAssignmentPage.tsx'
 import TimeTrackingPage from './pages/dashboard/TimeTrackingPage.tsx'
 import DepartmentsPage from './pages/admin/DepartmentsPage'
@@ -81,6 +82,11 @@ function App() {
               <Route path="roles" element={<RolesPage />} />
               <Route path="time-tracking" element={<RoleBasedTimeTracking />} />
               <Route path="leave-request" element={<LeaveRequestPage />} />
+              <Route path="tasks" element={
+                <ProtectedRoute>
+                  <TasksPage />
+                </ProtectedRoute>
+              } />
               <Route path="payroll" element={
                 <ProtectedRoute requiredRoles={['super-admin', 'hr-admin', 'finance-admin']}>
                   <PayrollPage />
@@ -97,11 +103,6 @@ function App() {
               <Route path="schedule" element={
                 <ProtectedRoute requiredRoles={['super-admin', 'hr-admin', 'manager']}>
                   <SchedulePage />
-                </ProtectedRoute>
-              } />
-              <Route path="time-tracking" element={
-                <ProtectedRoute>
-                  <TimeTrackingPage />
                 </ProtectedRoute>
               } />
               <Route path="compliance" element={

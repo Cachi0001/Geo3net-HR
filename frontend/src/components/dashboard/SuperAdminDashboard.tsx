@@ -232,14 +232,14 @@ export const SuperAdminDashboard: React.FC = () => {
   ] : [];
 
   const quickActions = [
-    { title: 'Location Management', description: 'Configure office locations & geofencing', icon: MapPin, action: () => navigate('/dashboard/settings?tab=locations'), color: 'bg-blue-500' },
-    { title: 'Attendance Policies', description: 'Set work hours & attendance rules', icon: Clock, action: () => navigate('/dashboard/settings?tab=attendance'), color: 'bg-green-500' },
-    { title: 'System Configuration', description: 'Configure system-wide settings', icon: Settings, action: () => navigate('/dashboard/settings?tab=system'), color: 'bg-purple-500' },
-    { title: 'User Management', description: 'Manage user roles and permissions', icon: Shield, action: () => navigate('/dashboard/roles'), color: 'bg-red-500' },
-    { title: 'Real-time Monitoring', description: 'Live attendance & system status', icon: Activity, action: () => navigate('/dashboard/analytics?view=realtime'), color: 'bg-orange-500' },
-    { title: 'Employee Management', description: 'Manage all employee records', icon: Users, action: () => navigate('/dashboard/employees'), color: 'bg-cyan-500' },
-    { title: 'Notifications Center', description: 'Configure alerts & notifications', icon: Bell, action: () => navigate('/dashboard/settings?tab=notifications'), color: 'bg-yellow-500' },
-    { title: 'System Reports', description: 'Generate comprehensive reports', icon: BarChart3, action: () => navigate('/dashboard/analytics'), color: 'bg-indigo-500' },
+    { title: 'Employee Management', description: 'Manage all employee records', icon: Users, action: () => navigate('/dashboard/employees'), color: 'bg-blue-500' },
+    { title: 'System Reports', description: 'View comprehensive analytics', icon: BarChart3, action: () => navigate('/dashboard/reports'), color: 'bg-orange-500' },
+    { title: 'Location Management', description: 'Configure office locations', icon: MapPin, action: () => navigate('/dashboard/settings/locations'), color: 'bg-green-500' },
+    { title: 'Attendance Policies', description: 'Set work hours & rules', icon: Clock, action: () => navigate('/dashboard/settings/attendance'), color: 'bg-purple-500' },
+    { title: 'Add New Employee', description: 'Onboard new team members', icon: UserPlus, action: () => navigate('/dashboard/employees/add'), color: 'bg-cyan-500' },
+    { title: 'Role Management', description: 'Manage user roles and permissions', icon: Shield, action: () => navigate('/dashboard/roles'), color: 'bg-red-500' },
+    { title: 'Time Tracking', description: 'Monitor attendance & hours', icon: Activity, action: () => navigate('/dashboard/time-tracking'), color: 'bg-indigo-500' },
+    { title: 'System Settings', description: 'Configure system-wide settings', icon: Settings, action: () => navigate('/dashboard/settings'), color: 'bg-yellow-500' },
   ];
 
   if (loading) {
@@ -292,18 +292,18 @@ export const SuperAdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="dashboard-container">
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
-          <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+        <h1 className="mobile-text-xl font-bold text-foreground flex items-center gap-2">
+          <Shield className="mobile-icon-lg text-primary" />
           Super Admin Dashboard
         </h1>
-        <p className="text-muted-foreground text-sm sm:text-base">Complete system overview and administrative controls</p>
+        <p className="text-muted-foreground mobile-text-sm">Complete system overview and administrative controls</p>
       </div>
 
       {/* System Metrics - Mobile First: 2x4 grid, Desktop: 4x2 */}
-      <div className="mobile-responsive-grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+      <div className="mobile-responsive-grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4">
         {systemMetrics.map((metric, index) => {
           const variants = ['primary', 'secondary', 'accent', 'success', 'warning', 'info', 'destructive', 'outline'] as const;
           return (
@@ -314,40 +314,39 @@ export const SuperAdminDashboard: React.FC = () => {
               change={metric.change}
               icon={metric.icon}
               variant={(['primary', 'secondary', 'accent', 'success', 'warning', 'info'] as const)[index % 6]}
-              className="animate-fade-in"
+              className="animate-fade-in mobile-card"
             />
           );
         })}
       </div>
 
       {/* Quick Actions */}
-      <Card className="bg-gradient-card shadow-xl border-0">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
+      <Card className="mobile-card bg-gradient-card shadow-xl border-0">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 mobile-text-lg">
+            <Settings className="mobile-icon" />
             Quick Actions
           </CardTitle>
-          <CardDescription>Administrative shortcuts and system controls</CardDescription>
+          <CardDescription className="mobile-text-sm">Administrative shortcuts and system controls</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 gap-3">
+          <div className="mobile-responsive-grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4">
             {quickActions.map((action, index) => {
               const Icon = action.icon;
               return (
-                <Button
+                <div
                   key={index}
-                  variant="outline"
-                  className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-primary/5 transition-all duration-200"
+                  className="quick-action-card cursor-pointer"
                   onClick={action.action}
                 >
-                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${action.color || 'bg-primary'} text-white`}>
-                    <Icon className="h-4 w-4" />
+                  <div className={`h-6 w-6 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center ${action.color || 'bg-primary'} text-white mb-2`}>
+                    <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
                   </div>
                   <div className="text-center">
-                    <div className="font-medium text-xs leading-tight">{action.title}</div>
-                    <div className="text-xs text-muted-foreground mt-1 hidden sm:block">{action.description}</div>
+                    <div className="font-medium mobile-text-xs leading-tight">{action.title}</div>
+                    <div className="mobile-text-xs text-muted-foreground mt-1 hide-on-mobile">{action.description}</div>
                   </div>
-                </Button>
+                </div>
               );
             })}
           </div>
@@ -360,15 +359,15 @@ export const SuperAdminDashboard: React.FC = () => {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Real-time Attendance Monitoring */}
-        <Card className="bg-gradient-card shadow-xl border-0">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
+        <Card className="mobile-card bg-gradient-card shadow-xl border-0">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 mobile-text-lg">
+              <Activity className="mobile-icon" />
               Real-time Attendance
             </CardTitle>
-            <CardDescription>Live employee presence and status monitoring</CardDescription>
+            <CardDescription className="mobile-text-sm">Live employee presence and status monitoring</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="mobile-space-y-4">
             {attendanceMetrics.map((metric, index) => {
               const getStatusColor = (status: string) => {
                 switch (status) {
@@ -381,18 +380,18 @@ export const SuperAdminDashboard: React.FC = () => {
               };
               
               return (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-background/50">
+                <div key={index} className="mobile-card flex items-center justify-between p-2 sm:p-3 rounded-lg border bg-background/50">
                   <div className="flex-1">
-                    <div className="font-medium text-sm">{metric.employeeName}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="font-medium mobile-text-sm">{metric.employeeName}</div>
+                    <div className="mobile-text-xs text-muted-foreground">
                       {metric.location} • {metric.checkInTime}
                     </div>
                   </div>
-                  <div className="text-right space-y-1">
-                    <Badge className={`text-xs ${getStatusColor(metric.status)}`}>
+                  <div className="text-right mobile-space-y-1">
+                    <Badge className={`mobile-text-xs ${getStatusColor(metric.status)}`}>
                       {metric.status.replace('_', ' ')}
                     </Badge>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="mobile-text-xs text-muted-foreground">
                       {metric.hoursWorked}
                     </div>
                   </div>
@@ -405,37 +404,37 @@ export const SuperAdminDashboard: React.FC = () => {
               className="w-full mt-4"
               onClick={() => navigate('/dashboard/analytics?view=attendance')}
             >
-              <BarChart3 className="h-4 w-4 mr-2" />
+              <BarChart3 className="mobile-icon mr-2" />
               View Full Attendance Report
             </Button>
           </CardContent>
         </Card>
 
         {/* Location Management Overview */}
-        <Card className="bg-gradient-card shadow-xl border-0">
+        <Card className="mobile-card bg-gradient-card shadow-xl border-0">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 mobile-text-lg">
+              <MapPin className="mobile-icon" />
               Location Overview
             </CardTitle>
-            <CardDescription>Office locations and capacity utilization</CardDescription>
+            <CardDescription className="mobile-text-sm">Office locations and capacity utilization</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="mobile-space-y-4">
             {locationStats.map((location) => (
-              <div key={location.name} className="space-y-3">
+              <div key={location.name} className="mobile-space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-medium text-sm">{location.name}</span>
-                    <p className="text-xs text-muted-foreground">{location.address}</p>
+                    <span className="font-medium mobile-text-sm">{location.name}</span>
+                    <p className="mobile-text-xs text-muted-foreground">{location.address}</p>
                   </div>
                   <div className="text-right">
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="mobile-text-xs">
                       {location.activeEmployees}/{location.totalCapacity}
                     </Badge>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
+                <div className="mobile-space-y-1">
+                  <div className="flex justify-between mobile-text-xs">
                     <span className="text-muted-foreground">Utilization Rate</span>
                     <span className="font-medium">{location.utilizationRate}%</span>
                   </div>
@@ -449,7 +448,7 @@ export const SuperAdminDashboard: React.FC = () => {
               className="w-full mt-4"
               onClick={() => navigate('/dashboard/settings?tab=locations')}
             >
-              <MapPin className="h-4 w-4 mr-2" />
+              <MapPin className="mobile-icon mr-2" />
               Manage Locations
             </Button>
           </CardContent>
@@ -459,30 +458,30 @@ export const SuperAdminDashboard: React.FC = () => {
       {/* Secondary Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Department Overview */}
-        <Card className="bg-gradient-card shadow-xl border-0">
+        <Card className="mobile-card bg-gradient-card shadow-xl border-0">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 mobile-text-lg">
+              <TrendingUp className="mobile-icon" />
               Department Analytics
             </CardTitle>
-            <CardDescription>Employee distribution and growth metrics</CardDescription>
+            <CardDescription className="mobile-text-sm">Employee distribution and growth metrics</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="mobile-space-y-4">
             {departmentStats.slice(0, 4).map((dept) => (
-              <div key={dept.name} className="space-y-2">
+              <div key={dept.name} className="mobile-space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{dept.name}</span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs">
+                  <span className="font-medium mobile-text-sm">{dept.name}</span>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Badge variant="secondary" className="mobile-text-xs">
                       {dept.employees} emp
                     </Badge>
-                    <Badge variant={dept.growth > 10 ? 'default' : 'secondary'} className="text-xs">
+                    <Badge variant={dept.growth > 10 ? 'default' : 'secondary'} className="mobile-text-xs">
                       +{dept.growth}%
                     </Badge>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
+                <div className="mobile-space-y-1">
+                  <div className="flex justify-between mobile-text-xs">
                     <span className="text-muted-foreground">Budget Usage</span>
                     <span className="font-medium">{dept.budget}%</span>
                   </div>
@@ -496,32 +495,32 @@ export const SuperAdminDashboard: React.FC = () => {
               className="w-full mt-4"
               onClick={() => navigate('/dashboard/departments')}
             >
-              <Building2 className="h-4 w-4 mr-2" />
+              <Building2 className="mobile-icon mr-2" />
               Manage Departments
             </Button>
           </CardContent>
         </Card>
 
         {/* Enhanced System Alerts & Notifications */}
-        <Card className="bg-gradient-card shadow-xl border-0">
+        <Card className="mobile-card bg-gradient-card shadow-xl border-0">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 mobile-text-lg">
+              <AlertTriangle className="mobile-icon" />
               System Alerts & Monitoring
             </CardTitle>
-            <CardDescription>Critical notifications and system health alerts</CardDescription>
+            <CardDescription className="mobile-text-sm">Critical notifications and system health alerts</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="mobile-space-y-4">
             {systemAlerts.map((alert) => (
-              <div key={alert.id} className="flex items-start gap-3 p-3 rounded-lg border bg-background/50">
+              <div key={alert.id} className="mobile-card flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border bg-background/50">
                 <div className={`h-2 w-2 rounded-full mt-2 ${alert.priority === 'high' ? 'bg-destructive animate-pulse' : alert.priority === 'medium' ? 'bg-warning' : 'bg-primary'}`} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{alert.message}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{alert.time}</p>
+                  <p className="font-medium mobile-text-sm">{alert.message}</p>
+                  <p className="mobile-text-xs text-muted-foreground mt-1">{alert.time}</p>
                 </div>
                 <Badge 
                   variant={alert.priority === 'high' ? 'destructive' : alert.priority === 'medium' ? 'secondary' : 'outline'}
-                  className="text-xs"
+                  className="mobile-text-xs"
                 >
                   {alert.priority}
                 </Badge>
@@ -533,7 +532,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 size="sm"
                 onClick={() => navigate('/dashboard/settings?tab=notifications')}
               >
-                <Bell className="h-4 w-4 mr-2" />
+                <Bell className="mobile-icon mr-2" />
                 Alerts
               </Button>
               <Button 
@@ -541,7 +540,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 size="sm"
                 onClick={() => navigate('/dashboard/security')}
               >
-                <Shield className="h-4 w-4 mr-2" />
+                <Shield className="mobile-icon mr-2" />
                 Security
               </Button>
             </div>
