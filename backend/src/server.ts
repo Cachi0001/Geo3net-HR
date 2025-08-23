@@ -26,6 +26,7 @@ import { settingsRoutes } from './routes/settings.routes'
 import dashboardRoutes from './routes/dashboard.routes'
 import { departmentRoutes } from './routes/department.routes'
 import attendancePolicyRoutes from './routes/attendancePolicy.routes'
+import authLogsRoutes from './routes/authLogs.routes'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -76,6 +77,7 @@ app.use('/api/settings', settingsRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/departments', departmentRoutes)
 app.use('/api/attendance-policies', attendancePolicyRoutes)
+app.use('/api/auth-logs', authLogsRoutes)
 app.use('/api/debug', debugRoutes)
 
 app.use(notFoundHandler)
