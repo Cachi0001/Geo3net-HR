@@ -94,10 +94,14 @@ class ApiClient {
     // Initialize connection monitoring
     this.initializeConnectionMonitoring()
 
+    // Start periodic token validation
+    this.startTokenValidation()
+
     console.log('🔧 ApiClient initialized:', {
       baseURL: this.baseURL,
       hasToken: !!this.token,
-      hasRefreshToken: !!this.refreshToken
+      hasRefreshToken: !!this.refreshToken,
+      tokenInfo: this.getTokenInfo()
     })
   }
 
@@ -106,19 +110,54 @@ class ApiClient {
     this.token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
     this.refreshToken = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
 
-    // Validate token if it exists
+    // Enhanced token validation
     if (this.token) {
+      if (!this.validateTokenFormat(this.token)) {
+        console.warn('⚠️ Invalid access token format, clearing tokens')
+        this.clearToken()
+        return
+      }
+
       try {
         const payload = JSON.parse(atob(this.token.split('.')[1]))
         const isExpired = payload.exp * 1000 < Date.now()
+        const expiresIn = payload.exp * 1000 - Date.now()
 
         if (isExpired) {
           console.log('🔄 Access token expired, will attempt refresh on next request')
+        } else {
+          console.log(`🔐 Access token valid, expires in ${Math.round(expiresIn / 1000 / 60)} minutes`)
         }
       } catch (error) {
-        console.warn('⚠️ Invalid token format, clearing tokens')
+        console.warn('⚠️ Could not parse token payload, clearing tokens')
         this.clearToken()
       }
+    }
+
+    // Validate refresh token format
+    if (this.refreshToken && !this.validateTokenFormat(this.refreshToken)) {
+      console.warn('⚠️ Invalid refresh token format, clearing tokens')
+      this.clearToken()
+    }
+  }
+
+  private validateTokenFormat(token: string): boolean {
+    if (!token || typeof token !== 'string') {
+      return false
+    }
+    
+    const parts = token.split('.')
+    if (parts.length !== 3) {
+      return false
+    }
+    
+    try {
+      // Try to decode the header and payload
+      JSON.parse(atob(parts[0]))
+      JSON.parse(atob(parts[1]))
+      return true
+    } catch (error) {
+      return false
     }
   }
 
@@ -134,6 +173,25 @@ class ApiClient {
     window.addEventListener('offline', () => {
       console.log('📴 Connection lost')
       this.connectionStatus.isOnline = false
+    })
+  }
+
+  private startTokenValidation(): void {
+    // Check token validity every 5 minutes
+    setInterval(() => {
+      if (this.token && this.isTokenExpired(this.token)) {
+        console.log('🔄 Token expired during periodic check, will refresh on next request')
+      }
+    }, 5 * 60 * 1000) // 5 minutes
+
+    // Also validate on page focus
+    window.addEventListener('focus', () => {
+      if (this.token) {
+        const tokenInfo = this.getTokenInfo()
+        if (tokenInfo.isExpired) {
+          console.log('🔄 Token expired while page was not focused')
+        }
+      }
     })
   }
 
@@ -175,7 +233,9 @@ class ApiClient {
   }
 
   clearToken() {
-    console.log('🗑️ Clearing all tokens')
+    console.log('🗑️ Clearing all tokens and resetting state')
+    
+    // Clear instance variables
     this.token = null
     this.refreshToken = null
     this.isRefreshing = false
@@ -186,6 +246,32 @@ class ApiClient {
     sessionStorage.removeItem('accessToken')
     localStorage.removeItem('refreshToken')
     sessionStorage.removeItem('refreshToken')
+
+    // Clear any user-related data that might be cached
+    localStorage.removeItem('user')
+    sessionStorage.removeItem('user')
+
+    // Reset connection status
+    this.connectionStatus.reconnectAttempts = 0
+
+    // Close WebSocket connection if exists
+    if (this.ws) {
+      this.ws.close()
+      this.ws = null
+    }
+
+    // Clear any timers
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer)
+      this.heartbeatTimer = null
+    }
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+
+    console.log('✅ All tokens and session data cleared')
   }
 
   private async request<T>(
@@ -295,11 +381,48 @@ class ApiClient {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]))
       const currentTime = Math.floor(Date.now() / 1000)
-      return payload.exp < currentTime
+      const bufferTime = 60 // 1 minute buffer to refresh before actual expiration
+      
+      return payload.exp < (currentTime + bufferTime)
     } catch (error) {
       console.warn('⚠️ Could not parse token for expiration check:', error)
       return true // Assume expired if we can't parse
     }
+  }
+
+  /**
+   * Gets token expiration info for debugging
+   */
+  getTokenInfo(): { 
+    hasToken: boolean
+    hasRefreshToken: boolean
+    isExpired?: boolean
+    expiresIn?: number
+    expiresAt?: Date
+  } {
+    const info = {
+      hasToken: !!this.token,
+      hasRefreshToken: !!this.refreshToken
+    }
+
+    if (this.token) {
+      try {
+        const payload = JSON.parse(atob(this.token.split('.')[1]))
+        const currentTime = Math.floor(Date.now() / 1000)
+        const expiresIn = payload.exp - currentTime
+        
+        return {
+          ...info,
+          isExpired: payload.exp < currentTime,
+          expiresIn: expiresIn,
+          expiresAt: new Date(payload.exp * 1000)
+        }
+      } catch (error) {
+        return { ...info, isExpired: true }
+      }
+    }
+
+    return info
   }
 
   private async handleTokenRefresh(): Promise<void> {
@@ -326,12 +449,21 @@ class ApiClient {
     const refreshToken = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
 
     if (!refreshToken) {
+      console.log('❌ No refresh token available for refresh')
       throw new Error('No refresh token available')
+    }
+
+    // Validate refresh token format before attempting refresh
+    if (!this.validateTokenFormat(refreshToken)) {
+      console.log('❌ Invalid refresh token format')
+      this.clearToken()
+      throw new Error('Invalid refresh token format')
     }
 
     console.log('🔄 Performing token refresh...')
 
     try {
+      const startTime = Date.now()
       const response = await fetch(`${this.baseURL}/auth/refresh`, {
         method: 'POST',
         headers: {
@@ -340,8 +472,26 @@ class ApiClient {
         body: JSON.stringify({ refreshToken }),
       })
 
+      const duration = Date.now() - startTime
+      console.log(`📡 Token refresh response: ${response.status} (${duration}ms)`)
+
       if (!response.ok) {
-        throw new Error(`Refresh failed: ${response.status}`)
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.message || `HTTP ${response.status}`
+        
+        console.error('❌ Token refresh failed:', {
+          status: response.status,
+          message: errorMessage
+        })
+
+        // Handle specific error cases
+        if (response.status === 401 || response.status === 403) {
+          console.log('🔐 Refresh token expired or invalid, clearing tokens')
+          this.clearToken()
+          throw new Error('Session expired. Please log in again.')
+        }
+
+        throw new Error(`Token refresh failed: ${errorMessage}`)
       }
 
       const data = await response.json()
@@ -349,17 +499,30 @@ class ApiClient {
       if (data.success && data.data?.accessToken) {
         const rememberMe = !!localStorage.getItem('accessToken')
         this.setToken(data.data.accessToken, rememberMe)
-        console.log('✅ Token refreshed successfully')
+        
+        // Log token expiration info
+        try {
+          const payload = JSON.parse(atob(data.data.accessToken.split('.')[1]))
+          const expiresIn = payload.exp * 1000 - Date.now()
+          console.log(`✅ Token refreshed successfully, expires in ${Math.round(expiresIn / 1000 / 60)} minutes`)
+        } catch (parseError) {
+          console.log('✅ Token refreshed successfully')
+        }
       } else {
-        throw new Error(data.message || 'Token refresh failed')
+        throw new Error(data.message || 'Token refresh failed - no access token returned')
       }
-    } catch (error) {
-      console.error('❌ Token refresh failed:', error)
-      this.clearToken()
+    } catch (error: any) {
+      console.error('❌ Token refresh failed:', error.message)
+      
+      // Only clear tokens and redirect for authentication errors
+      if (error.message.includes('Session expired') || error.message.includes('401') || error.message.includes('403')) {
+        this.clearToken()
 
-      // Redirect to login if we're in a browser environment
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login'
+        // Redirect to login if we're in a browser environment
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+          console.log('🔄 Redirecting to login page')
+          window.location.href = '/login'
+        }
       }
 
       throw error
@@ -673,7 +836,7 @@ class ApiClient {
   // Task endpoints
   async getTasks(params?: any): Promise<ApiResponse> {
     const queryString = params ? '?' + new URLSearchParams(params).toString() : ''
-    return this.request(`/tasks/search${queryString}`)
+    return this.request(`/tasks${queryString}`)
   }
 
   async getMyTasks(status?: string): Promise<ApiResponse> {
@@ -820,7 +983,7 @@ class ApiClient {
     const formData = new FormData()
     formData.append('profilePicture', file)
 
-    return this.request('/users/profile-picture', {
+    return this.request('/users/profile/picture', {
       method: 'POST',
       body: formData,
       headers: {
@@ -831,7 +994,7 @@ class ApiClient {
   }
 
   async deleteProfilePicture(): Promise<ApiResponse> {
-    return this.request('/users/profile-picture', {
+    return this.request('/users/profile/picture', {
       method: 'DELETE',
     })
   }
@@ -1012,6 +1175,48 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     })
+  }
+
+  // Leave Management endpoints
+  async getLeaveRequests(params?: any): Promise<ApiResponse> {
+    const queryString = params ? '?' + new URLSearchParams(params).toString() : ''
+    return this.request(`/leave/requests${queryString}`)
+  }
+
+  async createLeaveRequest(data: any): Promise<ApiResponse> {
+    return this.request('/leave/requests', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateLeaveRequest(id: string, data: any): Promise<ApiResponse> {
+    return this.request(`/leave/requests/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async approveLeaveRequest(id: string, data?: any): Promise<ApiResponse> {
+    return this.request(`/leave/requests/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
+    })
+  }
+
+  async rejectLeaveRequest(id: string, data: any): Promise<ApiResponse> {
+    return this.request(`/leave/requests/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getLeaveBalance(): Promise<ApiResponse> {
+    return this.request('/leave/balance')
+  }
+
+  async getLeaveTypes(): Promise<ApiResponse> {
+    return this.request('/leave/types')
   }
 }
 

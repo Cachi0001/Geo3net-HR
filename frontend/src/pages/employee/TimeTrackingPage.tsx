@@ -115,11 +115,6 @@ const EmployeeTimeTrackingPage: React.FC = () => {
     }
   }, [activeEntry]);
 
-  // Load data on component mount
-  useEffect(() => {
-    loadTimeTrackingData();
-  }, [loadTimeTrackingData]);
-
   const loadTimeTrackingData = async () => {
     try {
       setLoading(true);
@@ -149,6 +144,11 @@ const EmployeeTimeTrackingPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Load data on component mount
+  useEffect(() => {
+    loadTimeTrackingData();
+  }, [loadTimeTrackingData]);
 
   const getCurrentLocation = (): Promise<GeolocationPosition> => {
     return new Promise((resolve, reject) => {

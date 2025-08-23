@@ -5,6 +5,7 @@ import { AuthenticatedRequest } from '../middleware/auth'
 import { validatePasswordStrength } from '../utils/password'
 import { ResponseHandler } from '../utils/response'
 import { ValidationError } from '../utils/errors'
+import { DatabaseHealthChecker } from '../utils/database'
 import Joi from 'joi'
 
 const authService = new AuthService()
@@ -51,11 +52,15 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       throw new ValidationError('Password does not meet requirements', passwordValidation.errors)
     }
 
+    // Get IP address and user agent for logging
+    const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] as string
+    const userAgent = req.headers['user-agent']
+
     const result = await authService.registerWithEmail({
       email,
       fullName,
       password
-    })
+    }, ipAddress, userAgent)
 
     return ResponseHandler.created(res, result.message || 'Account created successfully!', {
       user: result.user
@@ -144,7 +149,11 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     const { email, password, rememberMe } = value
 
-    const result = await authService.loginWithEmail({ email, password, rememberMe })
+    // Get IP address and user agent for logging
+    const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] as string
+    const userAgent = req.headers['user-agent']
+
+    const result = await authService.loginWithEmail({ email, password, rememberMe }, ipAddress, userAgent)
 
     return ResponseHandler.success(res, 'Login successful', {
       user: result.user,
@@ -230,7 +239,10 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
       throw new ValidationError('Password does not meet requirements', passwordValidation.errors)
     }
 
-    await authService.resetPassword(token, newPassword)
+    // Get IP address for logging
+    const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] as string
+
+    await authService.resetPassword(token, newPassword, ipAddress)
 
     return ResponseHandler.success(res, 'Password reset successful')
   } catch (error) {
@@ -281,7 +293,10 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
       throw new ValidationError('Refresh token is required')
     }
 
-    const result = await authService.refreshToken(refreshToken)
+    // Get IP address for logging
+    const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] as string
+
+    const result = await authService.refreshToken(refreshToken, ipAddress)
     
     return ResponseHandler.success(res, 'Token refreshed successfully', {
       accessToken: result.accessToken
@@ -295,6 +310,14 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
 export const debugAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     console.log('🔍 [DEBUG] Checking database connectivity and users...')
+    
+    // Perform comprehensive health check
+    const healthCheckResult = await DatabaseHealthChecker.performHealthCheck()
+    
+    if (!healthCheckResult.healthy) {
+      console.error('❌ [DEBUG] Database health check failed')
+      return ResponseHandler.error(res, 'Database health check failed', 500, [healthCheckResult.message])
+    }
     
     // Test basic database connection
     const { data: users, error: usersError } = await supabase
@@ -322,6 +345,7 @@ export const debugAuth = async (req: Request, res: Response, next: NextFunction)
     console.log(`✅ [DEBUG] Found ${roles?.length || 0} user roles in database`)
     
     return ResponseHandler.success(res, 'Database debug info retrieved', {
+      healthCheck: healthCheckResult,
       users: users?.map(user => ({
         id: user.id,
         email: user.email,
@@ -340,5 +364,21 @@ export const debugAuth = async (req: Request, res: Response, next: NextFunction)
   } catch (error: any) {
     console.error('❌ [DEBUG] Database debug failed:', error)
     return ResponseHandler.internalError(res, `Debug failed: ${error.message}`)
+  }
+}
+
+// Health check endpoint
+export const healthCheck = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const healthCheckResult = await DatabaseHealthChecker.performHealthCheck()
+    
+    if (healthCheckResult.healthy) {
+      return ResponseHandler.success(res, 'System is healthy', healthCheckResult)
+    } else {
+      return ResponseHandler.error(res, 'System has health issues', 500, [healthCheckResult.message])
+    }
+  } catch (error: any) {
+    console.error('❌ [HEALTH] Health check failed:', error)
+    return ResponseHandler.internalError(res, `Health check failed: ${error.message}`)
   }
 }

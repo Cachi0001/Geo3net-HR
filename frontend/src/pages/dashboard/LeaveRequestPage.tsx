@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, FileText, Plus, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -26,8 +27,12 @@ interface LeaveRequest {
 
 const LeaveRequestPage: React.FC = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  
+  // Check if user is super-admin
+  const isSuperAdmin = user?.role === 'super-admin';
   const [formData, setFormData] = useState({
     type: '',
     startDate: '',
@@ -144,14 +149,22 @@ const LeaveRequestPage: React.FC = () => {
           </h1>
           <p className="text-muted-foreground">Manage your time off requests</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          New Request
-        </Button>
+        {!isSuperAdmin && (
+          <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            New Request
+          </Button>
+        )}
+        {isSuperAdmin && (
+          <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+            <p className="font-medium">Super Administrator Notice</p>
+            <p>Super administrators cannot submit leave requests. You can view and manage all leave requests from other employees.</p>
+          </div>
+        )}
       </div>
 
       {/* New Leave Request Form */}
-      {showForm && (
+      {showForm && !isSuperAdmin && (
         <Card className="bg-gradient-card shadow-xl border-0 animate-slide-up">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

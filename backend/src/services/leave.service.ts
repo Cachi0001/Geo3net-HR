@@ -7,6 +7,9 @@ import { EmployeeLeavePolicyService } from './employeeLeavePolicy.service'
 import { LeaveBalanceService } from './leaveBalance.service'
 import { LeaveAccrualService } from './leaveAccrual.service'
 import { EmployeeOnboardingService } from './employeeOnboarding.service'
+import { LeaveRequestService } from './leaveRequest.service'
+import { LeaveValidationService } from './leaveValidation.service'
+import { LeaveWorkflowService } from './leaveWorkflow.service'
 
 // Re-export all types for convenience
 export * from '../types/leave.types'
@@ -20,6 +23,9 @@ export { EmployeeLeavePolicyService } from './employeeLeavePolicy.service'
 export { LeaveBalanceService } from './leaveBalance.service'
 export { LeaveAccrualService } from './leaveAccrual.service'
 export { EmployeeOnboardingService } from './employeeOnboarding.service'
+export { LeaveRequestService } from './leaveRequest.service'
+export { LeaveValidationService } from './leaveValidation.service'
+export { LeaveWorkflowService } from './leaveWorkflow.service'
 
 export class LeaveService {
   public leaveTypeService: LeaveTypeService
@@ -28,6 +34,9 @@ export class LeaveService {
   public leaveBalanceService: LeaveBalanceService
   public leaveAccrualService: LeaveAccrualService
   public employeeOnboardingService: EmployeeOnboardingService
+  public leaveRequestService: LeaveRequestService
+  public leaveValidationService: LeaveValidationService
+  public leaveWorkflowService: LeaveWorkflowService
 
   constructor() {
     this.leaveTypeService = new LeaveTypeService()
@@ -36,6 +45,9 @@ export class LeaveService {
     this.leaveBalanceService = new LeaveBalanceService()
     this.leaveAccrualService = new LeaveAccrualService()
     this.employeeOnboardingService = new EmployeeOnboardingService()
+    this.leaveRequestService = new LeaveRequestService()
+    this.leaveValidationService = new LeaveValidationService()
+    this.leaveWorkflowService = new LeaveWorkflowService()
   }
 
   // Convenience methods that delegate to appropriate services
@@ -108,5 +120,56 @@ export class LeaveService {
 
   async adjustEmployeeBalance(employeeId: string, leaveTypeId: string, amount: number, reason: string, adjustedBy: string) {
     return this.employeeOnboardingService.adjustEmployeeBalance(employeeId, leaveTypeId, amount, reason, adjustedBy)
+  }
+
+  // Leave Requests
+  async createLeaveRequest(data: any, employeeId: string) {
+    return this.leaveRequestService.createLeaveRequest(data, employeeId)
+  }
+
+  async getLeaveRequestById(id: string) {
+    return this.leaveRequestService.getLeaveRequestById(id)
+  }
+
+  async updateLeaveRequest(id: string, data: any, updatedBy: string) {
+    return this.leaveRequestService.updateLeaveRequest(id, data, updatedBy)
+  }
+
+  async getEmployeeLeaveRequests(employeeId: string, filters: any = {}) {
+    return this.leaveRequestService.getEmployeeLeaveRequests(employeeId, filters)
+  }
+
+  async getTeamLeaveRequests(managerId: string, filters: any = {}) {
+    return this.leaveRequestService.getTeamLeaveRequests(managerId, filters)
+  }
+
+  // Leave Workflow
+  async approveLeaveRequest(id: string, approvedBy: string, comments?: string) {
+    return this.leaveWorkflowService.processWorkflowAction(id, {
+      action: 'approve',
+      performedBy: approvedBy,
+      comments
+    })
+  }
+
+  async denyLeaveRequest(id: string, deniedBy: string, reason: string) {
+    return this.leaveWorkflowService.processWorkflowAction(id, {
+      action: 'deny',
+      performedBy: deniedBy,
+      reason
+    })
+  }
+
+  async cancelLeaveRequest(id: string, cancelledBy: string, reason?: string) {
+    return this.leaveWorkflowService.processWorkflowAction(id, {
+      action: 'cancel',
+      performedBy: cancelledBy,
+      reason
+    })
+  }
+
+  // Leave Validation
+  async validateLeaveRequest(employeeId: string, leaveTypeId: string, startDate: Date, endDate: Date) {
+    return this.leaveValidationService.validateLeaveRequest(employeeId, leaveTypeId, startDate, endDate)
   }
 }

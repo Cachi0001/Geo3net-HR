@@ -13,6 +13,7 @@
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
     "test:ci": "jest --coverage --collectCoverage=true --watchAll=false --passWithNoTests",
+    "setup-admin": "ts-node scripts/setup-super-admin.ts",
     "test:verbose": "jest --verbose --coverage",
     "migrate": "ts-node src/scripts/run-migration.ts",
     "init-system": "ts-node scripts/initialize-system.ts"

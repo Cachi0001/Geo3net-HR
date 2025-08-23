@@ -20,7 +20,7 @@ import debugRoutes from './routes/debug.routes'
 import payrollRoutes from './routes/payroll.routes'
 import performanceRoutes from './routes/performance.routes'
 import recruitmentRoutes from './routes/recruitment.routes'
-// import leaveRoutes from './routes/leave.routes' // Temporarily disabled until leave service is implemented
+import leaveRoutes from './routes/leave.routes'
 import auditRoutes from './routes/audit.routes'
 import { settingsRoutes } from './routes/settings.routes'
 import dashboardRoutes from './routes/dashboard.routes'
@@ -35,8 +35,17 @@ app.use(helmet())
 app.use(cors({
   origin: ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Request-ID',
+    'x-request-id',
+    'Accept',
+    'Origin',
+    'X-Requested-With'
+  ],
+  exposedHeaders: ['X-Request-ID']
 }))
 app.use(morgan('combined'))
 app.use(express.json({ limit: '10mb' }))
@@ -61,7 +70,7 @@ app.use('/api/notifications', notificationRoutes)
 app.use('/api/payroll', payrollRoutes)
 app.use('/api/performance', performanceRoutes)
 app.use('/api/recruitment', recruitmentRoutes)
-// app.use('/api/leave', leaveRoutes) // Temporarily disabled until leave service is implemented
+app.use('/api/leave', leaveRoutes)
 app.use('/api/audit', auditRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/dashboard', dashboardRoutes)

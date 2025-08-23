@@ -32,6 +32,27 @@ router.put('/types/:id',
   leaveController.updateLeaveType.bind(leaveController)
 )
 
+// Leave Policy Routes
+router.post('/policies', 
+  requireHRStaff,
+  leaveController.createLeavePolicy.bind(leaveController)
+)
+
+router.get('/policies', 
+  permissionMiddleware.requireAnyPermission(['leave.read', 'leave.manage']),
+  leaveController.getLeavePolicies.bind(leaveController)
+)
+
+router.get('/policies/:id', 
+  permissionMiddleware.requireAnyPermission(['leave.read', 'leave.manage']),
+  leaveController.getLeavePolicyById.bind(leaveController)
+)
+
+router.put('/policies/:id', 
+  requireHRStaff,
+  leaveController.updateLeavePolicy.bind(leaveController)
+)
+
 // Leave Request Routes
 router.post('/requests', 
   leaveController.createLeaveRequest.bind(leaveController)
@@ -60,7 +81,7 @@ router.post('/requests/:id/approve',
 
 router.post('/requests/:id/reject', 
   permissionMiddleware.requireAnyPermission(['leave.manage', 'team.manage']),
-  leaveController.rejectLeaveRequest.bind(leaveController)
+  leaveController.denyLeaveRequest.bind(leaveController)
 )
 
 router.post('/requests/:id/cancel', 
@@ -96,6 +117,17 @@ router.get('/my-balances',
 router.get('/analytics', 
   permissionMiddleware.requireAnyPermission(['reports.generate', 'leave.manage']),
   leaveController.getLeaveAnalytics.bind(leaveController)
+)
+
+// Accrual Processing
+router.post('/accruals/process', 
+  requireHRStaff,
+  leaveController.processAccruals.bind(leaveController)
+)
+
+// Leave Request Validation
+router.post('/validate', 
+  leaveController.validateLeaveRequest.bind(leaveController)
 )
 
 export default router

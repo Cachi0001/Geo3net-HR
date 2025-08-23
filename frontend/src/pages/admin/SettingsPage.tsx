@@ -109,13 +109,15 @@ const SettingsPage: React.FC = () => {
       setLoadingLocations(true);
       const response = await apiClient.getLocations();
       
-      if (response.success && response.data) {
+      if (response.success && response.data && Array.isArray(response.data)) {
         setOfficeLocations(response.data);
       } else {
+        setOfficeLocations([]); // Ensure it's always an array
         toast.error('Failed to load office locations');
       }
     } catch (error: any) {
       console.error('Error loading office locations:', error);
+      setOfficeLocations([]); // Ensure it's always an array
       toast.error('Failed to load office locations');
     } finally {
       setLoadingLocations(false);

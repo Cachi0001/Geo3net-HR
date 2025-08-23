@@ -297,7 +297,7 @@ export class DashboardController {
       console.log('📊 Dashboard metrics:', metrics);
       
       // Get additional super admin specific data
-      const superAdminData = {
+      const superAdminData: any = {
         totalEmployees: metrics.totalEmployees,
         totalDepartments: metrics.departments,
         activeRecruitment: metrics.activeRecruitment,
