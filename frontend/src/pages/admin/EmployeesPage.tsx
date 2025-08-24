@@ -44,7 +44,7 @@ const EmployeesPage: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
   
@@ -53,7 +53,7 @@ const EmployeesPage: React.FC = () => {
   const [showActivationModal, setShowActivationModal] = useState(false);
   const [activationLoading, setActivationLoading] = useState(false);
 
-  const loadEmployees = useCallback(async () => {
+  const loadEmployees = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -83,11 +83,11 @@ const EmployeesPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.limit, pagination.page, searchTerm, filterStatus, toast]);
+  };
 
   useEffect(() => {
     loadEmployees();
-  }, [loadEmployees]);
+  }, [pagination.limit, pagination.page, searchTerm, filterStatus]);
 
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -171,8 +171,7 @@ const EmployeesPage: React.FC = () => {
   const handleFilterChange = (newFilter: string) => {
     setFilterStatus(newFilter);
     setPagination(prev => ({ ...prev, page: 1 }));
-    // Trigger reload with new filter
-    setTimeout(loadEmployees, 100);
+    // The useEffect will automatically trigger loadEmployees when filterStatus changes
   };
 
   const handleActivateAccount = async (employee: Employee) => {

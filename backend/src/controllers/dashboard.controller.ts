@@ -368,19 +368,45 @@ export class DashboardController {
         return total + (parseFloat(entry.total_hours) || 0);
       }, 0);
       
-      // Get leave balance
-      const { data: leaveBalance, error: leaveError } = await supabase
-        .from('leave_requests')
-        .select('days_requested, status')
+      // Get leave balance from leave_balances table
+      const currentYear = new Date().getFullYear();
+      const { data: leaveBalances, error: leaveError } = await supabase
+        .from('leave_balances')
+        .select(`
+          allocated_days,
+          used_days,
+          available_days,
+          leave_type:leave_types(name)
+        `)
         .eq('employee_id', employeeId)
-        .eq('status', 'approved');
+        .eq('policy_year', currentYear);
       
-      const usedLeaveDays = leaveBalance?.reduce((total, leave) => {
-        return total + (parseFloat(leave.days_requested) || 0);
-      }, 0) || 0;
+      // Calculate total leave balance (focusing on annual leave)
+      const annualLeaveBalance = leaveBalances?.find(balance => 
+        (balance.leave_type as any)?.name?.toLowerCase().includes('annual')
+      );
       
-      const totalLeaveAllowance = 23; // Default annual leave
-      const remainingLeave = totalLeaveAllowance - usedLeaveDays;
+      const totalLeaveAllowance = annualLeaveBalance?.allocated_days || 21; // Default to 21 if no data
+      const usedLeaveDays = annualLeaveBalance?.used_days || 0;
+      const remainingLeave = annualLeaveBalance?.available_days || (totalLeaveAllowance - usedLeaveDays);
+      
+      // If no leave balance data exists, fall back to calculating from leave_requests
+      let fallbackRemainingLeave = remainingLeave;
+      if (!annualLeaveBalance) {
+        const { data: leaveRequests } = await supabase
+          .from('leave_requests')
+          .select('days_requested, status')
+          .eq('employee_id', employeeId)
+          .eq('status', 'approved')
+          .gte('start_date', `${currentYear}-01-01`)
+          .lt('start_date', `${currentYear + 1}-01-01`);
+        
+        const usedDaysFromRequests = leaveRequests?.reduce((total, leave) => {
+          return total + (parseFloat(leave.days_requested) || 0);
+        }, 0) || 0;
+        
+        fallbackRemainingLeave = totalLeaveAllowance - usedDaysFromRequests;
+      }
       
       // Get tasks
       const { data: tasks, error: tasksError } = await supabase
@@ -406,18 +432,54 @@ export class DashboardController {
         status: task.status
       })) || [];
       
-      // Get today's schedule (mock data for now)
-      const todaySchedule = [
-        { id: '1', title: 'Team Standup', time: '9:00 AM', type: 'meeting' },
-        { id: '2', title: 'Project Review', time: '2:00 PM', type: 'review' },
-        { id: '3', title: 'Training Session', time: '4:00 PM', type: 'training' }
-      ];
+      // Get today's schedule from database
+      const { data: scheduleData, error: scheduleError } = await supabase
+        .from('employee_schedules')
+        .select('id, title, start_time, end_time, type, description')
+        .eq('employee_id', employeeId)
+        .eq('date', today)
+        .order('start_time', { ascending: true });
+      
+      const todaySchedule = scheduleData?.map(schedule => ({
+        id: schedule.id,
+        title: schedule.title,
+        time: new Date(`${today}T${schedule.start_time}`).toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        }),
+        type: schedule.type || 'event'
+      })) || [];
+      
+      // If no schedule data found, check for meetings or events
+      if (todaySchedule.length === 0) {
+        const { data: meetingsData } = await supabase
+          .from('meetings')
+          .select('id, title, start_time, meeting_type')
+          .contains('attendees', [employeeId])
+          .gte('start_time', `${today}T00:00:00`)
+          .lt('start_time', `${today}T23:59:59`)
+          .order('start_time', { ascending: true });
+        
+        if (meetingsData && meetingsData.length > 0) {
+          todaySchedule.push(...meetingsData.map(meeting => ({
+            id: meeting.id,
+            title: meeting.title,
+            time: new Date(meeting.start_time).toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            }),
+            type: meeting.meeting_type || 'meeting'
+          })));
+        }
+      }
       
       const dashboardData = {
         stats: {
           hoursThisWeek: Math.round(hoursThisWeek * 10) / 10,
           hoursToday: Math.round(hoursToday * 10) / 10,
-          leaveBalance: remainingLeave,
+          leaveBalance: fallbackRemainingLeave,
           usedLeaveDays: Math.round(usedLeaveDays),
           tasksCompleted: completedTasks.length,
           completedThisWeek,

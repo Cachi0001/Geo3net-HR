@@ -20,20 +20,41 @@ export class EmployeeController {
    */
   async createEmployee(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
+      console.log('🔍 [EmployeeController] createEmployee called with data:', {
+        userId: req.user?.id,
+        role: req.user?.role,
+        bodyKeys: Object.keys(req.body),
+        hasRequiredFields: {
+          fullName: !!req.body.fullName,
+          email: !!req.body.email,
+          hireDate: !!req.body.hireDate,
+          departmentId: !!req.body.departmentId,
+          positionId: !!req.body.positionId
+        }
+      })
+      
       const employeeData: CreateEmployeeData = req.body
       const createdBy = req.user?.id!
 
       const result = await this.employeeService.createEmployee(employeeData, createdBy)
 
       if (result.success) {
+        console.log('✅ [EmployeeController] Employee created successfully:', result.employee?.id)
         return ResponseHandler.created(res, result.message, {
           employee: result.employee,
           temporaryPassword: result.temporaryPassword
         })
       }
 
+      console.log('❌ [EmployeeController] Employee creation failed:', result.message)
       return ResponseHandler.badRequest(res, result.message)
     } catch (error) {
+      console.error('❌ [EmployeeController] createEmployee error:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        type: error?.constructor?.name
+      })
+      
       if (error instanceof ValidationError) {
         return ResponseHandler.validationError(res, error.errors || [error.message])
       }
@@ -50,6 +71,12 @@ export class EmployeeController {
    */
   async getEmployees(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
+      console.log('🔍 [EmployeeController] getEmployees called by user:', {
+        userId: req.user?.id,
+        role: req.user?.role,
+        query: req.query
+      })
+      
       const filters: EmployeeSearchFilters = {
         departmentId: req.query.departmentId as string,
         positionId: req.query.positionId as string,
@@ -59,11 +86,21 @@ export class EmployeeController {
         limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
         offset: req.query.offset ? parseInt(req.query.offset as string) : 0
       }
+      
+      console.log('📋 [EmployeeController] Filters applied:', filters)
 
       // Create access context for role-based filtering
       const accessContext: EmployeeAccessContext = await this.createAccessContext(req)
+      console.log('🔐 [EmployeeController] Access context created:', accessContext)
       
       const result = await this.employeeService.searchEmployees(filters, accessContext)
+
+      console.log('✅ [EmployeeController] Search result:', {
+        success: result.success,
+        employeeCount: result.employees?.length || 0,
+        total: result.total,
+        message: result.message
+      })
 
       if (result.success) {
         return ResponseHandler.success(res, result.message, {
@@ -74,8 +111,10 @@ export class EmployeeController {
         })
       }
 
+      console.error('❌ [EmployeeController] Search failed:', result.message)
       return ResponseHandler.internalError(res, result.message)
     } catch (error) {
+      console.error('❌ [EmployeeController] getEmployees error:', error)
       return ResponseHandler.internalError(res, 'Failed to retrieve employees')
     }
   }
@@ -424,6 +463,12 @@ export class EmployeeController {
     const userId = req.user?.id!
     const userRole = req.user?.role || 'employee'
     
+    console.log('🔐 [EmployeeController] Creating access context for user:', {
+      userId,
+      userRole,
+      targetEmployeeId
+    })
+    
     // Get user's permissions from role service
     const permissions: string[] = []
     
@@ -431,17 +476,22 @@ export class EmployeeController {
     switch (userRole) {
       case 'super-admin':
         permissions.push('employees:read:all', 'employees:read:salary', 'employees:read:emergency', 'employees:read:notes')
+        console.log('📦 [EmployeeController] Super-admin permissions granted')
         break
       case 'hr-admin':
         permissions.push('employees:read:hr', 'employees:read:salary', 'employees:read:emergency', 'employees:read:notes')
+        console.log('📦 [EmployeeController] HR-admin permissions granted')
         break
       case 'manager':
         permissions.push('employees:read:team', 'employees:read:salary')
+        console.log('📦 [EmployeeController] Manager permissions granted')
         break
       case 'hr-staff':
         permissions.push('employees:read:hr', 'employees:read:emergency')
+        console.log('📦 [EmployeeController] HR-staff permissions granted')
         break
       default:
+        console.log('📦 [EmployeeController] Default employee permissions (limited)')
         // Regular employee permissions
         break
     }
@@ -452,13 +502,17 @@ export class EmployeeController {
       // Get the employee record to check if it belongs to the current user
       const employee = await this.employeeService.getEmployeeById(targetEmployeeId)
       isOwner = employee?.userId === userId
+      console.log('🔍 [EmployeeController] Ownership check:', { isOwner, employeeUserId: employee?.userId })
     }
     
-    return {
+    const accessContext = {
       userId,
       role: userRole,
       permissions,
       isOwner
     }
+    
+    console.log('✅ [EmployeeController] Access context created:', accessContext)
+    return accessContext
   }
 }

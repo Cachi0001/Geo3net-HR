@@ -766,7 +766,21 @@ class ApiClient {
 
   // Employee endpoints with proper typing
   async getEmployees(params?: EmployeeSearchFilters): Promise<ApiResponse<{ employees: Employee[], total: number }>> {
-    const queryString = params ? '?' + new URLSearchParams(params as any).toString() : ''
+    if (!params) {
+      return this.request('/employees')
+    }
+    
+    // Filter out undefined values to prevent them from becoming 'undefined' strings
+    const filteredParams: Record<string, string> = {}
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        filteredParams[key] = String(value)
+      }
+    })
+    
+    const queryString = Object.keys(filteredParams).length > 0 
+      ? '?' + new URLSearchParams(filteredParams).toString() 
+      : ''
     return this.request(`/employees${queryString}`)
   }
 

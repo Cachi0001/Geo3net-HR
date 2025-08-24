@@ -106,7 +106,7 @@ const TimeTrackingPage: React.FC = () => {
     );
   }
 
-  const loadTimeEntries = useCallback(async () => {
+  const loadTimeEntries = async () => {
     try {
       const response = await apiClient.getAllTimeEntries({
         startDate: selectedDate,
@@ -133,20 +133,16 @@ const TimeTrackingPage: React.FC = () => {
         }));
         setTimeEntries(transformedEntries);
       } else {
-        throw new Error('Failed to fetch time entries');
+        console.warn('No time entries data received from API');
+        setTimeEntries([]);
       }
     } catch (error) {
       console.error('Failed to load time entries:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load time entries from server. Please try again later.',
-        variant: 'destructive'
-      });
       setTimeEntries([]);
     }
-  }, [selectedDate]);
+  };
 
-  const loadAttendanceReport = useCallback(async () => {
+  const loadAttendanceReport = async () => {
     try {
       const response = await apiClient.getAttendanceReport({
         startDate: selectedDate,
@@ -159,9 +155,9 @@ const TimeTrackingPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to load attendance report:', error);
     }
-  }, [selectedDate]);
+  };
 
-  const loadWeeklyStats = useCallback(async () => {
+  const loadWeeklyStats = async () => {
     try {
       const endDate = new Date(selectedDate);
       const startDate = new Date(endDate);
@@ -181,9 +177,9 @@ const TimeTrackingPage: React.FC = () => {
       console.error('Failed to load weekly stats:', error);
       setWeeklyStats([]);
     }
-  }, [selectedDate]);
+  };
 
-  const loadTimeTrackingData = useCallback(async () => {
+  const loadTimeTrackingData = async () => {
     try {
       setLoading(true);
       await Promise.all([
@@ -196,11 +192,11 @@ const TimeTrackingPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [loadTimeEntries, loadAttendanceReport, loadWeeklyStats]);
+  };
 
   useEffect(() => {
     loadTimeTrackingData();
-  }, [loadTimeTrackingData]);
+  }, [selectedDate]);
 
   const filteredEntries = timeEntries.filter(entry => {
     const matchesSearch = entry.employee?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -440,9 +440,25 @@ export class EmployeeService {
 
       let employees = data?.map(emp => this.mapDatabaseToEmployee(emp)) || []
       
+      console.log(`📋 [EmployeeService][${_ts}] Raw employees before filtering:`, employees.length)
+      
       // Apply role-based data filtering if access context is provided
       if (accessContext) {
-        employees = employees.map(emp => this.filterEmployeeDataByRole(emp, accessContext))
+        console.log(`🔐 [EmployeeService][${_ts}] Applying role-based filtering with context:`, {
+          role: accessContext.role,
+          permissions: accessContext.permissions,
+          userId: accessContext.userId
+        })
+        
+        employees = employees.map(emp => {
+          const filtered = this.filterEmployeeDataByRole(emp, accessContext)
+          console.log(`🔍 [EmployeeService][${_ts}] Employee ${emp.fullName} filtered - showing salary: ${filtered.salary !== undefined}`)
+          return filtered
+        })
+        
+        console.log(`📋 [EmployeeService][${_ts}] Employees after filtering:`, employees.length)
+      } else {
+        console.log(`⚠️ [EmployeeService][${_ts}] No access context provided - returning unfiltered data`)
       }
 
       try {
@@ -807,23 +823,35 @@ export class EmployeeService {
   }
 
   private filterEmployeeDataByRole(employee: Employee, accessContext: EmployeeAccessContext): Employee {
+    console.log(`🔍 [EmployeeService] Filtering data for employee ${employee.fullName}:`, {
+      employeeUserId: employee.userId,
+      accessUserId: accessContext.userId,
+      role: accessContext.role,
+      permissions: accessContext.permissions,
+      isOwner: accessContext.isOwner
+    })
+    
     // If user is viewing their own profile, return full data
     if (employee.userId === accessContext.userId || accessContext.isOwner) {
+      console.log(`✅ [EmployeeService] Employee ${employee.fullName} - owner access, returning full data`)
       return employee
     }
 
     // Super-admin gets full access to all data
     if (accessContext.role === 'super-admin' || accessContext.permissions.includes('employees:read:all')) {
+      console.log(`✅ [EmployeeService] Employee ${employee.fullName} - super-admin access, returning full data`)
       return employee
     }
 
     // HR-admin gets full access to employee data
     if (accessContext.role === 'hr-admin' || accessContext.permissions.includes('employees:read:hr')) {
+      console.log(`✅ [EmployeeService] Employee ${employee.fullName} - hr-admin access, returning full data`)
       return employee
     }
 
     // Manager can see team data with some restrictions
     if (accessContext.role === 'manager' || accessContext.permissions.includes('employees:read:team')) {
+      console.log(`✅ [EmployeeService] Employee ${employee.fullName} - manager access, applying some restrictions`)
       return {
         ...employee,
         // Managers can see salary if they have permission
@@ -838,6 +866,7 @@ export class EmployeeService {
 
     // HR-staff can see basic employee information with emergency contacts
     if (accessContext.role === 'hr-staff') {
+      console.log(`✅ [EmployeeService] Employee ${employee.fullName} - hr-staff access, limited access`)
       return {
         ...employee,
         // Hide salary for hr-staff
@@ -851,6 +880,7 @@ export class EmployeeService {
     }
 
     // Default: return limited public information for regular employees
+    console.log(`⚠️ [EmployeeService] Employee ${employee.fullName} - default employee access, very limited data`)
     return {
       ...employee,
       phoneNumber: undefined,

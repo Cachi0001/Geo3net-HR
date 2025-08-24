@@ -75,20 +75,7 @@ const ResetPasswordPage = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          {/* Logo and Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center space-x-3 mb-4">
-              <img 
-                src="/logo.jpeg" 
-                alt="Go3net Logo" 
-                className="h-12 w-12 rounded-lg object-cover"
-              />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Go3net</h1>
-                <p className="text-sm text-gray-600">HR Management System</p>
-              </div>
-            </div>
-          </div>
+
 
           <Card className="shadow-lg border-0">
             <CardHeader className="space-y-1 text-center">
@@ -116,22 +103,7 @@ const ResetPasswordPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo and Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <img 
-              src="/logo.jpeg" 
-              alt="Go3net Logo" 
-              className="h-12 w-12 rounded-lg object-cover"
-            />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Go3net</h1>
-              <p className="text-sm text-gray-600">HR Management System</p>
-            </div>
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Reset Your Password</h2>
-          <p className="text-gray-600">Enter your new password below</p>
-        </div>
+
 
         <Card className="shadow-lg border-0">
           <CardHeader className="space-y-1">

@@ -107,7 +107,8 @@ export const SuperAdminDashboard: React.FC = () => {
       }
 
       if (departmentsResponse.success && departmentsResponse.data) {
-        const deptStats = departmentsResponse.data.map((dept: any) => ({
+        const departments = departmentsResponse.data.departments || departmentsResponse.data;
+        const deptStats = departments.map((dept: any) => ({
           id: dept.id,
           name: dept.name,
           employees: dept.employee_count || 0,

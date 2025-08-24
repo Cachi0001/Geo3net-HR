@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { DashboardController } from '../controllers/dashboard.controller';
+import { EmployeeController } from '../controllers/employee.controller';
 import { authenticateToken } from '../middleware/auth';
 import { permissionMiddleware } from '../middleware/permission';
 
 const router = Router();
 const dashboardController = new DashboardController();
+const employeeController = new EmployeeController();
 
 // Apply authentication to all dashboard routes
 router.use(authenticateToken);
@@ -47,6 +49,15 @@ router.get('/super-admin',
 // Get employee specific dashboard data
 router.get('/employee',
   dashboardController.getEmployeeDashboard.bind(dashboardController)
+);
+
+// Get employees for dashboard views (proxy to employee controller)
+router.get('/employees',
+  permissionMiddleware.requireAnyPermission(['employee.read', 'profile.read']),
+  (req, res) => {
+    console.log('🔄 [Dashboard] Proxying /dashboard/employees to employee controller')
+    return employeeController.getEmployees(req, res)
+  }
 );
 
 /**

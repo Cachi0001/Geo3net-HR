@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/api';
 import {
   User,
@@ -59,25 +60,48 @@ const ProfilePage: React.FC = () => {
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fallback profile data
   const fallbackProfile: UserProfile = useMemo(() => {
-    const fullName = user?.fullName || 'User';
+    if (!user) {
+      return {
+        id: '',
+        firstName: 'User',
+        lastName: '',
+        email: '',
+        phone: '',
+        address: '',
+        dateOfBirth: '',
+        department: '',
+        position: '',
+        role: 'employee',
+        bio: '',
+        joinDate: '',
+        emergencyContact: {
+          name: '',
+          phone: '',
+          relationship: ''
+        }
+      };
+    }
+
+    const fullName = user.fullName || 'User';
     const nameParts = fullName.split(' ');
     const firstName = nameParts[0] || 'User';
     const lastName = nameParts.slice(1).join(' ') || '';
     
     return {
-      id: user?.id || '',
+      id: user.id || '',
       firstName,
       lastName,
-      email: user?.email || '',
+      email: user.email || '',
       phone: '',
       address: '',
       dateOfBirth: '',
-      department: '',
-      position: '',
-      role: user?.role || 'employee',
+      department: user.department || '',
+      position: user.position || '',
+      role: user.role || 'employee',
       bio: '',
       joinDate: '',
       emergencyContact: {
@@ -86,7 +110,7 @@ const ProfilePage: React.FC = () => {
         relationship: ''
       }
     };
-  }, [user?.id, user?.fullName, user?.email, user?.role]);
+  }, [user]);
 
   // Load user profile
   const loadProfile = useCallback(async () => {
@@ -116,13 +140,13 @@ const ProfilePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fallbackProfile]);
 
   useEffect(() => {
     if (user) {
       loadProfile();
     }
-  }, [user?.id]);
+  }, [user?.id, loadProfile]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -133,6 +157,10 @@ const ProfilePage: React.FC = () => {
         if (response.success) {
           setProfile({ ...profile!, ...formData });
           setEditing(false);
+          
+          // Invalidate and refetch user data to update auth context
+          await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+          
           toast({
             title: 'Success',
             description: 'Profile updated successfully'
@@ -146,6 +174,10 @@ const ProfilePage: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 1000));
         setProfile({ ...profile!, ...formData });
         setEditing(false);
+        
+        // Invalidate and refetch user data to update auth context
+        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        
         toast({
           title: 'Success',
           description: 'Profile updated successfully'
@@ -194,6 +226,10 @@ const ProfilePage: React.FC = () => {
         const updatedProfile = { ...profile!, avatar: response.data.profile_picture };
         setProfile(updatedProfile);
         setFormData(updatedProfile);
+        
+        // Invalidate and refetch user data to update auth context
+        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        
         toast({
           title: 'Success',
           description: 'Profile picture updated successfully'
@@ -223,6 +259,10 @@ const ProfilePage: React.FC = () => {
         const updatedProfile = { ...profile!, avatar: undefined };
         setProfile(updatedProfile);
         setFormData(updatedProfile);
+        
+        // Invalidate and refetch user data to update auth context
+        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        
         toast({
           title: 'Success',
           description: 'Profile picture removed successfully'
@@ -359,7 +399,7 @@ const ProfilePage: React.FC = () => {
                   <Avatar className="h-24 w-24">
                     <AvatarImage src={profile.avatar} alt={`${profile.firstName} ${profile.lastName}`} />
                     <AvatarFallback className="text-lg">
-                      {profile.firstName.charAt(0)}{profile.lastName.charAt(0)}
+                      {profile?.firstName?.charAt(0) || 'U'}{profile?.lastName?.charAt(0) || ''}
                     </AvatarFallback>
                   </Avatar>
                   {editing && (
