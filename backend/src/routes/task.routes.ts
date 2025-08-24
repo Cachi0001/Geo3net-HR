@@ -41,23 +41,25 @@ router.get('/:id/comments',
   taskController.getTaskComments.bind(taskController)
 );
 
-// Add comment to task
 router.post('/:id/comments',
   taskController.addTaskComment.bind(taskController)
 );
 
-// Create new task - Managers and above
 router.post('/',
   permissionMiddleware.requireMinimumRole('manager'),
   taskController.createTask.bind(taskController)
 );
 
-// Update task - Task assignee or Managers and above
 router.put('/:id',
   taskController.updateTask.bind(taskController)
 );
 
-// Delete task - HR Admin and above
+// Assign task - Managers and above
+router.patch('/:id/assign',
+  permissionMiddleware.requireMinimumRole('manager'),
+  taskController.assignTask.bind(taskController)
+);
+
 router.delete('/:id',
   permissionMiddleware.requireMinimumRole('hr-admin'),
   taskController.deleteTask.bind(taskController)

@@ -103,29 +103,7 @@ export const SuperAdminDashboard: React.FC = () => {
       if (dashboardResponse.success && dashboardResponse.data) {
         setDashboardData(dashboardResponse.data);
       } else {
-        // Fallback data for development
-        setDashboardData({
-          totalEmployees: 156,
-          totalDepartments: 8,
-          activeRecruitment: 12,
-          monthlyPayroll: "₦2,450,000",
-          employeeGrowth: 8,
-          departmentGrowth: 2,
-          recruitmentFilled: 5,
-          payrollGrowth: 12,
-          todayAttendance: {
-            present: 142,
-            absent: 14,
-            late: 8,
-            earlyCheckouts: 3
-          },
-          activeLocations: 4,
-          systemHealth: {
-            uptime: "99.8%",
-            activeSessions: 89,
-            lastBackup: "2 hours ago"
-          }
-        });
+        throw new Error('Failed to load dashboard data');
       }
 
       if (departmentsResponse.success && departmentsResponse.data) {
@@ -142,27 +120,11 @@ export const SuperAdminDashboard: React.FC = () => {
       // Load today's attendance data
       if (attendanceResponse.success && (attendanceResponse as any).data) {
         setAttendanceMetrics((attendanceResponse as any).data?.attendanceRecords || []);
-      } else {
-        // Fallback attendance data
-        setAttendanceMetrics([
-          { employeeName: "John Doe", checkInTime: "08:45 AM", location: "Lagos HQ", status: "on_time", hoursWorked: "8h 30m" },
-          { employeeName: "Jane Smith", checkInTime: "09:15 AM", location: "Abuja Branch", status: "late", hoursWorked: "7h 45m" },
-          { employeeName: "Mike Johnson", checkInTime: "08:30 AM", location: "Remote", status: "on_time", hoursWorked: "8h 15m" },
-          { employeeName: "Sarah Wilson", checkInTime: "-", location: "-", status: "absent", hoursWorked: "0h 0m" },
-        ]);
       }
 
       // Load location statistics
       if (locationsResponse.success && locationsResponse.data) {
         setLocationStats(locationsResponse.data.locations || []);
-      } else {
-        // Fallback location data
-        setLocationStats([
-          { id: 1, name: "Lagos HQ", address: "Victoria Island, Lagos", activeEmployees: 89, totalCapacity: 120, utilizationRate: 74 },
-          { id: 2, name: "Abuja Branch", address: "Wuse 2, Abuja", activeEmployees: 34, totalCapacity: 50, utilizationRate: 68 },
-          { id: 3, name: "Port Harcourt", address: "GRA, Port Harcourt", activeEmployees: 19, totalCapacity: 30, utilizationRate: 63 },
-          { id: 4, name: "Remote Workers", address: "Various Locations", activeEmployees: 14, totalCapacity: 25, utilizationRate: 56 },
-        ]);
       }
 
       // Enhanced system alerts

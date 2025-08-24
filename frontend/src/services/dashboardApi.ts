@@ -68,24 +68,11 @@ class DashboardApiService {
       throw new Error(response.message || 'Failed to fetch attendance dashboard');
     } catch (error) {
       console.error('Attendance dashboard API error:', error);
-      // Return fallback data
-      return {
-        date: date || new Date().toISOString().split('T')[0],
-        summary: {
-          totalEmployees: 150,
-          presentToday: 142,
-          lateArrivals: 8,
-          onLeave: 5,
-          absentToday: 3
-        },
-        attendanceList: []
-      };
+      throw error;
     }
   }
 
-  /**
-   * Get attendance analytics
-   */
+ 
   async getAttendanceAnalytics(params: {
     startDate?: string;
     endDate?: string;
@@ -99,21 +86,7 @@ class DashboardApiService {
       throw new Error(response.message || 'Failed to fetch attendance analytics');
     } catch (error) {
       console.error('Attendance analytics API error:', error);
-      // Return fallback data
-      return {
-        period: params,
-        analytics: {
-          averageWorkHours: 8.2,
-          punctualityRate: 94.5,
-          overtimeHours: 12.5,
-          absenteeismRate: 2.1,
-          trends: {
-            daily: [],
-            weekly: [],
-            monthly: []
-          }
-        }
-      };
+      throw error;
     }
   }
 
@@ -129,12 +102,7 @@ class DashboardApiService {
       throw new Error(response.message || 'Failed to fetch real-time status');
     } catch (error) {
       console.error('Real-time status API error:', error);
-      // Return fallback data
-      return {
-        timestamp: new Date().toISOString(),
-        currentlyCheckedIn: 142,
-        activeEmployees: []
-      };
+      throw error;
     }
   }
 
@@ -150,13 +118,7 @@ class DashboardApiService {
       throw new Error(response.message || 'Failed to fetch employee stats');
     } catch (error) {
       console.error('Employee stats API error:', error);
-      // Return fallback data
-      return {
-        total: 150,
-        active: 145,
-        onLeave: 5,
-        departments: 8
-      };
+      throw error;
     }
   }
 
@@ -172,13 +134,7 @@ class DashboardApiService {
       throw new Error(response.message || 'Failed to fetch department stats');
     } catch (error) {
       console.error('Department stats API error:', error);
-      // Fallback to mock data if endpoint doesn't exist yet
-      return [
-        { department: 'Engineering', employees: 25, present: 23, absent: 2, performance: 92 },
-        { department: 'Marketing', employees: 15, present: 14, absent: 1, performance: 88 },
-        { department: 'Sales', employees: 20, present: 18, absent: 2, performance: 85 },
-        { department: 'HR', employees: 8, present: 8, absent: 0, performance: 95 }
-      ];
+      throw error;
     }
   }
 
@@ -194,30 +150,7 @@ class DashboardApiService {
       throw new Error(response.message || 'Failed to fetch recent activities');
     } catch (error) {
       console.error('Recent activities API error:', error);
-      // Fallback to mock data if endpoint doesn't exist yet
-      return [
-        {
-          id: '1',
-          type: 'check-in',
-          description: 'John Doe checked in',
-          timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
-          user: 'John Doe'
-        },
-        {
-          id: '2',
-          type: 'leave-request',
-          description: 'Sarah Wilson submitted leave request',
-          timestamp: new Date(Date.now() - 15 * 60000).toISOString(),
-          user: 'Sarah Wilson'
-        },
-        {
-          id: '3',
-          type: 'task-completed',
-          description: 'Mike Johnson completed project milestone',
-          timestamp: new Date(Date.now() - 30 * 60000).toISOString(),
-          user: 'Mike Johnson'
-        }
-      ];
+      throw error;
     }
   }
 
@@ -233,14 +166,7 @@ class DashboardApiService {
       throw new Error(response.message || 'Failed to fetch dashboard metrics');
     } catch (error) {
       console.error('Dashboard metrics API error:', error);
-      // Return fallback data
-      return {
-        totalEmployees: 150,
-        presentToday: 142,
-        lateArrivals: 8,
-        onLeave: 5,
-        absentToday: 3
-      };
+      throw error;
     }
   }
 
@@ -277,38 +203,7 @@ class DashboardApiService {
         };
       } catch (fallbackError) {
         console.error('Fallback dashboard data fetch failed:', fallbackError);
-        // Return complete fallback data
-        return {
-          metrics: {
-            totalEmployees: 150,
-            presentToday: 142,
-            lateArrivals: 8,
-            onLeave: 5,
-            absentToday: 3
-          },
-          departmentStats: [
-            { department: 'Engineering', employees: 25, present: 23, absent: 2, performance: 92 },
-            { department: 'Marketing', employees: 15, present: 14, absent: 1, performance: 88 },
-            { department: 'Sales', employees: 20, present: 18, absent: 2, performance: 85 },
-            { department: 'HR', employees: 8, present: 8, absent: 0, performance: 95 }
-          ],
-          recentActivities: [
-            {
-              id: '1',
-              type: 'check-in',
-              description: 'John Doe checked in',
-              timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
-              user: 'John Doe'
-            },
-            {
-              id: '2',
-              type: 'leave-request',
-              description: 'Sarah Wilson submitted leave request',
-              timestamp: new Date(Date.now() - 15 * 60000).toISOString(),
-              user: 'Sarah Wilson'
-            }
-          ]
-        };
+        throw fallbackError;
       }
     }
   }

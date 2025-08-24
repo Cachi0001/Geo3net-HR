@@ -7,7 +7,9 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
+import { createServer } from 'http'
 import { testConnection } from './config/database'
+import { websocketService } from './services/websocket.service'
 import authRoutes from './routes/auth.routes'
 import roleRoutes from './routes/role.routes'
 import { userRoutes } from './routes/user.routes'
@@ -30,6 +32,7 @@ import authLogsRoutes from './routes/authLogs.routes'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 
 const app = express()
+const server = createServer(app)
 const PORT = process.env.PORT || 5004
 
 app.use(helmet())
@@ -83,12 +86,36 @@ app.use('/api/debug', debugRoutes)
 app.use(notFoundHandler)
 app.use(errorHandler)
 
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`)
+// Initialize WebSocket service
+websocketService.initialize(server)
+
+server.listen(PORT, async () => {
+  console.log(`🚀 Server running on port ${PORT}`)
+  console.log(`🔌 WebSocket server available at ws://localhost:${PORT}/ws`)
+  
   // Run DB connectivity test in background so startup is not blocked by transient network issues
   testConnection().catch((err) => {
     console.error('Background DB connectivity check failed:', err?.message || err)
   })
-}) // Trigger restart - updated
+})
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully')
+  websocketService.shutdown()
+  server.close(() => {
+    console.log('✅ Server closed')
+    process.exit(0)
+  })
+})
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received, shutting down gracefully')
+  websocketService.shutdown()
+  server.close(() => {
+    console.log('✅ Server closed')
+    process.exit(0)
+  })
+})
 
 export default app

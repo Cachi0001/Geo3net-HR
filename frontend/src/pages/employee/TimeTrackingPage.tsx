@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -73,7 +73,7 @@ interface CheckOutData {
 }
 
 const EmployeeTimeTrackingPage: React.FC = () => {
-  const { user, isLoadingUser } = useAuth();
+  const { user, isLoading: isLoadingUser } = useAuth();
   const [activeEntry, setActiveEntry] = useState<TimeEntry | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,7 +140,7 @@ const EmployeeTimeTrackingPage: React.FC = () => {
     }
   }, [activeEntry]);
 
-  const loadTimeTrackingData = async () => {
+  const loadTimeTrackingData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -160,15 +160,11 @@ const EmployeeTimeTrackingPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to load time tracking data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load time tracking data',
-        variant: 'destructive'
-      });
+      // Remove toast dependency to prevent infinite loop
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Load data on component mount
   useEffect(() => {

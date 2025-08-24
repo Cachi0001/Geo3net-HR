@@ -1,15 +1,80 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Calendar, CheckCircle, AlertCircle, User, FileText } from 'lucide-react';
+import { Clock, Calendar, CheckCircle, AlertCircle, User, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { apiClient } from '@/services/api';
+
+interface DashboardStats {
+  hoursThisWeek: number;
+  hoursToday: number;
+  leaveBalance: number;
+  usedLeaveDays: number;
+  tasksCompleted: number;
+  completedThisWeek: number;
+  pendingTasks: number;
+  dueTodayTasks: number;
+}
+
+interface Task {
+  id: string;
+  title: string;
+  dueDate: string;
+  priority: string;
+  status: string;
+}
+
+interface ScheduleItem {
+  id: string;
+  title: string;
+  time: string;
+  type: string;
+}
+
+interface DashboardData {
+  stats: DashboardStats;
+  recentTasks: Task[];
+  todaySchedule: ScheduleItem[];
+  employee: {
+    id: string;
+    fullName: string;
+    employeeId: string;
+  };
+}
 
 export const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   console.log('👤 EmployeeDashboard rendered for user:', user?.email, 'role:', user?.role);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.getEmployeeDashboard();
+      
+      if (response.success && response.data) {
+        setDashboardData(response.data);
+      } else {
+        throw new Error(response.message || 'Failed to load dashboard data');
+      }
+    } catch (error: any) {
+      console.error('Dashboard data error:', error);
+      setError(error.message || 'Failed to load dashboard data');
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleQuickAction = (action: string) => {
     switch (action) {
@@ -30,48 +95,56 @@ export const EmployeeDashboard: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="dashboard-container flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !dashboardData) {
+    return (
+      <div className="dashboard-container space-y-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-600">Failed to load dashboard data. Please try refreshing the page.</p>
+        </div>
+      </div>
+    );
+  }
+
   const stats = [
     {
       title: 'Hours This Week',
-      value: '32.5',
-      change: '7.5 hours today',
+      value: dashboardData.stats.hoursThisWeek.toString(),
+      change: `${dashboardData.stats.hoursToday} hours today`,
       icon: Clock,
       color: 'text-blue-600'
     },
     {
       title: 'Leave Balance',
-      value: '18',
-      change: '5 days used',
+      value: dashboardData.stats.leaveBalance.toString(),
+      change: `${dashboardData.stats.usedLeaveDays} days used`,
       icon: Calendar,
       color: 'text-green-600'
     },
     {
       title: 'Tasks Completed',
-      value: '12',
-      change: '3 this week',
+      value: dashboardData.stats.tasksCompleted.toString(),
+      change: `${dashboardData.stats.completedThisWeek} this week`,
       icon: CheckCircle,
       color: 'text-purple-600'
     },
     {
       title: 'Pending Tasks',
-      value: '4',
-      change: '2 due today',
+      value: dashboardData.stats.pendingTasks.toString(),
+      change: `${dashboardData.stats.dueTodayTasks} due today`,
       icon: AlertCircle,
       color: 'text-orange-600'
     }
-  ];
-
-  const recentTasks = [
-    { id: 1, title: 'Complete project documentation', status: 'pending', priority: 'high', dueDate: 'Today' },
-    { id: 2, title: 'Review team presentation', status: 'completed', priority: 'medium', dueDate: 'Yesterday' },
-    { id: 3, title: 'Update client requirements', status: 'pending', priority: 'low', dueDate: 'Tomorrow' },
-    { id: 4, title: 'Attend team meeting', status: 'completed', priority: 'medium', dueDate: '2 days ago' }
-  ];
-
-  const upcomingEvents = [
-    { id: 1, title: 'Team Standup', time: '9:00 AM', type: 'meeting' },
-    { id: 2, title: 'Project Review', time: '2:00 PM', type: 'review' },
-    { id: 3, title: 'Training Session', time: '4:00 PM', type: 'training' }
   ];
 
   return (
@@ -111,7 +184,7 @@ export const EmployeeDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="space-y-2 sm:space-y-3">
-              {recentTasks.map((task) => (
+              {dashboardData.recentTasks.map((task) => (
                 <div key={task.id} className="flex items-center justify-between p-2 sm:p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${
@@ -149,7 +222,7 @@ export const EmployeeDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="space-y-3 sm:space-y-4">
-              {upcomingEvents.map((event) => (
+              {dashboardData.todaySchedule.map((event) => (
                 <div key={event.id} className="flex items-center gap-3 sm:gap-4 p-2 sm:p-3 bg-muted/50 rounded-lg">
                   <div className="w-8 h-8 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Clock className="mobile-icon sm:h-6 sm:w-6 text-blue-600" />

@@ -602,14 +602,39 @@ export class EmployeeService {
 
   private async generateEmployeeId(): Promise<string> {
     const prefix = 'EMP'
-    const timestamp = Date.now().toString().slice(-6)
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-    return `${prefix}${timestamp}${random}`
+    let attempt = 0
+    const maxAttempts = 10
+
+    while (attempt < maxAttempts) {
+      const timestamp = Date.now().toString().slice(-6)
+      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+      const employeeId = `${prefix}${timestamp}${random}`
+
+      // Check if this ID already exists
+      const { data: existing, error } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('employee_id', employeeId)
+        .single()
+
+      if (error && error.code === 'PGRST116') {
+        // No existing employee with this ID found
+        console.log(`Generated unique employee ID: ${employeeId}`)
+        return employeeId
+      }
+
+      attempt++
+      // Small delay before retry
+      await new Promise(resolve => setTimeout(resolve, 10))
+    }
+
+    throw new Error('Failed to generate unique employee ID after multiple attempts')
   }
 
   private validateEmployeeData(data: CreateEmployeeData): void {
     const errors: string[] = []
 
+    // Required fields as per project requirements
     if (!data.fullName?.trim()) {
       errors.push('Full name is required')
     }
@@ -622,14 +647,45 @@ export class EmployeeService {
 
     if (!data.hireDate) {
       errors.push('Hire date is required')
+    } else {
+      const hireDate = new Date(data.hireDate)
+      if (isNaN(hireDate.getTime())) {
+        errors.push('Invalid hire date format')
+      }
     }
 
+    // Enhanced validation for mandatory profile completion
+    if (!data.departmentId) {
+      errors.push('Department is required - please complete mandatory profile information')
+    }
+
+    if (!data.positionId) {
+      errors.push('Position is required - please complete mandatory profile information')
+    }
+
+    // Optional field validations
     if (data.salary && data.salary < 0) {
       errors.push('Salary must be a positive number')
     }
 
+    if (data.dateOfBirth) {
+      const birthDate = new Date(data.dateOfBirth)
+      if (isNaN(birthDate.getTime())) {
+        errors.push('Invalid date of birth format')
+      } else {
+        const age = new Date().getFullYear() - birthDate.getFullYear()
+        if (age < 16 || age > 80) {
+          errors.push('Employee age must be between 16 and 80 years')
+        }
+      }
+    }
+
+    if (data.phoneNumber && !/^[\+]?[1-9][\d]{0,15}$/.test(data.phoneNumber.replace(/[\s\-\(\)]/g, ''))) {
+      errors.push('Invalid phone number format')
+    }
+
     if (errors.length > 0) {
-      throw new ValidationError('Validation failed', errors)
+      throw new ValidationError('Employee validation failed', errors)
     }
   }
 

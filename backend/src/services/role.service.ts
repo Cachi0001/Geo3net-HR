@@ -38,7 +38,9 @@ export class RoleService {
       permissions: [
         'employee.create', 'employee.read', 'employee.update', 'employee.delete',
         'recruitment.manage', 'payroll.manage', 'reports.generate',
-        'roles.assign', 'roles.manage'
+        'roles.assign', 'roles.manage', 'time.log', 'time.review',
+        'tasks.create', 'tasks.assign', 'tasks.read', 'tasks.update',
+        'checkin.create', 'checkin.review'
       ],
       description: 'HR administrator with full HR management access'
     },
@@ -46,8 +48,9 @@ export class RoleService {
       level: 3,
       permissions: [
         'employee.read', 'team.manage', 'performance.manage',
-        'leave.approve', 'time.review', 'tasks.create',
-        'tasks.assign', 'checkin.review'
+        'leave.approve', 'time.review', 'time.log', 'tasks.create',
+        'tasks.assign', 'tasks.read', 'tasks.update', 'checkin.create',
+        'checkin.review'
       ],
       description: 'Department/team manager'
     },
@@ -55,7 +58,8 @@ export class RoleService {
       level: 2,
       permissions: [
         'employee.read', 'recruitment.read', 'recruitment.update',
-        'onboarding.manage', 'documents.manage'
+        'onboarding.manage', 'documents.manage', 'time.log',
+        'tasks.read', 'tasks.update', 'checkin.create'
       ],
       description: 'HR staff member'
     },

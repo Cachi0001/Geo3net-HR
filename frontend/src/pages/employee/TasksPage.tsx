@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,9 @@ import {
   Search,
   Filter,
   MoreVertical,
-  Loader2
+  Loader2,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -63,6 +65,29 @@ interface TaskUpdate {
   notes?: string;
 }
 
+interface TaskProgressUpdate {
+  taskId: string;
+  status: string;
+  actualHours?: number;
+  progressNotes?: string;
+  timestamp: string;
+  updatedBy: {
+    id: string;
+    fullName: string;
+  };
+}
+
+interface TaskStatusChangeNotification {
+  taskId: string;
+  oldStatus: string;
+  newStatus: string;
+  updatedBy: {
+    id: string;
+    fullName: string;
+  };
+  timestamp: string;
+}
+
 const TasksPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -78,84 +103,85 @@ const TasksPage: React.FC = () => {
     actualHours: 0,
     notes: ''
   });
+  const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
 
-  // Fallback data for when API is unavailable
-  const fallbackTasks: Task[] = [
-    {
-      id: '1',
-      title: 'Complete User Authentication Module',
-      description: 'Implement JWT-based authentication system with login, logout, and token refresh functionality.',
-      status: 'in_progress',
-      priority: 'high',
-      dueDate: '2024-03-15',
-      assignedBy: {
-        id: 'mgr1',
-        name: 'Sarah Johnson',
-        role: 'Project Manager'
-      },
-      project: 'HR Management System',
-      estimatedHours: 16,
-      actualHours: 8,
-      createdAt: '2024-03-01T09:00:00Z',
-      updatedAt: '2024-03-10T14:30:00Z'
-    },
-    {
-      id: '2',
-      title: 'Design Employee Dashboard UI',
-      description: 'Create responsive dashboard interface for employee self-service portal.',
-      status: 'completed',
-      priority: 'medium',
-      dueDate: '2024-03-10',
-      assignedBy: {
-        id: 'mgr2',
-        name: 'Mike Chen',
-        role: 'Design Lead'
-      },
-      project: 'Employee Portal',
-      estimatedHours: 12,
-      actualHours: 14,
-      createdAt: '2024-02-28T10:00:00Z',
-      updatedAt: '2024-03-09T16:45:00Z'
-    },
-    {
-      id: '3',
-      title: 'Write API Documentation',
-      description: 'Document all REST API endpoints with examples and response schemas.',
-      status: 'pending',
-      priority: 'low',
-      dueDate: '2024-03-20',
-      assignedBy: {
-        id: 'mgr1',
-        name: 'Sarah Johnson',
-        role: 'Project Manager'
-      },
-      project: 'Documentation',
-      estimatedHours: 8,
-      createdAt: '2024-03-05T11:00:00Z',
-      updatedAt: '2024-03-05T11:00:00Z'
-    },
-    {
-      id: '4',
-      title: 'Fix Time Tracking Bug',
-      description: 'Resolve issue where check-out times are not being recorded properly.',
-      status: 'overdue',
-      priority: 'high',
-      dueDate: '2024-03-08',
-      assignedBy: {
-        id: 'mgr3',
-        name: 'David Wilson',
-        role: 'Tech Lead'
-      },
-      project: 'Bug Fixes',
-      estimatedHours: 4,
-      createdAt: '2024-03-06T09:30:00Z',
-      updatedAt: '2024-03-06T09:30:00Z'
-    }
-  ];
+  // No fallback data - all data should come from the API
+
+  // WebSocket event handlers
+  const handleTaskProgressUpdate = useCallback((update: TaskProgressUpdate) => {
+    console.log('📊 Task progress update received:', update);
+    
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task.id === update.taskId 
+          ? {
+              ...task,
+              status: update.status as 'pending' | 'in_progress' | 'completed' | 'overdue',
+              actualHours: update.actualHours,
+              updatedAt: update.timestamp
+            }
+          : task
+      )
+    );
+    
+    // Show toast notification
+    toast({
+      title: 'Task Updated',
+      description: `Task progress updated by ${update.updatedBy.fullName}`
+    });
+  }, []);
+  
+  const handleTaskStatusChange = useCallback((notification: TaskStatusChangeNotification) => {
+    console.log('🔄 Task status change received:', notification);
+    
+    // Show toast notification
+    toast({
+      title: 'Status Changed',
+      description: `Task status changed from ${notification.oldStatus} to ${notification.newStatus} by ${notification.updatedBy.fullName}`
+    });
+  }, []);
+  
+  const handleWebSocketConnected = useCallback(() => {
+    setIsWebSocketConnected(true);
+    console.log('✅ WebSocket connected for real-time task updates');
+  }, []);
+  
+  const handleWebSocketDisconnected = useCallback(() => {
+    setIsWebSocketConnected(false);
+    console.log('❌ WebSocket disconnected');
+  }, []);
 
   useEffect(() => {
     loadTasks();
   }, [statusFilter, priorityFilter, searchTerm]);
+
+  useEffect(() => {
+    // Connect to WebSocket for real-time updates
+    if (apiClient.connectWebSocket) {
+      apiClient.connectWebSocket();
+    }
+    
+    // Set up event listeners
+    if (apiClient.on) {
+      apiClient.on('task:progress_update', handleTaskProgressUpdate);
+      apiClient.on('task:status_change', handleTaskStatusChange);
+      apiClient.on('websocket:connected', handleWebSocketConnected);
+      apiClient.on('websocket:disconnected', handleWebSocketDisconnected);
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (apiClient.off) {
+        apiClient.off('task:progress_update', handleTaskProgressUpdate);
+        apiClient.off('task:status_change', handleTaskStatusChange);
+        apiClient.off('websocket:connected', handleWebSocketConnected);
+        apiClient.off('websocket:disconnected', handleWebSocketDisconnected);
+      }
+      if (apiClient.disconnectWebSocket) {
+        apiClient.disconnectWebSocket();
+      }
+    };
+  }, [handleTaskProgressUpdate, handleTaskStatusChange, handleWebSocketConnected, handleWebSocketDisconnected]);
 
   const loadTasks = async () => {
     try {
@@ -169,15 +195,15 @@ const TasksPage: React.FC = () => {
         
         // Apply additional filters
         if (statusFilter !== 'all') {
-          apiTasks = apiTasks.filter((task) => task.status === statusFilter);
+          apiTasks = apiTasks.filter((task: Task) => task.status === statusFilter);
         }
         
         if (priorityFilter !== 'all') {
-          apiTasks = apiTasks.filter((task) => task.priority === priorityFilter);
+          apiTasks = apiTasks.filter((task: Task) => task.priority === priorityFilter);
         }
         
         if (searchTerm) {
-          apiTasks = apiTasks.filter((task) => 
+          apiTasks = apiTasks.filter((task: Task) => 
             task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             task.description.toLowerCase().includes(searchTerm.toLowerCase())
           );
@@ -190,32 +216,12 @@ const TasksPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to load tasks from API:', error);
-      console.log('📋 Using fallback task data');
-      
-      // Use fallback data with filters
-      let filteredTasks = fallbackTasks;
-      
-      if (statusFilter !== 'all') {
-        filteredTasks = filteredTasks.filter(task => task.status === statusFilter);
-      }
-      
-      if (priorityFilter !== 'all') {
-        filteredTasks = filteredTasks.filter(task => task.priority === priorityFilter);
-      }
-      
-      if (searchTerm) {
-        filteredTasks = filteredTasks.filter(task => 
-          task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.description.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-      
-      setTasks(filteredTasks);
       toast({
-        title: 'Warning',
-        description: 'Failed to load tasks from server. Using sample data.',
+        title: 'Error',
+        description: 'Failed to load tasks from server. Please try again later.',
         variant: 'destructive'
       });
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -225,9 +231,9 @@ const TasksPage: React.FC = () => {
     if (!selectedTask) return;
 
     try {
-      const response = await apiClient.put(`/api/tasks/${selectedTask.id}`, updateForm);
+      const response = await apiClient.updateTask(`/api/tasks/${selectedTask.id}`, updateForm);
       
-      if (response.data?.success) {
+      if (response.data && typeof response.data === 'object' && 'success' in response.data && response.data.success) {
         toast({
           title: 'Success',
           description: 'Task updated successfully'
@@ -315,7 +321,22 @@ const TasksPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">My Tasks</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">My Tasks</h1>
+            <div className="flex items-center gap-2">
+              {isWebSocketConnected ? (
+                <div className="flex items-center gap-1 text-green-600">
+                  <Wifi className="h-4 w-4" />
+                  <span className="text-sm font-medium">Live Updates</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-gray-400">
+                  <WifiOff className="h-4 w-4" />
+                  <span className="text-sm">Offline</span>
+                </div>
+              )}
+            </div>
+          </div>
           <p className="text-muted-foreground mt-1">Manage your assigned tasks and track progress</p>
         </div>
       </div>

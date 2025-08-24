@@ -48,7 +48,7 @@ export class DepartmentController {
         return ResponseHandler.internalError(res, 'Failed to fetch departments')
       }
 
-      return ResponseHandler.success(res, 'Departments retrieved successfully', departments || [])
+      return ResponseHandler.success(res, 'Departments retrieved successfully', { departments: departments || [] })
     } catch (error) {
       console.error('Department fetch error:', error)
       return ResponseHandler.internalError(res, 'Failed to fetch departments')

@@ -10,19 +10,11 @@ const PerformancePage: React.FC = () => {
   const { user } = useAuth();
   const isManager = user?.role === 'manager' || user?.role === 'hr-admin' || user?.role === 'super-admin';
 
-  // Mock performance data
+  // Performance data will be loaded from API
   const performanceData = {
-    overallScore: 87,
-    goals: [
-      { id: 1, title: 'Complete Q1 Projects', progress: 92, status: 'on-track', dueDate: '2024-03-31' },
-      { id: 2, title: 'Improve Team Collaboration', progress: 75, status: 'needs-attention', dueDate: '2024-04-15' },
-      { id: 3, title: 'Learn New Technologies', progress: 60, status: 'behind', dueDate: '2024-05-30' },
-    ],
-    reviews: [
-      { id: 1, period: 'Q4 2023', score: 85, status: 'completed', reviewer: 'John Manager' },
-      { id: 2, period: 'Q3 2023', score: 89, status: 'completed', reviewer: 'Jane Supervisor' },
-      { id: 3, period: 'Q1 2024', score: 0, status: 'pending', reviewer: 'John Manager' },
-    ]
+    overallScore: 0,
+    goals: [],
+    reviews: []
   };
 
   const getStatusColor = (status: string) => {
@@ -79,7 +71,7 @@ const PerformancePage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Reviews</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {performanceData.reviews.filter(r => r.status === 'completed').length}
+                  {performanceData.reviews.filter((r: any) => r.status === 'completed').length}
                 </p>
               </div>
               <Star className="h-8 w-8 text-primary" />
@@ -113,21 +105,28 @@ const PerformancePage: React.FC = () => {
             <CardDescription>Track your current objectives and progress</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {performanceData.goals.map((goal) => (
-              <div key={goal.id} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{goal.title}</span>
-                  <Badge variant="outline" className={`${getStatusColor(goal.status)} text-white`}>
-                    {goal.status.replace('-', ' ')}
-                  </Badge>
+            {performanceData.goals.length > 0 ? (
+              performanceData.goals.map((goal: any) => (
+                <div key={goal.id} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{goal.title}</span>
+                    <Badge variant="outline" className={`${getStatusColor(goal.status)} text-white`}>
+                      {goal.status.replace('-', ' ')}
+                    </Badge>
+                  </div>
+                  <Progress value={goal.progress} className="h-2" />
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>{goal.progress}% complete</span>
+                    <span>Due: {new Date(goal.dueDate).toLocaleDateString()}</span>
+                  </div>
                 </div>
-                <Progress value={goal.progress} className="h-2" />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>{goal.progress}% complete</span>
-                  <span>Due: {new Date(goal.dueDate).toLocaleDateString()}</span>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No performance goals set</p>
               </div>
-            ))}
+            )}
             <Button className="w-full mt-4" variant="outline">
               <Target className="mr-2 h-4 w-4" />
               Set New Goal
@@ -145,23 +144,30 @@ const PerformancePage: React.FC = () => {
             <CardDescription>Past and upcoming performance evaluations</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {performanceData.reviews.map((review) => (
-              <div key={review.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">{review.period}</p>
-                  <p className="text-sm text-muted-foreground">Reviewer: {review.reviewer}</p>
+            {performanceData.reviews.length > 0 ? (
+              performanceData.reviews.map((review: any) => (
+                <div key={review.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{review.period}</p>
+                    <p className="text-sm text-muted-foreground">Reviewer: {review.reviewer}</p>
+                  </div>
+                  <div className="text-right">
+                    {review.status === 'completed' ? (
+                      <p className="text-lg font-bold text-primary">{review.score}%</p>
+                    ) : (
+                      <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                        Pending
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <div className="text-right">
-                  {review.status === 'completed' ? (
-                    <p className="text-lg font-bold text-primary">{review.score}%</p>
-                  ) : (
-                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
-                      Pending
-                    </Badge>
-                  )}
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No performance reviews available</p>
               </div>
-            ))}
+            )}
             {isManager && (
               <Button className="w-full mt-4" variant="outline">
                 <Star className="mr-2 h-4 w-4" />

@@ -91,27 +91,28 @@ const DepartmentsPage: React.FC = () => {
       
       if (response.success && response.data) {
         // Transform backend data to frontend format
-        const transformedDepartments = response.data.map((dept: any, index: number) => ({
+        const departmentArray = response.data.departments || response.data;
+        const transformedDepartments = departmentArray.map((dept: any, index: number) => ({
           ...dept,
           manager: dept.manager ? {
-            name: dept.manager.full_name,
+            full_name: dept.manager.full_name,
             email: dept.manager.email,
-            phone: '+234 80' + (1000000 + index * 111111).toString().slice(0, 8)
+            phone: dept.manager.phone || 'N/A'
           } : {
-            name: 'No Manager Assigned',
+            full_name: 'No Manager Assigned',
             email: 'no-manager@go3net.com',
-            phone: '+234 800 000 0000'
+            phone: 'N/A'
           },
-          employeeCount: Math.floor(Math.random() * 20) + 5, // Will be replaced with actual data
-          budget: Math.floor(Math.random() * 5000000) + 1000000,
-          budgetUsed: Math.floor(Math.random() * 3000000) + 500000,
-          projects: {
-            active: Math.floor(Math.random() * 10) + 2,
-            completed: Math.floor(Math.random() * 25) + 10,
-            total: Math.floor(Math.random() * 35) + 15
+          employeeCount: dept.employee_count || 0,
+          budget: dept.budget || 0,
+          budgetUsed: dept.budget_used || 0,
+          projects: dept.projects || {
+            active: 0,
+            completed: 0,
+            total: 0
           },
-          performance: Math.floor(Math.random() * 30) + 70,
-          location: index % 2 === 0 ? 'Lagos Office' : 'Abuja Office',
+          performance: dept.performance || 0,
+          location: dept.location || 'Not specified',
           established: dept.created_at,
           color: ['bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-cyan-500', 'bg-pink-500'][index % 5]
         }));

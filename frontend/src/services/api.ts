@@ -1,6 +1,18 @@
 const API_BASE_URL = 'http://localhost:5004/api'
 const WS_BASE_URL = 'ws://localhost:5004'
 
+// Import employee types for type safety
+import type {
+  Employee,
+  CreateEmployeeData,
+  UpdateEmployeeData,
+  EmployeeSearchFilters,
+  EmployeeResult,
+  EmployeeStatistics,
+  Department,
+  Position
+} from '../types/employee.types'
+
 // Enhanced API Response types
 export interface ApiResponse<T = any> {
   success: boolean
@@ -48,12 +60,34 @@ export interface LoginData {
   rememberMe?: boolean
 }
 
-// Real-time data types
 export interface RealTimeUpdate {
-  type: 'attendance' | 'task' | 'notification' | 'system'
+  type: 'attendance' | 'task' | 'notification' | 'system' | 'task_progress' | 'task_status_change'
   data: any
   timestamp: string
   userId?: string
+}
+
+export interface TaskProgressUpdate {
+  taskId: string
+  status: string
+  actualHours: number
+  progressNotes: string
+  updatedBy: {
+    id: string
+    fullName: string
+  }
+  timestamp: string
+}
+
+export interface TaskStatusChangeNotification {
+  taskId: string
+  oldStatus: string
+  newStatus: string
+  updatedBy: {
+    id: string
+    fullName: string
+  }
+  timestamp: string
 }
 
 export interface ConnectionStatus {
@@ -701,7 +735,7 @@ class ApiClient {
     return this.request('/dashboard/department-stats')
   }
 
-  async getDepartments(): Promise<ApiResponse> {
+  async getDepartments(): Promise<ApiResponse<{ departments: Department[] }>> {
     return this.request('/departments')
   }
 
@@ -717,6 +751,10 @@ class ApiClient {
     return this.request('/dashboard/super-admin')
   }
 
+  async getEmployeeDashboard(): Promise<ApiResponse> {
+    return this.request('/dashboard/employee')
+  }
+
   async getRealTimeStatus(): Promise<ApiResponse> {
     return this.request('/dashboard/real-time-status')
   }
@@ -726,37 +764,37 @@ class ApiClient {
     return this.request(`/dashboard/analytics${queryString}`)
   }
 
-  // Employee endpoints
-  async getEmployees(params?: any): Promise<ApiResponse> {
-    const queryString = params ? '?' + new URLSearchParams(params).toString() : ''
+  // Employee endpoints with proper typing
+  async getEmployees(params?: EmployeeSearchFilters): Promise<ApiResponse<{ employees: Employee[], total: number }>> {
+    const queryString = params ? '?' + new URLSearchParams(params as any).toString() : ''
     return this.request(`/employees${queryString}`)
   }
 
-  async getEmployee(id: string): Promise<ApiResponse> {
+  async getEmployee(id: string): Promise<ApiResponse<Employee>> {
     return this.request(`/employees/${id}`)
   }
 
-  async createEmployee(data: any): Promise<ApiResponse> {
+  async createEmployee(data: CreateEmployeeData): Promise<ApiResponse<{ employee: Employee, temporaryPassword?: string }>> {
     return this.request('/employees', {
       method: 'POST',
       body: JSON.stringify(data),
     })
   }
 
-  async updateEmployee(id: string, data: any): Promise<ApiResponse> {
+  async updateEmployee(id: string, data: UpdateEmployeeData): Promise<ApiResponse<Employee>> {
     return this.request(`/employees/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })
   }
 
-  async deleteEmployee(id: string): Promise<ApiResponse> {
+  async deleteEmployee(id: string): Promise<ApiResponse<{ message: string }>> {
     return this.request(`/employees/${id}`, {
       method: 'DELETE',
     })
   }
 
-  async getEmployeeStats(): Promise<ApiResponse> {
+  async getEmployeeStats(): Promise<ApiResponse<EmployeeStatistics>> {
     return this.request('/employees/statistics')
   }
 
@@ -767,17 +805,63 @@ class ApiClient {
   }
 
   async checkIn(data: any): Promise<ApiResponse> {
-    return this.request('/time-tracking/check-in', {
-      method: 'POST',
-      body: JSON.stringify(data),
+    console.log('[API] Check-in request initiated', {
+      employeeId: data.employeeId,
+      hasLocation: !!data.location,
+      hasDeviceInfo: !!data.deviceInfo,
+      timestamp: new Date().toISOString()
     })
+    
+    try {
+      const response = await this.request('/time-tracking/check-in', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+      console.log('[API] Check-in request successful', {
+        employeeId: data.employeeId,
+        success: response.success,
+        message: response.message,
+        entryId: response.data && typeof response.data === 'object' && 'id' in response.data ? response.data.id : undefined
+      })
+      return response
+    } catch (error: any) {
+      console.error('[API] Check-in request failed', {
+        employeeId: data.employeeId,
+        error: error.message,
+        statusCode: error.statusCode
+      })
+      throw error
+    }
   }
 
   async checkOut(data: any): Promise<ApiResponse> {
-    return this.request('/time-tracking/check-out', {
-      method: 'POST',
-      body: JSON.stringify(data),
+    console.log('[API] Check-out request initiated', {
+      employeeId: data.employeeId,
+      hasLocation: !!data.location,
+      hasDeviceInfo: !!data.deviceInfo,
+      timestamp: new Date().toISOString()
     })
+    
+    try {
+      const response = await this.request('/time-tracking/check-out', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+      console.log('[API] Check-out request successful', {
+        employeeId: data.employeeId,
+        success: response.success,
+        message: response.message,
+        entryId: response.data && typeof response.data === 'object' && 'id' in response.data ? response.data.id : undefined
+      })
+      return response
+    } catch (error: any) {
+      console.error('[API] Check-out request failed', {
+        employeeId: data.employeeId,
+        error: error.message,
+        statusCode: error.statusCode
+      })
+      throw error
+    }
   }
 
   async getActiveTimeEntry(): Promise<ApiResponse> {
@@ -1106,22 +1190,22 @@ class ApiClient {
     return this.request('/admin/attendance-overview')
   }
 
-  // Department Management endpoints
-  async createDepartment(data: any): Promise<ApiResponse> {
+  // Department Management endpoints with proper typing
+  async createDepartment(data: { name: string; description?: string; managerId?: string }): Promise<ApiResponse<Department>> {
     return this.request('/departments', {
       method: 'POST',
       body: JSON.stringify(data),
     })
   }
 
-  async updateDepartment(id: string, data: any): Promise<ApiResponse> {
+  async updateDepartment(id: string, data: { name?: string; description?: string; managerId?: string; isActive?: boolean }): Promise<ApiResponse<Department>> {
     return this.request(`/departments/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })
   }
 
-  async deleteDepartment(id: string): Promise<ApiResponse> {
+  async deleteDepartment(id: string): Promise<ApiResponse<{ message: string }>> {
     return this.request(`/departments/${id}`, {
       method: 'DELETE',
     })
@@ -1223,9 +1307,166 @@ class ApiClient {
   async getLeaveTypes(): Promise<ApiResponse> {
     return this.request('/leave/types')
   }
+
+  // WebSocket methods for real-time task updates
+  connectWebSocket(): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log('🔌 WebSocket already connected')
+      return
+    }
+
+    try {
+      const wsUrl = `${this.wsURL}/ws`
+      console.log('🔌 Connecting to WebSocket:', wsUrl)
+      
+      this.ws = new WebSocket(wsUrl)
+      
+      this.ws.onopen = () => {
+        console.log('✅ WebSocket connected')
+        this.connectionStatus.isOnline = true
+        this.connectionStatus.lastConnected = new Date()
+        this.connectionStatus.reconnectAttempts = 0
+        
+        // Authenticate WebSocket connection
+        if (this.token) {
+          this.ws?.send(JSON.stringify({
+            type: 'auth',
+            token: this.token
+          }))
+        }
+        
+        this.startHeartbeat()
+        this.emit('websocket:connected')
+      }
+      
+      this.ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data)
+          console.log('📨 WebSocket message received:', message)
+          
+          switch (message.type) {
+            case 'task_progress':
+              this.emit('task:progress_update', message.data)
+              break
+            case 'task_status_change':
+              this.emit('task:status_change', message.data)
+              break
+            case 'notification':
+              this.emit('notification', message.data)
+              break
+            case 'pong':
+              // Heartbeat response
+              break
+            default:
+              this.emit('websocket:message', message)
+          }
+        } catch (error) {
+          console.error('❌ Error parsing WebSocket message:', error)
+        }
+      }
+      
+      this.ws.onclose = (event) => {
+        console.log('🔌 WebSocket disconnected:', event.code, event.reason)
+        this.connectionStatus.isOnline = false
+        this.stopHeartbeat()
+        this.emit('websocket:disconnected', { code: event.code, reason: event.reason })
+        
+        // Attempt to reconnect if not a clean close
+        if (event.code !== 1000 && this.connectionStatus.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
+          this.scheduleReconnect()
+        }
+      }
+      
+      this.ws.onerror = (error) => {
+        console.error('❌ WebSocket error:', error)
+        this.connectionStatus.connectionError = 'WebSocket connection error'
+        this.emit('websocket:error', error)
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to create WebSocket connection:', error)
+      this.connectionStatus.connectionError = 'Failed to create WebSocket connection'
+    }
+  }
+
+  disconnectWebSocket(): void {
+    if (this.ws) {
+      this.ws.close(1000, 'Client disconnect')
+      this.ws = null
+    }
+    this.stopHeartbeat()
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+  }
+
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+    }
+    
+    this.connectionStatus.reconnectAttempts++
+    const delay = this.RECONNECT_INTERVAL * Math.pow(2, this.connectionStatus.reconnectAttempts - 1)
+    
+    console.log(`🔄 Scheduling WebSocket reconnect in ${delay}ms (attempt ${this.connectionStatus.reconnectAttempts})`)
+    
+    this.reconnectTimer = window.setTimeout(() => {
+      this.connectWebSocket()
+    }, delay)
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat()
+    this.heartbeatTimer = window.setInterval(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: 'ping' }))
+      }
+    }, this.HEARTBEAT_INTERVAL)
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer)
+      this.heartbeatTimer = null
+    }
+  }
+
+  on(event: string, callback: Function): void {
+    if (!this.eventListeners.has(event)) {
+      this.eventListeners.set(event, [])
+    }
+    this.eventListeners.get(event)!.push(callback)
+  }
+
+  off(event: string, callback: Function): void {
+    const listeners = this.eventListeners.get(event)
+    if (listeners) {
+      const index = listeners.indexOf(callback)
+      if (index > -1) {
+        listeners.splice(index, 1)
+      }
+    }
+  }
+
+  private emit(event: string, data?: any): void {
+    const listeners = this.eventListeners.get(event)
+    if (listeners) {
+      listeners.forEach(callback => {
+        try {
+          callback(data)
+        } catch (error) {
+          console.error(`❌ Error in event listener for ${event}:`, error)
+        }
+      })
+    }
+  }
+
+  getConnectionStatus(): ConnectionStatus {
+    return { ...this.connectionStatus }
+  }
 }
 
-// Create and export the API client instance
 const apiClient = new ApiClient(API_BASE_URL, WS_BASE_URL)
 
 export default apiClient

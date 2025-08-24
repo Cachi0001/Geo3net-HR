@@ -3,6 +3,8 @@ import { supabase } from '../config/database';
 import { ResponseHandler } from '../utils/response';
 import { AppError } from '../utils/errors';
 import { AuthenticatedRequest } from '../middleware/permission';
+import { taskNotificationService } from '../services/taskNotification.service';
+import { websocketService } from '../services/websocket.service';
 
 export interface Task {
   id: string;
@@ -257,9 +259,40 @@ export class TaskController {
   async updateTask(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
-      const updateData: Partial<CreateTaskRequest> = req.body;
+      const updateData: Partial<CreateTaskRequest & { actualHours?: number; notes?: string }> = req.body;
+      const userId = req.user?.id;
       
       console.log('✏️ Updating task:', id);
+
+      // First, get the current task data to compare changes
+      const { data: currentTask, error: fetchError } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          assigned_to_user:assigned_to (
+            id,
+            fullName,
+            email
+          ),
+          assigned_by_user:assigned_by (
+            id,
+            fullName,
+            email
+          )
+        `)
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Error fetching current task:', fetchError);
+        if (fetchError.code === 'PGRST116') {
+          return ResponseHandler.notFound(res, 'Task not found');
+        }
+        throw new AppError('Failed to fetch task', 500);
+      }
+
+      const oldStatus = currentTask.status;
+      const newStatus = updateData.status || oldStatus;
 
       // If status is being changed to completed, set completed_at
       if (updateData.status === 'completed') {
@@ -268,6 +301,18 @@ export class TaskController {
         (updateData as any).completed_at = null;
       }
 
+      // Add progress tracking fields
+      if (updateData.actualHours !== undefined) {
+        (updateData as any).actual_hours = updateData.actualHours;
+        delete updateData.actualHours;
+      }
+
+      if (updateData.notes) {
+        (updateData as any).progress_notes = updateData.notes;
+        delete updateData.notes;
+      }
+
+      // Update the task
       const { data: task, error } = await supabase
         .from('tasks')
         .update(updateData)
@@ -295,11 +340,136 @@ export class TaskController {
         throw new AppError('Failed to update task', 500);
       }
 
+      // Send notifications and real-time updates
+      if (req.user) {
+        try {
+          // Send real-time progress update via WebSocket
+          websocketService.broadcastTaskProgressUpdate({
+            taskId: task.id,
+            status: newStatus,
+            actualHours: task.actual_hours,
+            progressNotes: task.progress_notes,
+            updatedBy: {
+              id: req.user.id,
+              fullName: req.user.email
+            },
+            timestamp: new Date().toISOString()
+          });
+
+          // Send status change notification if status changed
+          if (oldStatus !== newStatus) {
+            await taskNotificationService.notifyTaskStatusChange(
+              {
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                assignedTo: task.assigned_to,
+                assignedBy: task.assigned_by,
+                priority: task.priority,
+                status: newStatus,
+                dueDate: task.due_date,
+                createdAt: task.created_at,
+                updatedAt: task.updated_at
+              },
+              oldStatus,
+              newStatus,
+              {
+                id: req.user.id,
+                fullName: req.user.email,
+                email: req.user.email
+              }
+            );
+
+            // Send real-time status change notification
+            websocketService.sendTaskStatusChangeNotification(
+              task.id,
+              oldStatus,
+              newStatus,
+              {
+                id: req.user.id,
+                fullName: req.user.email
+              }
+            );
+            console.log('📧 Task status change notification sent');
+          }
+        } catch (notificationError) {
+          console.error('❌ Failed to send notifications:', notificationError);
+          // Don't fail the request if notification fails
+        }
+      }
+
       console.log('✅ Task updated:', task.title);
       return ResponseHandler.success(res, 'Task updated successfully', task);
     } catch (error: any) {
       console.error('❌ Update task error:', error);
       return ResponseHandler.internalError(res, error.message || 'Failed to update task');
+    }
+  }
+
+  /**
+   * Assign task to user
+   */
+  async assignTask(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const { id } = req.params;
+      const { assignedTo } = req.body;
+      const assignedBy = req.user?.id;
+      
+      console.log('👤 Assigning task:', id, 'to user:', assignedTo);
+
+      if (!assignedTo) {
+        return ResponseHandler.badRequest(res, 'assignedTo is required');
+      }
+
+      // Verify the user exists
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id, full_name, email')
+        .eq('id', assignedTo)
+        .single();
+
+      if (userError || !user) {
+        console.error('❌ User not found:', assignedTo);
+        return ResponseHandler.notFound(res, 'User not found');
+      }
+
+      // Update the task
+      const { data: task, error } = await supabase
+        .from('tasks')
+        .update({ 
+          assigned_to: assignedTo,
+          assigned_by: assignedBy,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select(`
+          *,
+          assigned_to_user:assigned_to (
+            id,
+            full_name,
+            email
+          ),
+          assigned_by_user:assigned_by (
+            id,
+            full_name,
+            email
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('❌ Error assigning task:', error);
+        if (error.code === 'PGRST116') {
+          return ResponseHandler.notFound(res, 'Task not found');
+        }
+        throw new AppError('Failed to assign task', 500);
+      }
+
+      console.log('✅ Task assigned successfully to:', user.full_name);
+      return ResponseHandler.success(res, 'Task assigned successfully', task);
+    } catch (error: any) {
+      console.error('❌ Assign task error:', error);
+      return ResponseHandler.internalError(res, error.message || 'Failed to assign task');
     }
   }
 

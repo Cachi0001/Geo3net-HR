@@ -92,10 +92,19 @@ export class TimeTrackingService {
   async checkIn(data: CheckInData): Promise<TimeTrackingResult> {
     try {
       const { employeeId, location, notes, deviceInfo } = data
+      console.log(`[TimeTracking] Check-in attempt for employee: ${employeeId}`, {
+        hasLocation: !!location,
+        deviceInfo: deviceInfo || 'not provided',
+        timestamp: new Date().toISOString()
+      })
 
       // Check if employee already has an active check-in
       const activeEntry = await this.getActiveTimeEntry(employeeId)
       if (activeEntry) {
+        console.log(`[TimeTracking] Check-in failed - employee already checked in: ${employeeId}`, {
+          activeEntryId: activeEntry.id,
+          activeCheckInTime: activeEntry.checkInTime
+        })
         throw new ConflictError('Employee is already checked in')
       }
 
@@ -104,23 +113,44 @@ export class TimeTrackingService {
 
       // Handle location validation with real-world scenarios
       if (location) {
+        console.log(`[TimeTracking] Validating location for employee: ${employeeId}`, {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          accuracy: location.accuracy
+        })
+        
         const locationValidation = this.validateLocationData(location)
         locationStatus = locationValidation.status
         locationValidationMessage = locationValidation.message
+        
+        console.log(`[TimeTracking] Location validation result for employee: ${employeeId}`, {
+          status: locationStatus,
+          message: locationValidationMessage,
+          requireOfficeLocation: process.env.REQUIRE_OFFICE_LOCATION
+        })
 
         // If location is required and validation fails, reject check-in
         if (process.env.REQUIRE_OFFICE_LOCATION === 'true' && locationStatus === 'invalid') {
+          console.log(`[TimeTracking] Check-in rejected - invalid location: ${employeeId}`, {
+            validationMessage: locationValidationMessage
+          })
           throw new ValidationError(locationValidationMessage)
         }
 
         // If location is required but remote, reject check-in
         if (process.env.REQUIRE_OFFICE_LOCATION === 'true' && locationStatus === 'remote') {
+          console.log(`[TimeTracking] Check-in rejected - remote location: ${employeeId}`, {
+            validationMessage: locationValidationMessage
+          })
           throw new ValidationError(locationValidationMessage)
         }
 
         // If location is required but not accurate enough, allow with warning
         if (process.env.REQUIRE_OFFICE_LOCATION === 'true' && locationStatus === 'low_accuracy') {
           locationValidationMessage = 'Check-in allowed but location accuracy is low'
+          console.log(`[TimeTracking] Check-in allowed with warning - low accuracy: ${employeeId}`, {
+            validationMessage: locationValidationMessage
+          })
         }
       } else if (process.env.REQUIRE_OFFICE_LOCATION === 'true') {
         // Location is required but not provided
@@ -130,8 +160,16 @@ export class TimeTrackingService {
       const checkInTime = new Date().toISOString()
 
       // Create time entry with location status
+      console.log(`[TimeTracking] Creating time tracking entry for employee: ${employeeId}`, {
+        checkInTime: checkInTime,
+        hasLocation: !!location,
+        locationStatus,
+        hasNotes: !!notes,
+        hasDeviceInfo: !!deviceInfo
+      })
+      
       const { data: timeEntry, error } = await supabase
-        .from('time_entries')
+        .from('check_in_records')
         .insert({
           employee_id: employeeId,
           check_in_time: checkInTime,
@@ -144,9 +182,27 @@ export class TimeTrackingService {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error(`[TimeTracking] Failed to create time tracking entry for employee: ${employeeId}`, {
+          error: error,
+          errorMessage: error.message
+        })
+        throw error
+      }
+      
+      console.log(`[TimeTracking] Successfully created time tracking entry for employee: ${employeeId}`, {
+        entryId: timeEntry.id,
+        checkInTime: timeEntry.check_in_time
+      })
 
       const mappedEntry = this.mapDatabaseToTimeEntry(timeEntry)
+
+      console.log(`[TimeTracking] Check-in completed successfully for employee: ${employeeId}`, {
+        entryId: mappedEntry.id,
+        checkInTime: mappedEntry.checkInTime,
+        locationStatus: mappedEntry.locationStatus,
+        message: locationValidationMessage || 'Check-in successful'
+      })
 
       return {
         success: true,
@@ -154,6 +210,13 @@ export class TimeTrackingService {
         timeEntry: mappedEntry
       }
     } catch (error) {
+      console.error(`[TimeTracking] Check-in error for employee: ${data.employeeId}`, {
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        stack: error instanceof Error ? error.stack : 'No stack trace available',
+        timestamp: new Date().toISOString(),
+        hasLocation: !!data.location,
+        deviceInfo: data.deviceInfo || 'not provided'
+      })
       if (error instanceof ConflictError || error instanceof ValidationError) {
         throw error
       }
@@ -164,24 +227,68 @@ export class TimeTrackingService {
   async checkOut(employeeId: string, data: CheckOutData): Promise<TimeTrackingResult> {
     try {
       const { location, notes, deviceInfo } = data
+      console.log(`[TimeTracking] Check-out attempt for employee: ${employeeId}`, {
+        hasLocation: !!location,
+        deviceInfo: deviceInfo || 'not provided',
+        timestamp: new Date().toISOString()
+      })
 
       // Get active time entry
       const activeEntry = await this.getActiveTimeEntry(employeeId)
       if (!activeEntry) {
+        console.log(`[TimeTracking] Check-out failed - no active check-in found for employee: ${employeeId}`)
         throw new NotFoundError('No active check-in found for employee')
       }
+      
+      console.log(`[TimeTracking] Found active entry for employee: ${employeeId}`, {
+        entryId: activeEntry.id,
+        checkInTime: activeEntry.checkInTime
+      })
 
       // Validate location if provided
-      if (location && !this.isValidCoordinates(location)) {
-        throw new ValidationError('Invalid location coordinates')
+      let locationStatus = 'not_provided'
+      let locationValidationMessage = ''
+      
+      if (location) {
+        console.log(`[TimeTracking] Validating check-out location for employee: ${employeeId}`, {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          accuracy: location.accuracy
+        })
+        
+        if (!this.isValidCoordinates(location)) {
+          throw new ValidationError('Invalid location coordinates')
+        }
+        
+        const locationValidation = this.validateLocationData(location)
+        locationStatus = locationValidation.status
+        locationValidationMessage = locationValidation.message
+        
+        console.log(`[TimeTracking] Check-out location validation result for employee: ${employeeId}`, {
+          status: locationStatus,
+          message: locationValidationMessage
+        })
       }
 
       const checkOutTime = new Date().toISOString()
       const totalHours = this.calculateHours(activeEntry.checkInTime, checkOutTime)
+      
+      console.log(`[TimeTracking] Calculating work duration for employee: ${employeeId}`, {
+        checkInTime: activeEntry.checkInTime,
+        checkOutTime: checkOutTime,
+        totalHours: totalHours
+      })
 
       // Update time entry
+      console.log(`[TimeTracking] Updating time tracking entry for check-out: ${employeeId}`, {
+        entryId: activeEntry.id,
+        checkOutTime: checkOutTime,
+        hasLocation: !!location,
+        locationStatus
+      })
+      
       const { data: updatedEntry, error } = await supabase
-        .from('time_entries')
+        .from('check_in_records')
         .update({
           check_out_time: checkOutTime,
           check_out_location: location,
@@ -195,12 +302,33 @@ export class TimeTrackingService {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error(`[TimeTracking] Failed to update time tracking entry for employee: ${employeeId}`, {
+          error: error,
+          errorMessage: error.message,
+          entryId: activeEntry.id
+        })
+        throw error
+      }
+      
+      console.log(`[TimeTracking] Successfully updated time tracking entry for employee: ${employeeId}`, {
+        entryId: updatedEntry.id,
+        checkOutTime: updatedEntry.check_out_time,
+        totalHours: updatedEntry.total_hours
+      })
 
       const mappedEntry = this.mapDatabaseToTimeEntry(updatedEntry)
 
       // Create or update attendance record
       await this.updateAttendanceRecord(employeeId, mappedEntry)
+      
+      console.log(`[TimeTracking] Check-out completed successfully for employee: ${employeeId}`, {
+        entryId: mappedEntry.id,
+        checkInTime: mappedEntry.checkInTime,
+        checkOutTime: mappedEntry.checkOutTime,
+        totalHours: mappedEntry.totalHours,
+        locationStatus: mappedEntry.locationStatus
+      })
 
       return {
         success: true,
@@ -208,6 +336,11 @@ export class TimeTrackingService {
         timeEntry: mappedEntry
       }
     } catch (error) {
+      console.error(`[TimeTracking] Check-out error for employee: ${employeeId}`, {
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        stack: error instanceof Error ? error.stack : 'No stack trace available',
+        timestamp: new Date().toISOString()
+      })
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error
       }
@@ -221,7 +354,7 @@ export class TimeTrackingService {
   async getActiveTimeEntry(employeeId: string): Promise<TimeEntry | null> {
     try {
       const { data, error } = await supabase
-        .from('time_entries')
+        .from('check_in_records')
         .select('*')
         .eq('employee_id', employeeId)
         .eq('status', 'checked_in')
@@ -240,7 +373,7 @@ export class TimeTrackingService {
   async getTimeEntries(employeeId: string, startDate?: string, endDate?: string): Promise<TimeEntry[]> {
     try {
       let query = supabase
-        .from('time_entries')
+        .from('check_in_records')
         .select('*')
         .eq('employee_id', employeeId)
         .order('check_in_time', { ascending: false })
@@ -533,7 +666,7 @@ export class TimeTrackingService {
 
       // Create time entry without location
       const { data: timeEntry, error } = await supabase
-        .from('time_entries')
+        .from('check_in_records')
         .insert({
           employee_id: employeeId,
           check_in_time: checkInTime,
@@ -614,6 +747,168 @@ export class TimeTrackingService {
       message: validation.message,
       distance,
       recommendations
+    }
+  }
+
+  /**
+   * Admin method: Get all time entries with filters
+   */
+  async getAllTimeEntries(
+    startDate?: string,
+    endDate?: string,
+    employeeId?: string,
+    status?: string
+  ): Promise<TimeEntry[]> {
+    try {
+      let query = supabase
+        .from('check_in_records')
+        .select('*')
+        .order('check_in_time', { ascending: false })
+
+      if (startDate) {
+        query = query.gte('check_in_time', startDate)
+      }
+
+      if (endDate) {
+        query = query.lte('check_in_time', endDate)
+      }
+
+      if (employeeId) {
+        query = query.eq('employee_id', employeeId)
+      }
+
+      if (status) {
+        query = query.eq('status', status)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      return data?.map(entry => this.mapDatabaseToTimeEntry(entry)) || []
+    } catch (error) {
+      console.error('Error getting all time entries:', error)
+      return []
+    }
+  }
+
+  /**
+   * Admin method: Generate attendance report
+   */
+  async generateAttendanceReport(
+    startDate?: string,
+    endDate?: string,
+    departmentId?: string
+  ): Promise<any> {
+    try {
+      // Get attendance records for the period
+      let query = supabase
+        .from('attendance_records')
+        .select('*')
+        .order('date', { ascending: false })
+
+      if (startDate) {
+        query = query.gte('date', startDate)
+      }
+
+      if (endDate) {
+        query = query.lte('date', endDate)
+      }
+
+      const { data: attendanceRecords, error } = await query
+
+      if (error) throw error
+
+      // Calculate summary statistics
+      const totalEmployees = new Set(attendanceRecords?.map(r => r.employee_id) || []).size
+      const totalRecords = attendanceRecords?.length || 0
+      const present = attendanceRecords?.filter(r => r.status === 'present').length || 0
+      const late = attendanceRecords?.filter(r => r.status === 'late').length || 0
+      const absent = attendanceRecords?.filter(r => r.status === 'absent').length || 0
+      const working = attendanceRecords?.filter(r => r.status === 'checked_in').length || 0
+
+      const totalHours = attendanceRecords?.reduce((sum, r) => sum + (r.total_hours || 0), 0) || 0
+      const avgHours = totalRecords > 0 ? totalHours / totalRecords : 0
+
+      return {
+        summary: {
+          totalEmployees,
+          present,
+          late,
+          absent,
+          working,
+          avgHours: Math.round(avgHours * 100) / 100
+        },
+        records: attendanceRecords?.map(record => this.mapDatabaseToAttendanceRecord(record)) || [],
+        period: {
+          startDate: startDate || 'N/A',
+          endDate: endDate || 'N/A'
+        }
+      }
+    } catch (error) {
+      console.error('Error generating attendance report:', error)
+      return {
+        summary: {
+          totalEmployees: 0,
+          present: 0,
+          late: 0,
+          absent: 0,
+          working: 0,
+          avgHours: 0
+        },
+        records: [],
+        period: {
+          startDate: startDate || 'N/A',
+          endDate: endDate || 'N/A'
+        }
+      }
+    }
+  }
+
+  /**
+   * Manager method: Get team statistics
+   */
+  async getTeamStatistics(
+    managerId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<any[]> {
+    try {
+      // For now, return mock data since we don't have employee-manager relationships set up
+      // In a real implementation, you would:
+      // 1. Get team members under this manager
+      // 2. Get their attendance records for the period
+      // 3. Calculate statistics for each team member
+      
+      const mockStats = [
+        {
+          employeeId: 'emp001',
+          employeeName: 'John Doe',
+          department: 'Engineering',
+          totalHours: 40,
+          expectedHours: 40,
+          daysPresent: 5,
+          daysLate: 1,
+          daysAbsent: 0,
+          productivity: 95
+        },
+        {
+          employeeId: 'emp002',
+          employeeName: 'Jane Smith',
+          department: 'Engineering',
+          totalHours: 38,
+          expectedHours: 40,
+          daysPresent: 5,
+          daysLate: 0,
+          daysAbsent: 0,
+          productivity: 98
+        }
+      ]
+
+      return mockStats
+    } catch (error) {
+      console.error('Error getting team statistics:', error)
+      return []
     }
   }
 

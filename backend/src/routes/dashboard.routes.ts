@@ -44,6 +44,11 @@ router.get('/super-admin',
   dashboardController.getSuperAdminDashboard.bind(dashboardController)
 );
 
+// Get employee specific dashboard data
+router.get('/employee',
+  dashboardController.getEmployeeDashboard.bind(dashboardController)
+);
+
 /**
  * Real-time Dashboard Routes
  */

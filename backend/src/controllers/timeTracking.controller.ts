@@ -351,12 +351,16 @@ export class TimeTrackingController {
             const managerId = req.user?.id!
             const { startDate, endDate } = req.query
 
-            // This would require integration with employee service to get team members
-            // For now, return a placeholder response
-            return ResponseHandler.success(res, 'Team statistics feature coming soon', {
-                message: 'This endpoint will show attendance statistics for team members under this manager'
-            })
+            // Get team statistics
+            const statistics = await this.timeTrackingService.getTeamStatistics(
+                managerId,
+                startDate as string,
+                endDate as string
+            )
+
+            return ResponseHandler.success(res, 'Team statistics retrieved successfully', statistics)
         } catch (error) {
+            console.error('Error getting team statistics:', error)
             return ResponseHandler.internalError(res, 'Failed to get team statistics')
         }
     }
@@ -369,12 +373,27 @@ export class TimeTrackingController {
         try {
             const { employeeId, startDate, endDate, status, limit = '100', offset = '0' } = req.query
 
-            // This would require admin permissions and integration with employee service
-            // For now, return a placeholder response
-            return ResponseHandler.success(res, 'Admin time entries feature coming soon', {
-                message: 'This endpoint will show all time entries with admin filters'
+            // Get all time entries with filters
+            const allEntries = await this.timeTrackingService.getAllTimeEntries(
+                startDate as string,
+                endDate as string,
+                employeeId as string,
+                status as string
+            )
+
+            // Apply pagination
+            const limitNum = parseInt(limit as string)
+            const offsetNum = parseInt(offset as string)
+            const paginatedEntries = allEntries.slice(offsetNum, offsetNum + limitNum)
+
+            return ResponseHandler.success(res, 'Time entries retrieved successfully', {
+                entries: paginatedEntries,
+                total: allEntries.length,
+                limit: limitNum,
+                offset: offsetNum
             })
         } catch (error) {
+            console.error('Error getting all time entries:', error)
             return ResponseHandler.internalError(res, 'Failed to get all time entries')
         }
     }
@@ -387,12 +406,16 @@ export class TimeTrackingController {
         try {
             const { startDate, endDate, departmentId, format = 'json' } = req.query
 
-            // This would require admin permissions and integration with employee service
-            // For now, return a placeholder response
-            return ResponseHandler.success(res, 'Attendance report feature coming soon', {
-                message: 'This endpoint will generate comprehensive attendance reports'
-            })
+            // Generate attendance report
+            const report = await this.timeTrackingService.generateAttendanceReport(
+                startDate as string,
+                endDate as string,
+                departmentId as string
+            )
+
+            return ResponseHandler.success(res, 'Attendance report generated successfully', report)
         } catch (error) {
+            console.error('Error generating attendance report:', error)
             return ResponseHandler.internalError(res, 'Failed to generate attendance report')
         }
     }

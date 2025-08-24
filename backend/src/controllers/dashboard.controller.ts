@@ -32,18 +32,13 @@ export interface RecentActivity {
 }
 
 export class DashboardController {
-  /**
-   * Get comprehensive dashboard metrics
-   */
   async getDashboardMetrics(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      // Get total employees count - try users table first
       let totalEmployees = 0;
       let employeeError = null;
       
-      // Try users table first
       const { count: usersCount, error: usersError } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true })
@@ -51,7 +46,6 @@ export class DashboardController {
       
       if (usersError) {
         console.error('Users table error:', usersError);
-        // Try employees table as fallback
         const { count: employeesCount, error: employeesError } = await supabase
           .from('employees')
           .select('*', { count: 'exact', head: true })
@@ -71,7 +65,6 @@ export class DashboardController {
         throw new AppError('Failed to fetch employee count', 500);
       }
 
-      // Get today's attendance
       const { data: attendanceData, error: attendanceError } = await supabase
         .from('time_entries')
         .select('id, employee_id, check_in_time, check_out_time, status')
@@ -85,7 +78,6 @@ export class DashboardController {
       const presentToday = attendanceData.length;
       const lateArrivals = attendanceData.filter(entry => entry.status === 'late').length;
 
-      // Get employees on leave today
       const { count: onLeave, error: leaveError } = await supabase
         .from('leave_requests')
         .select('*', { count: 'exact', head: true })
@@ -97,7 +89,6 @@ export class DashboardController {
         throw new AppError('Failed to fetch leave data', 500);
       }
 
-      // Get departments count (fallback to 0 if table doesn't exist)
       let departments = 0;
       try {
         const { count, error: deptError } = await supabase
@@ -112,7 +103,6 @@ export class DashboardController {
         departments = 0;
       }
 
-      // Get active recruitment count (fallback to 0 if table doesn't exist)
       let activeRecruitment = 0;
       try {
         const { count, error: recruitmentError } = await supabase
@@ -149,9 +139,7 @@ export class DashboardController {
     }
   }
 
-  /**
-   * Get department statistics
-   */
+ 
   async getDepartmentStats(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -333,6 +321,129 @@ export class DashboardController {
   }
 
   /**
+   * Get employee specific dashboard data
+   */
+  async getEmployeeDashboard(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id!;
+      const today = new Date().toISOString().split('T')[0];
+      const startOfWeek = new Date();
+      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+      const weekStart = startOfWeek.toISOString().split('T')[0];
+      
+      console.log('🔍 Getting employee dashboard data for user:', userId);
+      
+      // Get employee record
+      const { data: employee, error: employeeError } = await supabase
+        .from('employees')
+        .select('id, full_name, employee_id')
+        .eq('user_id', userId)
+        .single();
+      
+      if (employeeError || !employee) {
+        console.log('❌ Employee not found for user:', userId);
+        return ResponseHandler.notFound(res, 'Employee record not found');
+      }
+      
+      const employeeId = employee.id;
+      
+      // Get time tracking data for this week
+      const { data: timeEntries, error: timeError } = await supabase
+        .from('time_entries')
+        .select('total_hours, check_in_time')
+        .eq('employee_id', employeeId)
+        .gte('check_in_time', `${weekStart}T00:00:00`)
+        .order('check_in_time', { ascending: false });
+      
+      // Calculate hours this week
+      const hoursThisWeek = timeEntries?.reduce((total, entry) => {
+        return total + (parseFloat(entry.total_hours) || 0);
+      }, 0) || 0;
+      
+      // Get today's hours
+      const todayEntries = timeEntries?.filter(entry => 
+        entry.check_in_time?.startsWith(today)
+      ) || [];
+      const hoursToday = todayEntries.reduce((total, entry) => {
+        return total + (parseFloat(entry.total_hours) || 0);
+      }, 0);
+      
+      // Get leave balance
+      const { data: leaveBalance, error: leaveError } = await supabase
+        .from('leave_requests')
+        .select('days_requested, status')
+        .eq('employee_id', employeeId)
+        .eq('status', 'approved');
+      
+      const usedLeaveDays = leaveBalance?.reduce((total, leave) => {
+        return total + (parseFloat(leave.days_requested) || 0);
+      }, 0) || 0;
+      
+      const totalLeaveAllowance = 23; // Default annual leave
+      const remainingLeave = totalLeaveAllowance - usedLeaveDays;
+      
+      // Get tasks
+      const { data: tasks, error: tasksError } = await supabase
+        .from('tasks')
+        .select('id, title, description, status, priority, due_date, created_at')
+        .eq('assigned_to', employeeId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      const completedTasks = tasks?.filter(task => task.status === 'completed') || [];
+      const pendingTasks = tasks?.filter(task => task.status !== 'completed') || [];
+      const completedThisWeek = completedTasks.filter(task => {
+        const taskDate = new Date(task.created_at);
+        return taskDate >= startOfWeek;
+      }).length;
+      
+      // Get recent tasks (last 4)
+      const recentTasks = tasks?.slice(0, 4).map(task => ({
+        id: task.id,
+        title: task.title,
+        dueDate: task.due_date,
+        priority: task.priority,
+        status: task.status
+      })) || [];
+      
+      // Get today's schedule (mock data for now)
+      const todaySchedule = [
+        { id: '1', title: 'Team Standup', time: '9:00 AM', type: 'meeting' },
+        { id: '2', title: 'Project Review', time: '2:00 PM', type: 'review' },
+        { id: '3', title: 'Training Session', time: '4:00 PM', type: 'training' }
+      ];
+      
+      const dashboardData = {
+        stats: {
+          hoursThisWeek: Math.round(hoursThisWeek * 10) / 10,
+          hoursToday: Math.round(hoursToday * 10) / 10,
+          leaveBalance: remainingLeave,
+          usedLeaveDays: Math.round(usedLeaveDays),
+          tasksCompleted: completedTasks.length,
+          completedThisWeek,
+          pendingTasks: pendingTasks.length,
+          dueTodayTasks: pendingTasks.filter(task => {
+            return task.due_date === today;
+          }).length
+        },
+        recentTasks,
+        todaySchedule,
+        employee: {
+          id: employee.id,
+          fullName: employee.full_name,
+          employeeId: employee.employee_id
+        }
+      };
+      
+      console.log('✅ Employee dashboard data prepared:', dashboardData);
+      return ResponseHandler.success(res, 'Employee dashboard data retrieved successfully', dashboardData);
+    } catch (error: any) {
+      console.error('Employee dashboard error:', error);
+      return ResponseHandler.internalError(res, 'Failed to retrieve employee dashboard data');
+    }
+  }
+
+  /**
    * Helper methods
    */
   private async getDashboardMetricsData(): Promise<DashboardMetrics> {
@@ -355,17 +466,17 @@ export class DashboardController {
           .eq('employment_status', 'active');
         
         if (employeesError) {
-          console.log('👥 Employees table error, using fallback:', employeesError.message);
-          totalEmployees = 156; // Fallback
+          console.log('👥 Employees table error:', employeesError.message);
+          totalEmployees = 0;
         } else {
-          totalEmployees = employeesCount || 156;
+          totalEmployees = employeesCount || 0;
         }
       } else {
-        totalEmployees = usersCount || 156;
+        totalEmployees = usersCount || 0;
       }
     } catch (error) {
-      console.log('👥 Employee count error, using fallback:', error);
-      totalEmployees = 156;
+      console.log('👥 Employee count error:', error);
+      totalEmployees = 0;
     }
     
     // Get attendance data
@@ -379,17 +490,17 @@ export class DashboardController {
         .lt('check_in_time', `${today}T23:59:59`);
       
       if (attendanceError) {
-        console.log('⏰ Attendance data error, using estimates:', attendanceError.message);
-        presentToday = Math.floor(totalEmployees * 0.85); // 85% attendance rate
-        lateArrivals = Math.floor(presentToday * 0.1); // 10% late
+        console.log('⏰ Attendance data error:', attendanceError.message);
+        presentToday = 0;
+        lateArrivals = 0;
       } else {
-        presentToday = attendanceData?.length || Math.floor(totalEmployees * 0.85);
-        lateArrivals = attendanceData?.filter(entry => entry.status === 'late').length || Math.floor(presentToday * 0.1);
+        presentToday = attendanceData?.length || 0;
+        lateArrivals = attendanceData?.filter(entry => entry.status === 'late').length || 0;
       }
     } catch (error) {
-      console.log('⏰ Attendance error, using estimates:', error);
-      presentToday = Math.floor(totalEmployees * 0.85);
-      lateArrivals = Math.floor(presentToday * 0.1);
+      console.log('⏰ Attendance error:', error);
+      presentToday = 0;
+      lateArrivals = 0;
     }
     
     // Get leave count
@@ -403,14 +514,14 @@ export class DashboardController {
         .gte('end_date', today);
       
       if (leaveError) {
-        console.log('🏖️ Leave data error, using estimate:', leaveError.message);
-        onLeave = Math.floor(totalEmployees * 0.05); // 5% on leave
+        console.log('🏖️ Leave data error:', leaveError.message);
+        onLeave = 0;
       } else {
-        onLeave = leaveCount || Math.floor(totalEmployees * 0.05);
+        onLeave = leaveCount || 0;
       }
     } catch (error) {
-      console.log('🏖️ Leave error, using estimate:', error);
-      onLeave = Math.floor(totalEmployees * 0.05);
+      console.log('🏖️ Leave error:', error);
+      onLeave = 0;
     }
     
     // Get department count
@@ -421,14 +532,14 @@ export class DashboardController {
         .select('*', { count: 'exact', head: true });
       
       if (departmentError) {
-        console.log('🏢 Department data error, using fallback:', departmentError.message);
-        departments = 8; // Fallback
+        console.log('🏢 Department data error:', departmentError.message);
+        departments = 0;
       } else {
-        departments = departmentCount || 8;
+        departments = departmentCount || 0;
       }
     } catch (error) {
-      console.log('🏢 Department error, using fallback:', error);
-      departments = 8;
+      console.log('🏢 Department error:', error);
+      departments = 0;
     }
     
     // Get recruitment count
@@ -440,14 +551,14 @@ export class DashboardController {
         .eq('status', 'active');
       
       if (recruitmentError) {
-        console.log('💼 Recruitment data error, using fallback:', recruitmentError.message);
-        activeRecruitment = 12; // Fallback
+        console.log('💼 Recruitment data error:', recruitmentError.message);
+        activeRecruitment = 0;
       } else {
-        activeRecruitment = recruitmentCount || 12;
+        activeRecruitment = recruitmentCount || 0;
       }
     } catch (error) {
-      console.log('💼 Recruitment error, using fallback:', error);
-      activeRecruitment = 12;
+      console.log('💼 Recruitment error:', error);
+      activeRecruitment = 0;
     }
 
     const metrics = {
@@ -458,7 +569,7 @@ export class DashboardController {
       absentToday: totalEmployees - presentToday - onLeave,
       departments,
       activeRecruitment,
-      monthlyPayroll: totalEmployees * 150000
+      monthlyPayroll: 0
     };
     
     console.log('📊 Final metrics:', metrics);

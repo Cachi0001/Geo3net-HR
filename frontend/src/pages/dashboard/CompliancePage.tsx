@@ -17,42 +17,12 @@ interface ComplianceItem {
 }
 
 const CompliancePage: React.FC = () => {
-  // Mock compliance data
+  // Compliance data will be loaded from API
   const complianceItems: ComplianceItem[] = [
     {
-      id: '1',
-      title: 'GDPR Data Protection',
-      description: 'General Data Protection Regulation compliance for employee data',
-      status: 'compliant',
-      lastReview: '2024-01-15',
-      nextReview: '2024-07-15',
-      owner: 'HR Department',
-      category: 'Data Protection'
-    },
-    {
-      id: '2',
-      title: 'Labour Law Compliance',
-      description: 'Adherence to local employment and labour regulations',
-      status: 'warning',
-      lastReview: '2023-12-01',
-      nextReview: '2024-03-01',
-      owner: 'Legal Team',
-      category: 'Employment Law'
-    },
-    {
-      id: '3',
-      title: 'Health & Safety Standards',
-      description: 'Workplace health and safety compliance monitoring',
-      status: 'compliant',
-      lastReview: '2024-02-10',
-      nextReview: '2024-05-10',
-      owner: 'Safety Officer',
-      category: 'Health & Safety'
-    },
-    {
       id: '4',
-      title: 'Financial Auditing',
-      description: 'Annual financial audit and compliance checks',
+      title: 'Financial Audit',
+      description: 'Annual financial compliance review',
       status: 'pending',
       lastReview: '2023-12-31',
       nextReview: '2024-03-31',
@@ -68,7 +38,7 @@ const CompliancePage: React.FC = () => {
       nextReview: '2024-02-15',
       owner: 'IT Department',
       category: 'Security'
-    },
+    }
   ];
 
   const complianceMetrics = {
@@ -199,59 +169,69 @@ const CompliancePage: React.FC = () => {
       </div>
 
       {/* Compliance Items by Category */}
-      <div className="space-y-6">
-        {categories.map((category) => {
-          const categoryItems = complianceItems.filter(item => item.category === category);
-          return (
-            <Card key={category}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  {category}
-                </CardTitle>
-                <CardDescription>
-                  {categoryItems.length} compliance requirements in this category
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {categoryItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        {getStatusIcon(item.status)}
-                        <div>
-                          <p className="font-medium">{item.title}</p>
-                          <p className="text-sm text-muted-foreground">{item.description}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Owner: {item.owner} • Last Review: {new Date(item.lastReview).toLocaleDateString()}
-                          </p>
+      {complianceItems.length > 0 ? (
+        <div className="space-y-6">
+          {categories.map((category) => {
+            const categoryItems = complianceItems.filter(item => item.category === category);
+            return (
+              <Card key={category}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    {category}
+                  </CardTitle>
+                  <CardDescription>
+                    {categoryItems.length} compliance requirements in this category
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {categoryItems.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-4">
+                          {getStatusIcon(item.status)}
+                          <div>
+                            <p className="font-medium">{item.title}</p>
+                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Owner: {item.owner} • Last Review: {new Date(item.lastReview).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-sm font-medium">Next Review</p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(item.nextReview).toLocaleDateString()}
+                            </p>
+                          </div>
+                          
+                          <Badge className={getStatusColor(item.status)}>
+                            {item.status.replace('-', ' ')}
+                          </Badge>
+
+                          <Button variant="outline" size="sm">
+                            Review
+                          </Button>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="text-sm font-medium">Next Review</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(item.nextReview).toLocaleDateString()}
-                          </p>
-                        </div>
-                        
-                        <Badge className={getStatusColor(item.status)}>
-                          {item.status.replace('-', ' ')}
-                        </Badge>
-
-                        <Button variant="outline" size="sm">
-                          Review
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No Compliance Data</h3>
+            <p className="text-muted-foreground">No compliance requirements found.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Action Items */}
       <Card>

@@ -11,6 +11,7 @@ import { ArrowLeft, Save, Loader2, User, Mail, Phone, Calendar, Building, Dollar
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/services/api'
 import { toast } from 'sonner'
+import type { CreateEmployeeData, Department, Position } from '@/types/employee.types'
 
 interface EmployeeFormData {
   fullName: string
@@ -33,20 +34,74 @@ interface EmployeeFormData {
   generatePassword: boolean
 }
 
-interface Department {
-  id: string
-  name: string
-}
-
-interface Position {
-  id: string
-  title: string
-}
-
 interface Manager {
   id: string
   fullName: string
   employeeId: string
+}
+
+// Enhanced validation function that matches backend requirements
+const validateEmployeeForm = (data: EmployeeFormData): string[] => {
+  const errors: string[] = []
+
+  // Required fields as per project requirements
+  if (!data.fullName?.trim()) {
+    errors.push('Full name is required')
+  }
+
+  if (!data.email?.trim()) {
+    errors.push('Email is required')
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    errors.push('Invalid email format')
+  }
+
+  if (!data.hireDate) {
+    errors.push('Hire date is required')
+  } else {
+    const hireDate = new Date(data.hireDate)
+    if (isNaN(hireDate.getTime())) {
+      errors.push('Invalid hire date format')
+    }
+  }
+
+  // Enhanced validation for mandatory profile completion
+  if (!data.departmentId) {
+    errors.push('Department is required - please complete mandatory profile information')
+  }
+
+  if (!data.positionId) {
+    errors.push('Position is required - please complete mandatory profile information')
+  }
+
+  // Optional field validations
+  if (data.salary && parseFloat(data.salary) < 0) {
+    errors.push('Salary must be a positive number')
+  }
+
+  if (data.dateOfBirth) {
+    const birthDate = new Date(data.dateOfBirth)
+    if (isNaN(birthDate.getTime())) {
+      errors.push('Invalid date of birth format')
+    } else {
+      const age = new Date().getFullYear() - birthDate.getFullYear()
+      if (age < 16 || age > 80) {
+        errors.push('Employee age must be between 16 and 80 years')
+      }
+    }
+  }
+
+  if (data.phoneNumber && !/^[\+]?[1-9][\d]{0,15}$/.test(data.phoneNumber.replace(/[\s\-\(\)]/g, ''))) {
+    errors.push('Invalid phone number format')
+  }
+
+  // Account setup validation
+  if (data.accountSetupMethod === 'manual_setup') {
+    if (!data.password || data.password.length < 8) {
+      errors.push('Password must be at least 8 characters long for manual setup')
+    }
+  }
+
+  return errors
 }
 
 // Utility function to generate a secure password
@@ -108,21 +163,28 @@ const AddEmployeeForm: React.FC = () => {
         setLoadingData(true)
         
         // Load departments
+        console.log('🏢 Loading departments...')
         const deptResponse = await apiClient.getDepartments()
+        console.log('🏢 Department response:', deptResponse)
         if (deptResponse.success && deptResponse.data) {
-          setDepartments(deptResponse.data.departments || [])
+          const departmentList = deptResponse.data.departments || []
+          console.log('🏢 Departments loaded:', departmentList.length, 'departments')
+          setDepartments(departmentList)
+        } else {
+          console.error('🏢 Failed to load departments:', deptResponse.message)
+          toast.error('Failed to load departments: ' + (deptResponse.message || 'Unknown error'))
         }
         
-        // Load positions - using departments API as positions might be part of it
-        // For now, we'll use mock data or you can implement getPositions API
-        setPositions([
-          { id: '1', title: 'Software Engineer' },
-          { id: '2', title: 'Senior Software Engineer' },
-          { id: '3', title: 'Project Manager' },
-          { id: '4', title: 'Team Lead' },
-          { id: '5', title: 'HR Manager' },
-          { id: '6', title: 'Finance Manager' }
-        ])
+        // Load positions - using mock data until positions API is implemented
+        const mockPositions: Position[] = [
+          { id: '1', title: 'Software Engineer', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: '2', title: 'Senior Software Engineer', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: '3', title: 'Project Manager', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: '4', title: 'Team Lead', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: '5', title: 'HR Manager', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: '6', title: 'Finance Manager', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ]
+        setPositions(mockPositions)
         
         // Load managers (employees with manager role)
         const empResponse = await apiClient.getEmployees()
@@ -188,23 +250,20 @@ const AddEmployeeForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.fullName || !formData.email || !formData.hireDate || !formData.departmentId || !formData.positionId) {
-      toast.error('Please fill in all required fields (Name, Email, Hire Date, Department, Position)')
+    // Enhanced validation that matches backend requirements
+    const validationErrors = validateEmployeeForm(formData)
+    if (validationErrors.length > 0) {
+      toast.error('Validation Failed', {
+        description: validationErrors.join(', ')
+      })
       return
-    }
-
-    // Validate password if manual setup is selected
-    if (formData.accountSetupMethod === 'manual_setup') {
-      if (!formData.password || formData.password.length < 8) {
-        toast.error('Password must be at least 8 characters long for manual setup')
-        return
-      }
     }
 
     try {
       setLoading(true)
       
-      const employeeData = {
+      // Map form data to CreateEmployeeData type for backend consistency
+      const employeeData: CreateEmployeeData = {
         fullName: formData.fullName,
         email: formData.email,
         phoneNumber: formData.phoneNumber || undefined,

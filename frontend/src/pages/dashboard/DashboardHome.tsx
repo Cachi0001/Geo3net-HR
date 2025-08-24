@@ -14,54 +14,17 @@ import {
 import { Link } from 'react-router-dom'
 
 const DashboardHome = () => {
-  // TODO: Replace with actual data from API
+  // Data will be loaded from API
   const stats = {
-    totalEmployees: 156,
-    presentToday: 142,
-    onLeave: 8,
-    pendingTasks: 23,
-    completedTasks: 87,
-    pendingLeaveRequests: 5
+    totalEmployees: 0,
+    presentToday: 0,
+    onLeave: 0,
+    pendingTasks: 0,
+    completedTasks: 0,
+    pendingLeaveRequests: 0
   }
 
-  const recentActivities = [
-    {
-      id: 1,
-      type: 'check-in',
-      user: 'Sarah Johnson',
-      action: 'checked in',
-      time: '9:15 AM',
-      icon: CheckCircle,
-      color: 'text-green-600'
-    },
-    {
-      id: 2,
-      type: 'leave-request',
-      user: 'Mike Chen',
-      action: 'requested leave',
-      time: '8:45 AM',
-      icon: Calendar,
-      color: 'text-blue-600'
-    },
-    {
-      id: 3,
-      type: 'task-completed',
-      user: 'Emily Davis',
-      action: 'completed task',
-      time: '8:30 AM',
-      icon: CheckCircle,
-      color: 'text-green-600'
-    },
-    {
-      id: 4,
-      type: 'late-arrival',
-      user: 'John Smith',
-      action: 'arrived late',
-      time: '8:20 AM',
-      icon: AlertCircle,
-      color: 'text-orange-600'
-    }
-  ]
+  const recentActivities: any[] = []
 
   const quickActions = [
     {
@@ -177,25 +140,32 @@ const DashboardHome = () => {
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-2 sm:pt-6">
             <div className="space-y-4 sm:space-y-6">
-              {recentActivities.map((activity) => {
-                const Icon = activity.icon
-                return (
-                  <div key={activity.id} className="flex items-center space-x-3">
-                    <Icon className={`mobile-icon ${activity.color}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="mobile-text-sm font-medium text-gray-900">
-                        {activity.user}
-                      </p>
-                      <p className="text-xs sm:text-sm text-gray-500">
-                        {activity.action}
-                      </p>
+              {recentActivities.length > 0 ? (
+                recentActivities.map((activity) => {
+                  const Icon = activity.icon
+                  return (
+                    <div key={activity.id} className="flex items-center space-x-3">
+                      <Icon className={`mobile-icon ${activity.color}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="mobile-text-sm font-medium text-gray-900">
+                          {activity.user}
+                        </p>
+                        <p className="text-xs sm:text-sm text-gray-500">
+                          {activity.action}
+                        </p>
+                      </div>
+                      <div className="text-xs sm:text-sm text-gray-500">
+                        {activity.time}
+                      </div>
                     </div>
-                    <div className="text-xs sm:text-sm text-gray-500">
-                      {activity.time}
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })
+              ) : (
+                <div className="text-center py-8">
+                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No recent activities</p>
+                </div>
+              )}
             </div>
             <div className="mt-4">
               <Link 
@@ -251,39 +221,9 @@ const DashboardHome = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100">
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <div>
-                  <p className="font-medium text-gray-900">Team Standup</p>
-                  <p className="text-sm text-gray-500">Daily sync with development team</p>
-                </div>
-              </div>
-              <span className="text-sm font-medium text-blue-600">10:00 AM</span>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-100">
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <div>
-                  <p className="font-medium text-gray-900">HR Review Meeting</p>
-                  <p className="text-sm text-gray-500">Monthly performance reviews</p>
-                </div>
-              </div>
-              <span className="text-sm font-medium text-green-600">2:00 PM</span>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-100">
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                <div>
-                  <p className="font-medium text-gray-900">Client Presentation</p>
-                  <p className="text-sm text-gray-500">Q4 project deliverables</p>
-                </div>
-              </div>
-              <span className="text-sm font-medium text-orange-600">4:30 PM</span>
-            </div>
+          <div className="text-center py-8">
+            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No scheduled events for today</p>
           </div>
         </CardContent>
       </Card>

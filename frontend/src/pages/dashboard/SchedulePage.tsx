@@ -21,21 +21,15 @@ const SchedulePage: React.FC = () => {
   const isManager = user?.role === 'manager' || user?.role === 'hr-admin' || user?.role === 'super-admin';
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Mock schedule data
-  const scheduleData: ScheduleItem[] = [
-    { id: '1', employeeName: 'John Doe', employeeId: 'EMP001', date: '2024-03-22', shift: '09:00 - 17:00', status: 'confirmed', hours: 8, department: 'Engineering' },
-    { id: '2', employeeName: 'Jane Smith', employeeId: 'EMP002', date: '2024-03-22', shift: '10:00 - 18:00', status: 'confirmed', hours: 8, department: 'Design' },
-    { id: '3', employeeName: 'Mike Johnson', employeeId: 'EMP003', date: '2024-03-22', shift: '09:00 - 17:00', status: 'late', hours: 7.5, department: 'Engineering' },
-    { id: '4', employeeName: 'Sarah Wilson', employeeId: 'EMP004', date: '2024-03-22', shift: '08:00 - 16:00', status: 'confirmed', hours: 8, department: 'QA' },
-    { id: '5', employeeName: 'Alex Chen', employeeId: 'EMP005', date: '2024-03-22', shift: '11:00 - 19:00', status: 'absent', hours: 0, department: 'DevOps' },
-  ];
+  // Schedule data will be loaded from API
+  const scheduleData: ScheduleItem[] = [];
 
   const scheduleSummary = {
-    totalScheduled: scheduleData.length,
-    confirmed: scheduleData.filter(item => item.status === 'confirmed').length,
-    late: scheduleData.filter(item => item.status === 'late').length,
-    absent: scheduleData.filter(item => item.status === 'absent').length,
-    totalHours: scheduleData.reduce((sum, item) => sum + item.hours, 0),
+    totalScheduled: 0,
+    confirmed: 0,
+    late: 0,
+    absent: 0,
+    totalHours: 0,
   };
 
   const getStatusColor = (status: string) => {
@@ -183,38 +177,46 @@ const SchedulePage: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {scheduleData.map((item) => (
-              <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(item.status)}
-                    <div>
-                      <p className="font-medium">{item.employeeName}</p>
-                      <p className="text-sm text-muted-foreground">{item.employeeId} • {item.department}</p>
+          {scheduleData.length > 0 ? (
+            <div className="space-y-4">
+              {scheduleData.map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(item.status)}
+                      <div>
+                        <p className="font-medium">{item.employeeName}</p>
+                        <p className="text-sm text-muted-foreground">{item.employeeId} • {item.department}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="font-medium">{item.shift}</p>
-                    <p className="text-sm text-muted-foreground">{item.hours}h scheduled</p>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-medium">{item.shift}</p>
+                      <p className="text-sm text-muted-foreground">{item.hours}h scheduled</p>
+                    </div>
+                    
+                    <Badge className={getStatusColor(item.status)}>
+                      {item.status.replace('-', ' ')}
+                    </Badge>
+
+                    {isManager && (
+                      <Button variant="outline" size="sm">
+                        Edit
+                      </Button>
+                    )}
                   </div>
-                  
-                  <Badge className={getStatusColor(item.status)}>
-                    {item.status.replace('-', ' ')}
-                  </Badge>
-
-                  {isManager && (
-                    <Button variant="outline" size="sm">
-                      Edit
-                    </Button>
-                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">No Schedule Data</h3>
+              <p className="text-muted-foreground">No schedules found for the selected date.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -240,11 +242,8 @@ const SchedulePage: React.FC = () => {
               <div key={i} className="border rounded-lg p-3 min-h-[120px] hover:bg-muted/50 transition-colors">
                 <div className="text-sm font-medium mb-2">{18 + i}</div>
                 <div className="space-y-1">
-                  <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                    {Math.floor(Math.random() * 8) + 5} staff
-                  </div>
                   <div className="text-xs text-muted-foreground">
-                    {Math.floor(Math.random() * 60) + 40}h total
+                    No data
                   </div>
                 </div>
               </div>

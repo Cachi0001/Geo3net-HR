@@ -69,157 +69,10 @@ interface WeeklyStats {
   productivity: number;
 }
 
-// Fallback data for when API is unavailable
-const fallbackTimeEntries: TimeEntry[] = [
-  {
-    id: '1',
-    employee: {
-      name: 'John Doe',
-      avatar: 'JD',
-      department: 'Engineering',
-      employeeId: 'EMP001'
-    },
-    date: '2024-02-01',
-    clockIn: '09:00',
-    clockOut: '17:30',
-    breakTime: 60,
-    totalHours: 7.5,
-    status: 'present',
-    project: 'Authentication System',
-    task: 'JWT Implementation',
-    notes: 'Completed user login functionality',
-    location: 'office'
-  },
-  {
-    id: '2',
-    employee: {
-      name: 'Jane Smith',
-      avatar: 'JS',
-      department: 'Design',
-      employeeId: 'EMP002'
-    },
-    date: '2024-02-01',
-    clockIn: '09:15',
-    clockOut: '17:45',
-    breakTime: 45,
-    totalHours: 7.75,
-    status: 'late',
-    project: 'Landing Page Redesign',
-    task: 'UI Mockups',
-    notes: 'Created high-fidelity mockups',
-    location: 'remote'
-  },
-  {
-    id: '3',
-    employee: {
-      name: 'Mike Johnson',
-      avatar: 'MJ',
-      department: 'Marketing',
-      employeeId: 'EMP003'
-    },
-    date: '2024-02-01',
-    clockIn: '08:45',
-    clockOut: '16:45',
-    breakTime: 60,
-    totalHours: 7,
-    status: 'present',
-    project: 'Q1 Campaign',
-    task: 'Content Strategy',
-    location: 'office'
-  },
-  {
-    id: '4',
-    employee: {
-      name: 'Sarah Wilson',
-      avatar: 'SW',
-      department: 'Human Resources',
-      employeeId: 'EMP004'
-    },
-    date: '2024-02-01',
-    clockIn: '09:00',
-    clockOut: '13:00',
-    breakTime: 30,
-    totalHours: 3.5,
-    status: 'half_day',
-    project: 'Employee Onboarding',
-    task: 'Process Review',
-    notes: 'Medical appointment in afternoon',
-    location: 'office'
-  },
-  {
-    id: '5',
-    employee: {
-      name: 'David Brown',
-      avatar: 'DB',
-      department: 'Sales',
-      employeeId: 'EMP005'
-    },
-    date: '2024-02-01',
-    clockIn: '10:30',
-    status: 'working',
-    breakTime: 0,
-    totalHours: 0,
-    project: 'Client Meetings',
-    task: 'Prospect Calls',
-    location: 'field'
-  },
-  {
-    id: '6',
-    employee: {
-      name: 'Alex Chen',
-      avatar: 'AC',
-      department: 'Engineering',
-      employeeId: 'EMP006'
-    },
-    date: '2024-02-01',
-    clockIn: '',
-    clockOut: '',
-    breakTime: 0,
-    totalHours: 0,
-    status: 'absent',
-    notes: 'Sick leave',
-    location: 'office'
-  }
-];
-
-const fallbackWeeklyStats: WeeklyStats[] = [
-  {
-    employeeId: 'EMP001',
-    employeeName: 'John Doe',
-    department: 'Engineering',
-    totalHours: 37.5,
-    expectedHours: 40,
-    daysPresent: 5,
-    daysLate: 0,
-    daysAbsent: 0,
-    productivity: 94
-  },
-  {
-    employeeId: 'EMP002',
-    employeeName: 'Jane Smith',
-    department: 'Design',
-    totalHours: 38.75,
-    expectedHours: 40,
-    daysPresent: 4,
-    daysLate: 1,
-    daysAbsent: 0,
-    productivity: 97
-  },
-  {
-    employeeId: 'EMP003',
-    employeeName: 'Mike Johnson',
-    department: 'Marketing',
-    totalHours: 35,
-    expectedHours: 40,
-    daysPresent: 5,
-    daysLate: 0,
-    daysAbsent: 0,
-    productivity: 88
-  }
-];
+// No fallback data - all data should come from the API
 
 const TimeTrackingPage: React.FC = () => {
-  const { user, isLoadingUser } = useAuth();
+  const { user } = useAuth();
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -231,7 +84,7 @@ const TimeTrackingPage: React.FC = () => {
   const { toast } = useToast();
 
   // Show loading state while checking authentication
-  if (isLoadingUser) {
+  if (loading && !timeEntries.length) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -285,13 +138,13 @@ const TimeTrackingPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to load time entries:', error);
       toast({
-        title: 'Warning',
-        description: 'Failed to load time entries. Using fallback data.',
+        title: 'Error',
+        description: 'Failed to load time entries from server. Please try again later.',
         variant: 'destructive'
       });
-      setTimeEntries(fallbackTimeEntries);
+      setTimeEntries([]);
     }
-  }, [selectedDate, toast]);
+  }, [selectedDate]);
 
   const loadAttendanceReport = useCallback(async () => {
     try {
@@ -326,7 +179,7 @@ const TimeTrackingPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to load weekly stats:', error);
-      setWeeklyStats(fallbackWeeklyStats);
+      setWeeklyStats([]);
     }
   }, [selectedDate]);
 
@@ -343,11 +196,11 @@ const TimeTrackingPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, loadTimeEntries, loadAttendanceReport, loadWeeklyStats]);
+  }, [loadTimeEntries, loadAttendanceReport, loadWeeklyStats]);
 
   useEffect(() => {
     loadTimeTrackingData();
-  }, [selectedDate, loadTimeTrackingData]);
+  }, [loadTimeTrackingData]);
 
   const filteredEntries = timeEntries.filter(entry => {
     const matchesSearch = entry.employee?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -363,6 +216,17 @@ const TimeTrackingPage: React.FC = () => {
   });
 
   const getAttendanceStatusColor = (status: string) => {
+    switch (status) {
+      case 'present': return 'bg-green-500 text-white';
+      case 'late': return 'bg-orange-500 text-white';
+      case 'absent': return 'bg-red-500 text-white';
+      case 'half_day': return 'bg-cyan-500 text-white';
+      case 'working': return 'bg-blue-500 text-white';
+      default: return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'present': return 'bg-green-500 text-white';
       case 'late': return 'bg-orange-500 text-white';
@@ -415,12 +279,13 @@ const TimeTrackingPage: React.FC = () => {
 
   const departments = [...new Set(timeEntries.map(entry => entry.employee?.department).filter(Boolean))];
 
-  const formatTime = (timeString: string) => {
+  const formatTime = (timeString?: string) => {
     if (!timeString) return '--:--';
     return timeString;
   };
 
-  const formatHours = (hours: number) => {
+  const formatHours = (hours?: number) => {
+    if (!hours) return '0h 0m';
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
     return `${h}h ${m}m`;
@@ -576,12 +441,12 @@ const TimeTrackingPage: React.FC = () => {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-semibold">
-                    {entry.employee.avatar}
+                    {entry.employee?.avatar || 'UN'}
                   </div>
                   <div>
-                    <CardTitle className="text-lg">{entry.employee.name}</CardTitle>
+                    <CardTitle className="text-lg">{entry.employee?.name || 'Unknown Employee'}</CardTitle>
                     <CardDescription className="text-sm">
-                      {entry.employee.employeeId} • {entry.employee.department}
+                      {entry.employee?.employeeId || 'Unknown'} • {entry.employee?.department || 'Unknown Department'}
                     </CardDescription>
                   </div>
                 </div>
@@ -650,7 +515,7 @@ const TimeTrackingPage: React.FC = () => {
 
               {/* Location */}
               <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                <Badge className={`${getLocationBadge(entry.location)} text-xs px-2 py-1`}>
+                <Badge className={`${getLocationBadge(entry.location || 'remote')} text-xs px-2 py-1`}>
                   <Building2 className="h-3 w-3 mr-1" />
                   {entry.location}
                 </Badge>

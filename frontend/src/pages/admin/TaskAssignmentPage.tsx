@@ -70,6 +70,7 @@ const TaskAssignmentPage: React.FC = () => {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newAssignee, setNewAssignee] = useState('');
   const { toast } = useToast();
 
   // Show loading state while checking authentication
@@ -203,7 +204,49 @@ const TaskAssignmentPage: React.FC = () => {
 
   function handleReassignTask(task: Task) {
     setSelectedTask(task);
+    setNewAssignee(task.assignedTo || '');
     setIsAssignModalOpen(true);
+  }
+
+  async function handleAssignTask() {
+    if (!selectedTask || !newAssignee) {
+      toast({
+        title: 'Error',
+        description: 'Please select an employee to assign the task to.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await apiClient.assignTask(selectedTask.id, newAssignee);
+      if (response.success) {
+        toast({ 
+          title: 'Success', 
+          description: 'Task assigned successfully!' 
+        });
+        setIsAssignModalOpen(false);
+        setSelectedTask(null);
+        setNewAssignee('');
+        loadTasks();
+      } else {
+        toast({ 
+          title: 'Error', 
+          description: response.message || 'Failed to assign task.', 
+          variant: 'destructive' 
+        });
+      }
+    } catch (error) {
+      console.error('Failed to assign task:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to assign task. Please try again.', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   if (loading) {
@@ -300,6 +343,50 @@ const TaskAssignmentPage: React.FC = () => {
               <Button onClick={handleCreateTask} disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                 Create Task
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Task Assignment Modal */}
+        <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Reassign Task</DialogTitle>
+              <DialogDescription>
+                Assign "{selectedTask?.title}" to a different team member.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label>Current Assignee</Label>
+                <div className="p-2 bg-muted rounded-md text-sm">
+                  {selectedTask?.assignee?.name || 'Unassigned'}
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>New Assignee</Label>
+                <Select value={newAssignee} onValueChange={setNewAssignee}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAssignModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAssignTask} disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Assign Task
               </Button>
             </DialogFooter>
           </DialogContent>

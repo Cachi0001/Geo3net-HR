@@ -62,28 +62,28 @@ const ProfilePage: React.FC = () => {
 
   // Fallback profile data
   const fallbackProfile: UserProfile = useMemo(() => {
-    const fullName = user?.fullName || 'John Doe';
+    const fullName = user?.fullName || 'User';
     const nameParts = fullName.split(' ');
-    const firstName = nameParts[0] || 'John';
-    const lastName = nameParts.slice(1).join(' ') || 'Doe';
+    const firstName = nameParts[0] || 'User';
+    const lastName = nameParts.slice(1).join(' ') || '';
     
     return {
-      id: user?.id || '1',
+      id: user?.id || '',
       firstName,
       lastName,
-      email: user?.email || 'john.doe@company.com',
-      phone: '+234 801 234 5678',
-      address: '123 Victoria Island, Lagos, Nigeria',
-      dateOfBirth: '1990-05-15',
-      department: 'Engineering',
-      position: 'Senior Software Engineer',
+      email: user?.email || '',
+      phone: '',
+      address: '',
+      dateOfBirth: '',
+      department: '',
+      position: '',
       role: user?.role || 'employee',
-      bio: 'Passionate software engineer with 5+ years of experience in full-stack development.',
-      joinDate: '2022-01-15',
+      bio: '',
+      joinDate: '',
       emergencyContact: {
-        name: 'Jane Doe',
-        phone: '+234 802 345 6789',
-        relationship: 'Spouse'
+        name: '',
+        phone: '',
+        relationship: ''
       }
     };
   }, [user?.id, user?.fullName, user?.email, user?.role]);
@@ -110,22 +110,19 @@ const ProfilePage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading profile:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load profile data',
-        variant: 'destructive'
-      });
       // Use fallback data on error
       setProfile(fallbackProfile);
       setFormData(fallbackProfile);
     } finally {
       setLoading(false);
     }
-  }, [toast, fallbackProfile]);
+  }, []);
 
   useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+    if (user) {
+      loadProfile();
+    }
+  }, [user?.id]);
 
   const handleSave = async () => {
     setSaving(true);

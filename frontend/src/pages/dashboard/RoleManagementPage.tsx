@@ -42,37 +42,6 @@ const RoleManagementPage = () => {
   // Check if user can manage roles
   const canManageRoles = hasAnyRole(['super-admin', 'hr-admin'])
 
-  // Fallback data
-  const fallbackHierarchy: RoleHierarchy = {
-    'super-admin': {
-      level: 5,
-      permissions: ['all_permissions', 'system_admin', 'user_management', 'role_management', 'security_management'],
-      description: 'Full system access with all administrative privileges'
-    },
-    'hr-admin': {
-      level: 4,
-      permissions: ['employee_management', 'recruitment', 'payroll', 'performance_management', 'role_assignment'],
-      description: 'HR administrative access with employee and recruitment management'
-    },
-    'manager': {
-      level: 3,
-      permissions: ['team_management', 'task_assignment', 'performance_review', 'leave_approval'],
-      description: 'Team management and oversight responsibilities'
-    },
-    'hr-staff': {
-      level: 2,
-      permissions: ['employee_view', 'recruitment_support', 'document_management'],
-      description: 'HR support staff with limited administrative access'
-    },
-    'employee': {
-      level: 1,
-      permissions: ['profile_view', 'leave_request', 'timesheet_entry'],
-      description: 'Basic employee access for personal information and requests'
-    }
-  }
-
-  const fallbackRoles = ['super-admin', 'hr-admin', 'manager', 'hr-staff', 'employee']
-
   // Load data on component mount
   useEffect(() => {
     loadRoleData()
@@ -81,41 +50,33 @@ const RoleManagementPage = () => {
   const loadRoleData = async () => {
     setIsLoading(true)
     try {
-      // Try to fetch from API, fallback to mock data
-      try {
-        const [hierarchyResponse, rolesResponse, myRolesResponse] = await Promise.all([
-          apiClient.getRoleHierarchy(),
-          apiClient.getAvailableRoles(),
-          apiClient.getMyRoles()
-        ])
+      const [hierarchyResponse, rolesResponse, myRolesResponse] = await Promise.all([
+        apiClient.getRoleHierarchy(),
+        apiClient.getAvailableRoles(),
+        apiClient.getMyRoles()
+      ])
 
-        if (hierarchyResponse.success && hierarchyResponse.data) {
-          setRoleHierarchy(hierarchyResponse.data.hierarchy || fallbackHierarchy)
-        } else {
-          setRoleHierarchy(fallbackHierarchy)
-        }
+      if (hierarchyResponse.success && hierarchyResponse.data) {
+        setRoleHierarchy(hierarchyResponse.data.hierarchy)
+      } else {
+        setRoleHierarchy({})
+      }
 
-        if (rolesResponse.success && rolesResponse.data) {
-          setAvailableRoles(rolesResponse.data.roles || fallbackRoles)
-        } else {
-          setAvailableRoles(fallbackRoles)
-        }
+      if (rolesResponse.success && rolesResponse.data) {
+        setAvailableRoles(rolesResponse.data.roles)
+      } else {
+        setAvailableRoles([])
+      }
 
-        if (myRolesResponse.success && myRolesResponse.data) {
-          setMyRoles(myRolesResponse.data.roles || [])
-        } else {
-          setMyRoles([])
-        }
-      } catch (error) {
-        console.warn('API not available, using fallback data:', error)
-        setRoleHierarchy(fallbackHierarchy)
-        setAvailableRoles(fallbackRoles)
+      if (myRolesResponse.success && myRolesResponse.data) {
+        setMyRoles(myRolesResponse.data.roles)
+      } else {
         setMyRoles([])
       }
     } catch (error) {
       console.error('Error loading role data:', error)
-      setRoleHierarchy(fallbackHierarchy)
-      setAvailableRoles(fallbackRoles)
+      setRoleHierarchy({})
+      setAvailableRoles([])
       setMyRoles([])
     } finally {
       setIsLoading(false)

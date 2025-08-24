@@ -209,7 +209,7 @@ export class SettingsService {
   async deleteLocation(id: string): Promise<boolean> {
     // Check if location is being used in time entries
     const { data: timeEntries, error: checkError } = await supabase
-      .from('time_entries')
+      .from('check_in_records')
       .select('id')
       .eq('location_id', id)
       .limit(1);
@@ -642,7 +642,7 @@ export class SettingsService {
     
     // Get today's attendance summary
     const { data: attendanceData, error } = await supabase
-      .from('time_entries')
+      .from('check_in_records')
       .select(`
         id, employee_id, check_in_time, check_out_time, status,
         employees!inner(full_name, employee_id, department)
@@ -704,7 +704,7 @@ export class SettingsService {
     
     // Get current check-in status
     const { data: statusData, error } = await supabase
-      .from('time_entries')
+      .from('check_in_records')
       .select(`
         id, employee_id, check_in_time, check_out_time, status,
         employees!inner(full_name, employee_id, department)

@@ -59,7 +59,7 @@ interface WorkLocation {
 }
 
 const TimeTrackingPage: React.FC = () => {
-  const { user, isLoadingUser } = useAuth();
+  const { user, isLoading: isLoadingUser } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeEntry, setActiveEntry] = useState<TimeEntry | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
@@ -107,6 +107,8 @@ const TimeTrackingPage: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+
+
   // Calculate working time if checked in
   useEffect(() => {
     if (activeEntry && activeEntry.status === 'checked_in' && activeEntry.checkInTime) {
@@ -127,6 +129,35 @@ const TimeTrackingPage: React.FC = () => {
       setWorkingTime('00:00:00');
     }
   }, [activeEntry]);
+
+  // Load time tracking data
+  const loadTimeTrackingData = useCallback(async () => {
+    try {
+      // Load active entry
+      const activeResponse = await apiClient.getActiveTimeEntry();
+      if (activeResponse.success && activeResponse.data?.timeEntry) {
+        setActiveEntry(activeResponse.data.timeEntry);
+      }
+
+      // Load recent time entries (last 30 days)
+      const endDate = new Date().toISOString().split('T')[0];
+      const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
+      const entriesResponse = await apiClient.getTimeEntries({ startDate, endDate });
+      if (entriesResponse.success && entriesResponse.data?.entries) {
+        setTimeEntries(entriesResponse.data.entries);
+      }
+
+      // Load work locations
+      const locationsResponse = await apiClient.getLocations();
+      if (locationsResponse.success && locationsResponse.data) {
+        setWorkLocations(locationsResponse.data);
+      }
+    } catch (error) {
+      console.error('Failed to load time tracking data:', error);
+      // Remove toast dependency to prevent infinite loop
+    }
+  }, []);
 
   // Load data on component mount
   useEffect(() => {
@@ -201,68 +232,7 @@ const TimeTrackingPage: React.FC = () => {
     return null;
   };
 
-  // Load time tracking data
-  const loadTimeTrackingData = useCallback(async () => {
-    try {
-      // TODO: Replace with actual API calls
-      const mockTimeEntries: TimeEntry[] = [
-        {
-          id: '1',
-          date: new Date().toISOString().split('T')[0],
-          checkInTime: '2024-02-22T09:00:00Z',
-          checkOutTime: '2024-02-22T17:30:00Z',
-          totalHours: 8.5,
-          status: 'checked_out',
-          location: {
-            latitude: 6.5244, 
-            longitude: 3.3792,
-            address: 'Lagos Office, Nigeria',
-            accuracy: 10
-          },
-          notes: 'Regular work day'
-        }
-      ];
 
-      const mockWorkLocations: WorkLocation[] = [
-        {
-          id: '1',
-          name: 'Main Office',
-          address: 'Victoria Island, Lagos, Nigeria',
-          latitude: 6.4281,
-          longitude: 3.4219,
-          radius: 100,
-          isActive: true
-        },
-        {
-          id: '2',
-          name: 'Branch Office',
-          address: 'Ikeja, Lagos, Nigeria', 
-          latitude: 6.6018,
-          longitude: 3.3515,
-          radius: 50,
-          isActive: true
-        }
-      ];
-
-      setTimeEntries(mockTimeEntries);
-      setWorkLocations(mockWorkLocations);
-
-      // Check if there's an active entry
-      const today = new Date().toISOString().split('T')[0];
-      const todayEntry = mockTimeEntries.find(entry => 
-        entry.date === today && entry.status === 'checked_in'
-      );
-      setActiveEntry(todayEntry || null);
-
-    } catch (error) {
-      console.error('Failed to load time tracking data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load time tracking data',
-        variant: 'destructive'
-      });
-    }
-  }, [toast]);
 
   // Handle check-in
   const handleCheckIn = async () => {
@@ -361,12 +331,13 @@ const TimeTrackingPage: React.FC = () => {
       console.log('🔄 Calling check-out API...');
       const response = await apiClient.checkOut({ latitude, longitude });
       
+      // Calculate total hours
+      const checkOutTime = new Date();
+      const checkInTime = new Date(activeEntry.checkInTime!);
+      const totalHours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
+      
       if (response.success && response.data) {
         console.log('✅ Check-out successful:', response.data);
-        
-        const checkOutTime = new Date();
-        const checkInTime = new Date(activeEntry.checkInTime!);
-        const totalHours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
 
         const updatedEntry: TimeEntry = {
           ...activeEntry,
@@ -402,10 +373,7 @@ const TimeTrackingPage: React.FC = () => {
     }
   };
 
-  // Load data on mount
-  useEffect(() => {
-    loadTimeTrackingData();
-  }, [loadTimeTrackingData]);
+
 
   // Get weekly summary
   const getWeeklySummary = () => {

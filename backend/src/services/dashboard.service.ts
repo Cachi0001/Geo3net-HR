@@ -41,9 +41,6 @@ export interface SuperAdminDashboardData {
 }
 
 export class DashboardService {
-  /**
-   * Get comprehensive dashboard statistics
-   */
   async getDashboardStats(): Promise<DashboardStats> {
     try {
       const today = new Date().toISOString().split('T')[0]
@@ -135,15 +132,11 @@ export class DashboardService {
     }
   }
 
-  /**
-   * Get super admin specific dashboard data
-   */
+  
   async getSuperAdminDashboard(): Promise<SuperAdminDashboardData> {
     try {
-      // Get basic stats
       const stats = await this.getDashboardStats()
 
-      // Get department statistics
       const { data: departments } = await supabase
         .from('departments')
         .select(`
@@ -161,7 +154,6 @@ export class DashboardService {
         performance: 85 // Placeholder calculation
       }))
 
-      // Get recent employees (last 30 days)
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
@@ -183,7 +175,7 @@ export class DashboardService {
         fullName: emp.full_name,
         email: emp.email,
         hireDate: emp.hire_date,
-        department: emp.departments?.name
+        department: emp.departments?.map(dept => dept.name)
       }))
 
       // System health check
@@ -196,7 +188,13 @@ export class DashboardService {
       return {
         stats,
         departmentStats,
-        recentEmployees: employees,
+        recentEmployees: employees.map(emp => ({
+          id: emp.id,
+          fullName: emp.fullName,
+          email: emp.email,
+          hireDate: emp.hireDate,
+          department: emp.department?.[0] || undefined
+        })),
         systemHealth
       }
     } catch (error) {
@@ -264,13 +262,13 @@ export class DashboardService {
       }
 
       return (employees || []).map(emp => ({
-        id: emp.id,
-        fullName: emp.full_name,
-        email: emp.email,
-        employeeId: emp.employee_id,
-        department: emp.departments?.name,
-        position: emp.positions?.title,
-        status: emp.status
+        id: emp.id as string,
+        fullName: emp.full_name as string,
+        email: emp.email as string,
+        employeeId: emp.employee_id as string,
+        department: emp.departments?.[0]?.name,
+        position: emp.positions?.[0]?.title,
+        status: emp.status as string
       }))
     } catch (error) {
       console.error('❌ Error in getEmployeeList:', error)
@@ -324,7 +322,7 @@ export class DashboardService {
       return (timeEntries || []).map(entry => ({
         id: entry.id,
         employeeId: entry.employee_id,
-        employeeName: entry.users?.full_name || 'Unknown',
+        employeeName: entry.users[0]?.full_name || 'Unknown',
         date: entry.check_in_time?.split('T')[0] || '',
         checkIn: entry.check_in_time,
         checkOut: entry.check_out_time,
