@@ -57,26 +57,26 @@ const EmployeeCard: React.FC<{ employee: Employee; level?: number; isManager?: b
             <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                     <div className="h-10 w-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                        {employee.fullName.split(' ').map(n => n[0]).join('')}
+                        {employee.fullName ? employee.fullName.split(' ').map(n => n[0]).join('') : '??'}
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium text-sm truncate">{employee.fullName}</h4>
-                            <Badge className={`${getStatusColor(employee.employmentStatus)} text-xs`}>
-                                {employee.employmentStatus.replace('-', ' ')}
+                            <h4 className="font-medium text-sm truncate">{employee.fullName || 'Unknown Employee'}</h4>
+                            <Badge className={`${getStatusColor(employee.employmentStatus || 'active')} text-xs`}>
+                                {(employee.employmentStatus || 'active').replace('-', ' ')}
                             </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground truncate">
                             {employee.position?.title || 'No Position'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                            ID: {employee.employeeId}
+                            ID: {employee.employeeId || 'N/A'}
                         </p>
                     </div>
                     <div className="flex flex-col gap-1 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                             <Mail className="h-3 w-3" />
-                            <span className="truncate max-w-[120px]">{employee.email}</span>
+                            <span className="truncate max-w-[120px]">{employee.email || 'No email'}</span>
                         </div>
                         {employee.phoneNumber && (
                             <div className="flex items-center gap-1">
@@ -92,6 +92,17 @@ const EmployeeCard: React.FC<{ employee: Employee; level?: number; isManager?: b
 };
 
 const EmployeeHierarchyView: React.FC<EmployeeHierarchyViewProps> = ({ employee }) => {
+    // Safety check to prevent crashes from undefined employee data
+    if (!employee) {
+        return (
+            <Card className="border-red-200 bg-red-50">
+                <CardContent className="p-4">
+                    <div className="text-red-600">Error: Employee data not available</div>
+                </CardContent>
+            </Card>
+        );
+    }
+
     const { toast } = useToast();
     const [hierarchyData, setHierarchyData] = useState<HierarchyData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -257,7 +268,7 @@ const EmployeeHierarchyView: React.FC<EmployeeHierarchyViewProps> = ({ employee 
                                 Direct Reports
                             </CardTitle>
                             <CardDescription>
-                                Employees who report directly to {employee.fullName}
+                                Employees who report directly to {employee.fullName || 'this employee'}
                             </CardDescription>
                         </div>
                         <Button

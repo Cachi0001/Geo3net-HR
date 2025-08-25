@@ -347,3 +347,5 @@ export class EmailService {
     return this.sendEmail(emailData)
   }
 }
+
+export const emailService = new EmailService()

@@ -39,7 +39,7 @@ self.addEventListener('push', (event) => {
   let notificationData = {
     title: 'Go3net HR',
     body: 'You have a new notification',
-    icon: '/icons/notification-icon.png',
+    icon: '/image.png',
     badge: '/icons/badge-icon.png',
     data: {},
     actions: [],
@@ -204,13 +204,13 @@ async function syncData() {
     // Get any pending data from IndexedDB or localStorage
     // Send to server when connection is restored
     console.log('Syncing data in background...')
-    
+
     // This would typically involve:
     // 1. Getting offline data from storage
     // 2. Sending to server
     // 3. Updating local storage with server response
     // 4. Showing success notification if needed
-    
+
   } catch (error) {
     console.error('Background sync failed:', error)
   }

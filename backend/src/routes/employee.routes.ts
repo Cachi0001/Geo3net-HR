@@ -50,6 +50,11 @@ router.post('/:id/restore',
   employeeController.restoreEmployee.bind(employeeController)
 )
 
+router.post('/:id/send-invitation', 
+  canUpdateEmployees,
+  employeeController.sendInvitation.bind(employeeController)
+)
+
 // Employee hierarchy management
 router.get('/:id/hierarchy', 
   canReadEmployees,

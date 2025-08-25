@@ -905,13 +905,21 @@ export class TimeTrackingService {
       console.log(`[TimeTracking] Generating attendance report for period: ${startDate} to ${endDate}`)
       
       // Get enriched attendance records with employee details and location data
+      // Note: attendance_records.employee_id -> users.id -> employees.user_id
       let query = supabase
         .from('attendance_records')
         .select(`
           *,
-          users!inner(id, full_name, email),
-          employees!inner(employee_number, user_id, department_id),
-          departments(name)
+          users!attendance_records_employee_id_fkey(
+            id, 
+            full_name, 
+            email,
+            employees!employees_user_id_fkey(
+              employee_id,
+              department_id,
+              departments(name)
+            )
+          )
         `)
         .order('date', { ascending: false })
 
@@ -1009,9 +1017,16 @@ export class TimeTrackingService {
         .from('attendance_records')
         .select(`
           *,
-          users!inner(id, full_name, email),
-          employees!inner(employee_number, user_id, department_id),
-          departments(name)
+          users!attendance_records_employee_id_fkey(
+            id, 
+            full_name, 
+            email,
+            employees!employees_user_id_fkey(
+              employee_id,
+              department_id,
+              departments(name)
+            )
+          )
         `)
         .order('date', { ascending: false })
 
