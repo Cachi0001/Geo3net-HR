@@ -24,7 +24,7 @@ interface Employee {
     id: string;
     title: string;
   };
-  employmentStatus: 'active' | 'inactive' | 'terminated' | 'on-leave';
+  employmentStatus: 'active' | 'inactive' | 'terminated' | 'on_leave';
   hireDate: string;
   avatar?: string;
   skills?: string[];
@@ -104,7 +104,7 @@ const EmployeesPage: React.FC = () => {
       case 'inactive':
       case 'terminated':
         return 'bg-gradient-to-r from-red-400 to-red-600 text-white';
-      case 'on-leave':
+      case 'on_leave':
         return 'bg-gradient-to-r from-orange-400 to-orange-600 text-white';
       default:
         return 'bg-gradient-to-r from-gray-400 to-gray-600 text-white';
@@ -287,7 +287,7 @@ const EmployeesPage: React.FC = () => {
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
                 <option value="terminated">Terminated</option>
-                <option value="on-leave">On Leave</option>
+                <option value="on_leave">On Leave</option>
               </select>
               <Button 
                 onClick={handleSearch}
@@ -338,7 +338,7 @@ const EmployeesPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="mobile-text-xs font-medium text-muted-foreground">On Leave</p>
-                <p className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">{employees.filter(e => e.employmentStatus === 'on-leave').length}</p>
+                <p className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">{employees.filter(e => e.employmentStatus === 'on_leave').length}</p>
               </div>
               <div className="h-8 w-8 sm:h-10 sm:w-10 bg-gradient-to-r from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
                 <Users className="h-4 w-4 sm:h-5 sm:w-5 text-white" />

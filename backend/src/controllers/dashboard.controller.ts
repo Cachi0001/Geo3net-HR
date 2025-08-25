@@ -382,8 +382,8 @@ export class DashboardController {
         .eq('policy_year', currentYear);
       
       // Calculate total leave balance (focusing on annual leave)
-      const annualLeaveBalance = leaveBalances?.find(balance => 
-        (balance.leave_type as any)?.name?.toLowerCase().includes('annual')
+      const annualLeaveBalance = leaveBalances?.find((balance: any) => 
+        balance.leave_type?.name?.toLowerCase().includes('annual')
       );
       
       const totalLeaveAllowance = annualLeaveBalance?.allocated_days || 21; // Default to 21 if no data
@@ -546,7 +546,7 @@ export class DashboardController {
     let lateArrivals = 0;
     try {
       const { data: attendanceData, error: attendanceError } = await supabase
-        .from('check_in_records')
+        .from('time_entries')
         .select('id, status')
         .gte('check_in_time', `${today}T00:00:00`)
         .lt('check_in_time', `${today}T23:59:59`);

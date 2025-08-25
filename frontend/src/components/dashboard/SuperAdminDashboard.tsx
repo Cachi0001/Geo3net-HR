@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/services/api';
 import TaskProgressMonitor from '@/components/admin/TaskProgressMonitor';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 // import styles from './SuperAdminDashboard.module.css';
 
 interface DashboardData {
@@ -317,7 +318,26 @@ export const SuperAdminDashboard: React.FC = () => {
       </Card>
 
       {/* Task Progress Monitor */}
-      <TaskProgressMonitor />
+      <ErrorBoundary
+        onError={(error, errorInfo) => {
+          console.error('TaskProgressMonitor error:', error, errorInfo);
+        }}
+        fallback={
+          <Card className="border-yellow-200 bg-yellow-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 text-yellow-800">
+                <AlertTriangle className="h-5 w-5" />
+                <span className="font-medium">Task Progress Monitor Unavailable</span>
+              </div>
+              <p className="text-sm text-yellow-700 mt-2">
+                The task progress monitor is temporarily unavailable. Other dashboard features remain functional.
+              </p>
+            </CardContent>
+          </Card>
+        }
+      >
+        <TaskProgressMonitor />
+      </ErrorBoundary>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

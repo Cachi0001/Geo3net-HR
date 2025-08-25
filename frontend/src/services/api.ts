@@ -812,6 +812,18 @@ class ApiClient {
     return this.request('/employees/statistics')
   }
 
+  async activateEmployeeAccount(employeeId: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request(`/employees/${employeeId}/activate`, {
+      method: 'POST',
+    })
+  }
+
+  async sendEmployeeInvitation(employeeId: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request(`/employees/${employeeId}/send-invitation`, {
+      method: 'POST',
+    })
+  }
+
   // Time tracking endpoints
   async getTimeTrackingHistory(params?: any): Promise<ApiResponse> {
     const queryString = params ? '?' + new URLSearchParams(params).toString() : ''

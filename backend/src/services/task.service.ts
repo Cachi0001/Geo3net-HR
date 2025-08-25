@@ -1,5 +1,6 @@
 import { supabase } from '../config/database'
 import { NotFoundError, ConflictError, ValidationError, AuthorizationError } from '../utils/errors'
+import { RoleService } from './role.service'
 
 export interface Task {
   id: string
@@ -24,6 +25,12 @@ export interface Task {
   updatedAt: string
   createdBy: string
   updatedBy?: string
+  // Additional fields for frontend display
+  assigneeName?: string
+  assigneeEmail?: string
+  assigneeDepartment?: string
+  assignerName?: string
+  creatorName?: string
 }
 
 export interface TaskComment {
@@ -113,38 +120,69 @@ export interface TaskStatistics {
 }
 
 export class TaskService {
+  private roleService: RoleService
+
+  constructor() {
+    this.roleService = new RoleService()
+  }
+
   async createTask(data: CreateTaskData, createdBy: string): Promise<TaskResult> {
     try {
+      console.log('🔄 [TaskService] Creating task with data:', JSON.stringify(data, null, 2));
+      console.log('🔄 [TaskService] Created by user:', createdBy);
+
       // Validate required fields
       this.validateTaskData(data)
+      console.log('✅ [TaskService] Task data validation passed');
 
       // Validate dependencies if provided
       if (data.dependencies && data.dependencies.length > 0) {
         await this.validateTaskDependencies(data.dependencies)
+        console.log('✅ [TaskService] Dependencies validation passed');
       }
 
-      // Validate assignee if provided
+      // Validate assignee if provided and get the actual user ID
+      let actualUserId: string | undefined;
       if (data.assignedTo) {
+        console.log('🔍 [TaskService] Validating assignee:', data.assignedTo);
         await this.validateAssignee(data.assignedTo)
+        console.log('✅ [TaskService] Assignee validation passed');
+        
+        // Get the actual user ID (in case assignedTo is an employee ID)
+        actualUserId = await this.getUserIdFromAssigneeId(data.assignedTo);
+        console.log('🔍 [TaskService] Actual user ID for assignment:', actualUserId);
+        
+        // Validate role-based assignment authorization using the actual user ID
+        console.log('🔍 [TaskService] Validating role-based assignment authorization');
+        await this.validateTaskAssignment(createdBy, actualUserId)
+        console.log('✅ [TaskService] Role-based assignment validation passed');
       }
 
-      // Set default values
+      // Set default values with proper null handling
       const taskData = {
         title: data.title,
         description: data.description,
-        assigned_to: data.assignedTo,
+        assigned_to: actualUserId || null, // Use resolved user ID or null if no assignment
         assigned_by: createdBy,
         status: 'pending' as const,
         priority: data.priority || 'medium' as const,
         due_date: data.dueDate,
         start_date: data.startDate,
-        estimated_hours: data.estimatedHours,
-        tags: data.tags || [],
+        estimated_hours: (data.estimatedHours && data.estimatedHours > 0) ? data.estimatedHours : null,
+        tags: (data.tags && data.tags.length > 0) ? data.tags : [],
         dependencies: data.dependencies || [],
-        project_id: data.projectId,
-        department_id: data.departmentId,
+        project_id: data.projectId || null,
+        department_id: data.departmentId || null,
         created_by: createdBy
       }
+
+      console.log('🔍 [TaskService] Assignment details:', {
+        originalAssignedTo: data.assignedTo,
+        resolvedUserId: actualUserId,
+        finalAssignedTo: taskData.assigned_to
+      });
+
+      console.log('🔄 [TaskService] Final task data for database:', JSON.stringify(taskData, null, 2));
 
       const { data: newTask, error } = await supabase
         .from('tasks')
@@ -152,8 +190,18 @@ export class TaskService {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ [TaskService] Database insert error:', error);
+        console.error('❌ [TaskService] Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
 
+      console.log('✅ [TaskService] Task created successfully in database:', newTask.id);
       const task = this.mapDatabaseToTask(newTask)
 
       return {
@@ -162,31 +210,103 @@ export class TaskService {
         task
       }
     } catch (error) {
-      if (error instanceof ValidationError || error instanceof ConflictError) {
+      console.error('❌ [TaskService] Task creation failed:', error);
+      if (error instanceof ValidationError || error instanceof ConflictError || error instanceof AuthorizationError) {
         throw error
       }
-      throw new Error('Failed to create task')
+      throw new Error(`Failed to create task: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
   async getTaskById(id: string): Promise<Task | null> {
     try {
-      const { data, error } = await supabase
+      // First get the basic task data
+      const { data: taskData, error: taskError } = await supabase
         .from('tasks')
-        .select(`
-          *,
-          assignee:users!assigned_to(id, full_name, email),
-          assigner:users!assigned_by(id, full_name, email),
-          creator:users!created_by(id, full_name, email),
-          comments:task_comments(*)
-        `)
+        .select('*')
         .eq('id', id)
         .single()
 
-      if (error || !data) return null
+      if (taskError || !taskData) return null
 
-      return this.mapDatabaseToTask(data)
+      // Then get assignee information (try both users and employees tables)
+      let assigneeInfo = null;
+      if (taskData.assigned_to) {
+        // Try to get user info first
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id, full_name, email')
+          .eq('id', taskData.assigned_to)
+          .single()
+
+        if (userData) {
+          assigneeInfo = userData;
+        } else {
+          // If no user found, try to find employee with this user_id
+          const { data: employeeData } = await supabase
+            .from('employees')
+            .select('id, full_name, email, user_id')
+            .eq('user_id', taskData.assigned_to)
+            .single()
+
+          if (employeeData) {
+            assigneeInfo = {
+              id: employeeData.user_id,
+              full_name: employeeData.full_name,
+              email: employeeData.email
+            };
+          } else {
+            // Last resort: try to find employee by ID (in case assigned_to is employee ID)
+            const { data: empByIdData } = await supabase
+              .from('employees')
+              .select('id, full_name, email, user_id')
+              .eq('id', taskData.assigned_to)
+              .single()
+
+            if (empByIdData) {
+              assigneeInfo = {
+                id: empByIdData.id,
+                full_name: empByIdData.full_name,
+                email: empByIdData.email
+              };
+            }
+          }
+        }
+      }
+
+      // Get assigner and creator info (these should exist in users table)
+      const [assignerData, creatorData] = await Promise.all([
+        taskData.assigned_by ? supabase
+          .from('users')
+          .select('id, full_name, email')
+          .eq('id', taskData.assigned_by)
+          .single() : Promise.resolve({ data: null }),
+        taskData.created_by ? supabase
+          .from('users')
+          .select('id, full_name, email')
+          .eq('id', taskData.created_by)
+          .single() : Promise.resolve({ data: null })
+      ]);
+
+      // Get comments
+      const { data: comments } = await supabase
+        .from('task_comments')
+        .select('*')
+        .eq('task_id', id)
+        .order('created_at', { ascending: true });
+
+      // Combine all data
+      const enrichedTaskData = {
+        ...taskData,
+        assignee: assigneeInfo,
+        assigner: assignerData.data,
+        creator: creatorData.data,
+        comments: comments || []
+      };
+
+      return this.mapDatabaseToTask(enrichedTaskData)
     } catch (error) {
+      console.error('❌ [TaskService] Error getting task by ID:', error);
       return null
     }
   }
@@ -199,9 +319,18 @@ export class TaskService {
         throw new NotFoundError('Task not found')
       }
 
-      // Validate assignee if being updated
+      // Validate assignee if being updated and resolve to user ID
+      let actualUserId: string | undefined;
       if (data.assignedTo) {
+        console.log('🔍 [TaskService] Validating assignee for update:', data.assignedTo);
         await this.validateAssignee(data.assignedTo)
+        
+        // Get the actual user ID (in case assignedTo is an employee ID)
+        actualUserId = await this.getUserIdFromAssigneeId(data.assignedTo);
+        console.log('🔍 [TaskService] Actual user ID for update:', actualUserId);
+        
+        // Validate role-based assignment authorization using the actual user ID
+        await this.validateTaskAssignment(updatedBy, actualUserId)
       }
 
       // Validate dependencies if being updated
@@ -209,12 +338,29 @@ export class TaskService {
         await this.validateTaskDependencies(data.dependencies, id)
       }
 
-      // Handle status changes
+      // Handle status changes and field mapping
       const updateData: any = {
-        ...data,
         updated_by: updatedBy,
         updated_at: new Date().toISOString()
       }
+
+      // Map frontend field names to database field names
+      if (data.title !== undefined) updateData.title = data.title
+      if (data.description !== undefined) updateData.description = data.description
+      if (data.assignedTo !== undefined) updateData.assigned_to = actualUserId || data.assignedTo
+      if (data.status !== undefined) updateData.status = data.status
+      if (data.priority !== undefined) updateData.priority = data.priority
+      if (data.dueDate !== undefined) updateData.due_date = data.dueDate
+      if (data.startDate !== undefined) updateData.start_date = data.startDate
+      if (data.completedDate !== undefined) updateData.completed_date = data.completedDate
+      if (data.estimatedHours !== undefined) updateData.estimated_hours = data.estimatedHours
+      if (data.actualHours !== undefined) updateData.actual_hours = data.actualHours
+      if (data.tags !== undefined) updateData.tags = data.tags
+      if (data.dependencies !== undefined) updateData.dependencies = data.dependencies
+      if (data.projectId !== undefined) updateData.project_id = data.projectId
+      if (data.departmentId !== undefined) updateData.department_id = data.departmentId
+
+      console.log('🔄 [TaskService] Update data prepared:', JSON.stringify(updateData, null, 2))
 
       // Set completion date if status is being changed to completed
       if (data.status === 'completed' && existingTask.status !== 'completed') {
@@ -296,14 +442,10 @@ export class TaskService {
 
   async searchTasks(filters: TaskSearchFilters): Promise<TaskResult> {
     try {
+      // Get basic task data first (without problematic joins)
       let query = supabase
         .from('tasks')
-        .select(`
-          *,
-          assignee:users!assigned_to(id, full_name, email),
-          assigner:users!assigned_by(id, full_name, email),
-          creator:users!created_by(id, full_name, email)
-        `, { count: 'exact' })
+        .select('*', { count: 'exact' })
 
       // Apply filters
       if (filters.assignedTo) {
@@ -364,7 +506,45 @@ export class TaskService {
 
       if (error) throw error
 
-      const tasks = data?.map(task => this.mapDatabaseToTask(task)) || []
+      // Enrich each task with assignee information
+      const enrichedTasks = await Promise.all((data || []).map(async (taskData) => {
+        // Get assignee information if assigned
+        let assigneeInfo = null;
+        if (taskData.assigned_to) {
+          // Try users table first
+          const { data: userData } = await supabase
+            .from('users')
+            .select('id, full_name, email')
+            .eq('id', taskData.assigned_to)
+            .single()
+
+          if (userData) {
+            assigneeInfo = userData;
+          } else {
+            // Try employees table
+            const { data: employeeData } = await supabase
+              .from('employees')
+              .select('id, full_name, email, user_id')
+              .or(`user_id.eq.${taskData.assigned_to},id.eq.${taskData.assigned_to}`)
+              .single()
+
+            if (employeeData) {
+              assigneeInfo = {
+                id: employeeData.user_id || employeeData.id,
+                full_name: employeeData.full_name,
+                email: employeeData.email
+              };
+            }
+          }
+        }
+
+        return {
+          ...taskData,
+          assignee: assigneeInfo
+        };
+      }));
+
+      const tasks = enrichedTasks.map(task => this.mapDatabaseToTask(task))
 
       return {
         success: true,
@@ -381,12 +561,7 @@ export class TaskService {
     try {
       let query = supabase
         .from('tasks')
-        .select(`
-          *,
-          assignee:users!assigned_to(id, full_name, email),
-          assigner:users!assigned_by(id, full_name, email),
-          creator:users!created_by(id, full_name, email)
-        `)
+        .select('*')
         .eq('assigned_to', assigneeId)
 
       if (status) {
@@ -399,7 +574,45 @@ export class TaskService {
 
       if (error) throw error
 
-      return data?.map(task => this.mapDatabaseToTask(task)) || []
+      // Enrich each task with assignee information
+      const enrichedTasks = await Promise.all((data || []).map(async (taskData) => {
+        // Get assignee information
+        let assigneeInfo = null;
+        if (taskData.assigned_to) {
+          // Try users table first
+          const { data: userData } = await supabase
+            .from('users')
+            .select('id, full_name, email')
+            .eq('id', taskData.assigned_to)
+            .single()
+
+          if (userData) {
+            assigneeInfo = userData;
+          } else {
+            // Try employees table
+            const { data: employeeData } = await supabase
+              .from('employees')
+              .select('id, full_name, email, user_id')
+              .or(`user_id.eq.${taskData.assigned_to},id.eq.${taskData.assigned_to}`)
+              .single()
+
+            if (employeeData) {
+              assigneeInfo = {
+                id: employeeData.user_id || employeeData.id,
+                full_name: employeeData.full_name,
+                email: employeeData.email
+              };
+            }
+          }
+        }
+
+        return {
+          ...taskData,
+          assignee: assigneeInfo
+        };
+      }));
+
+      return enrichedTasks.map(task => this.mapDatabaseToTask(task))
     } catch (error) {
       return []
     }
@@ -409,12 +622,7 @@ export class TaskService {
     try {
       let query = supabase
         .from('tasks')
-        .select(`
-          *,
-          assignee:users!assigned_to(id, full_name, email),
-          assigner:users!assigned_by(id, full_name, email),
-          creator:users!created_by(id, full_name, email)
-        `)
+        .select('*')
         .eq('created_by', creatorId)
 
       if (status) {
@@ -427,7 +635,45 @@ export class TaskService {
 
       if (error) throw error
 
-      return data?.map(task => this.mapDatabaseToTask(task)) || []
+      // Enrich each task with assignee information
+      const enrichedTasks = await Promise.all((data || []).map(async (taskData) => {
+        // Get assignee information
+        let assigneeInfo = null;
+        if (taskData.assigned_to) {
+          // Try users table first
+          const { data: userData } = await supabase
+            .from('users')
+            .select('id, full_name, email')
+            .eq('id', taskData.assigned_to)
+            .single()
+
+          if (userData) {
+            assigneeInfo = userData;
+          } else {
+            // Try employees table
+            const { data: employeeData } = await supabase
+              .from('employees')
+              .select('id, full_name, email, user_id')
+              .or(`user_id.eq.${taskData.assigned_to},id.eq.${taskData.assigned_to}`)
+              .single()
+
+            if (employeeData) {
+              assigneeInfo = {
+                id: employeeData.user_id || employeeData.id,
+                full_name: employeeData.full_name,
+                email: employeeData.email
+              };
+            }
+          }
+        }
+
+        return {
+          ...taskData,
+          assignee: assigneeInfo
+        };
+      }));
+
+      return enrichedTasks.map(task => this.mapDatabaseToTask(task))
     } catch (error) {
       return []
     }
@@ -439,19 +685,52 @@ export class TaskService {
 
       const { data, error } = await supabase
         .from('tasks')
-        .select(`
-          *,
-          assignee:users!assigned_to(id, full_name, email),
-          assigner:users!assigned_by(id, full_name, email),
-          creator:users!created_by(id, full_name, email)
-        `)
+        .select('*')
         .lt('due_date', today)
         .in('status', ['pending', 'in_progress'])
         .order('due_date', { ascending: true })
 
       if (error) throw error
 
-      return data?.map(task => this.mapDatabaseToTask(task)) || []
+      // Enrich each task with assignee information
+      const enrichedTasks = await Promise.all((data || []).map(async (taskData) => {
+        // Get assignee information
+        let assigneeInfo = null;
+        if (taskData.assigned_to) {
+          // Try users table first
+          const { data: userData } = await supabase
+            .from('users')
+            .select('id, full_name, email')
+            .eq('id', taskData.assigned_to)
+            .single()
+
+          if (userData) {
+            assigneeInfo = userData;
+          } else {
+            // Try employees table
+            const { data: employeeData } = await supabase
+              .from('employees')
+              .select('id, full_name, email, user_id')
+              .or(`user_id.eq.${taskData.assigned_to},id.eq.${taskData.assigned_to}`)
+              .single()
+
+            if (employeeData) {
+              assigneeInfo = {
+                id: employeeData.user_id || employeeData.id,
+                full_name: employeeData.full_name,
+                email: employeeData.email
+              };
+            }
+          }
+        }
+
+        return {
+          ...taskData,
+          assignee: assigneeInfo
+        };
+      }));
+
+      return enrichedTasks.map(task => this.mapDatabaseToTask(task))
     } catch (error) {
       return []
     }
@@ -622,26 +901,40 @@ export class TaskService {
   private async validateTaskData(data: CreateTaskData): Promise<void> {
     const errors: string[] = []
 
+    console.log('🔍 [TaskService] Validating task data:', {
+      title: data.title,
+      titleType: typeof data.title,
+      titleLength: data.title?.length,
+      assignedTo: data.assignedTo,
+      assignedToType: typeof data.assignedTo,
+      assignedToLength: data.assignedTo?.length
+    });
+
     if (!data.title?.trim()) {
-      errors.push('Task title is required')
+      errors.push('Task title is required and cannot be empty')
+      console.log('❌ [TaskService] Title validation failed');
     }
 
     if (data.title && data.title.length > 200) {
       errors.push('Task title must be less than 200 characters')
+      console.log('❌ [TaskService] Title too long:', data.title.length);
     }
 
     if (data.description && data.description.length > 2000) {
       errors.push('Task description must be less than 2000 characters')
+      console.log('❌ [TaskService] Description too long:', data.description.length);
     }
 
     if (data.estimatedHours && (data.estimatedHours < 0 || data.estimatedHours > 1000)) {
       errors.push('Estimated hours must be between 0 and 1000')
+      console.log('❌ [TaskService] Invalid estimated hours:', data.estimatedHours);
     }
 
     if (data.dueDate) {
       const dueDate = new Date(data.dueDate)
       if (isNaN(dueDate.getTime())) {
         errors.push('Invalid due date format')
+        console.log('❌ [TaskService] Invalid due date:', data.dueDate);
       }
     }
 
@@ -649,6 +942,7 @@ export class TaskService {
       const startDate = new Date(data.startDate)
       if (isNaN(startDate.getTime())) {
         errors.push('Invalid start date format')
+        console.log('❌ [TaskService] Invalid start date:', data.startDate);
       }
     }
 
@@ -657,25 +951,159 @@ export class TaskService {
       const dueDate = new Date(data.dueDate)
       if (startDate > dueDate) {
         errors.push('Start date cannot be after due date')
+        console.log('❌ [TaskService] Start date after due date:', { startDate, dueDate });
       }
     }
 
     if (errors.length > 0) {
+      console.log('❌ [TaskService] Task validation failed with errors:', errors);
       throw new ValidationError('Task validation failed', errors)
     }
+
+    console.log('✅ [TaskService] Task data validation completed successfully');
   }
 
   private async validateAssignee(assigneeId: string): Promise<void> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('id')
+    console.log('🔍 [TaskService] Validating assignee ID:', assigneeId);
+    console.log('🔍 [TaskService] Assignee ID type:', typeof assigneeId);
+    console.log('🔍 [TaskService] Assignee ID length:', assigneeId?.length);
+    
+    // Check if assigneeId is valid
+    if (!assigneeId || assigneeId.trim() === '') {
+      console.log('❌ [TaskService] Empty or null assignee ID');
+      throw new ValidationError('Invalid assignee: assignee ID is required')
+    }
+
+    // First, let's get some sample data to understand what's in the database
+    console.log('🔍 [TaskService] Checking available employees...');
+    const { data: sampleEmployees, error: sampleError } = await supabase
+      .from('employees')
+      .select('id, user_id, full_name, email, employment_status')
+      .limit(5)
+
+    if (sampleEmployees && sampleEmployees.length > 0) {
+      console.log('📋 [TaskService] Sample employees in database:');
+      sampleEmployees.forEach((emp, index) => {
+        console.log(`  ${index + 1}. ID: ${emp.id}, Name: ${emp.full_name}, Status: ${emp.employment_status}`);
+      });
+    } else {
+      console.log('❌ [TaskService] No employees found in database or error:', sampleError?.message);
+    }
+    
+    // First try to find by employee ID (most common case from frontend)
+    console.log('🔍 [TaskService] Searching for employee with ID:', assigneeId);
+    const { data: employeeData, error: employeeError } = await supabase
+      .from('employees')
+      .select('id, user_id, full_name, email, employment_status')
       .eq('id', assigneeId)
       .single()
 
-    if (error || !data) {
-      throw new ValidationError('Invalid assignee: user not found')
+    console.log('🔍 [TaskService] Employee query result:', {
+      found: !!employeeData,
+      error: employeeError?.message,
+      data: employeeData
+    });
+
+    if (employeeData && !employeeError) {
+      console.log('✅ [TaskService] Found employee:', {
+        employeeId: employeeData.id,
+        userId: employeeData.user_id,
+        fullName: employeeData.full_name,
+        status: employeeData.employment_status
+      });
+
+      if (!employeeData.user_id) {
+        console.log('❌ [TaskService] Employee has no associated user_id:', employeeData);
+        throw new ValidationError('Invalid assignee: employee has no associated user account')
+      }
+
+      // Verify the user_id exists in users table
+      console.log('🔍 [TaskService] Verifying linked user account:', employeeData.user_id);
+      const { data: linkedUserData, error: linkedUserError } = await supabase
+        .from('users')
+        .select('id, email, is_active')
+        .eq('id', employeeData.user_id)
+        .single()
+
+      console.log('🔍 [TaskService] Linked user query result:', {
+        found: !!linkedUserData,
+        error: linkedUserError?.message,
+        data: linkedUserData
+      });
+
+      if (linkedUserError || !linkedUserData) {
+        console.log('⚠️ [TaskService] Linked user not found, but employee exists:', {
+          employeeId: employeeData.id,
+          employeeName: employeeData.full_name,
+          linkedUserId: employeeData.user_id,
+          error: linkedUserError?.message
+        });
+        
+        // If employee exists but linked user doesn't exist, this is a data integrity issue
+        console.log('❌ [TaskService] Data integrity issue: employee exists but linked user account is missing');
+        throw new ValidationError(`Employee ${employeeData.full_name} has a user_id (${employeeData.user_id}) that doesn't exist in the users table. Please contact admin to fix this data integrity issue.`);
+      }
+
+      if (!linkedUserData.is_active) {
+        console.log('❌ [TaskService] User account is inactive:', linkedUserData);
+        throw new ValidationError('Invalid assignee: user account is inactive')
+      }
+
+      console.log('✅ [TaskService] Employee validation passed');
+      return;
     }
+
+    // If not found as employee, try to find the user directly in the users table
+    console.log('🔍 [TaskService] Employee not found, trying users table...');
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, email, is_active')
+      .eq('id', assigneeId)
+      .single()
+
+    console.log('🔍 [TaskService] User query result:', {
+      found: !!userData,
+      error: userError?.message,
+      data: userData
+    });
+
+    if (userData && !userError) {
+      if (!userData.is_active) {
+        console.log('❌ [TaskService] User account is inactive:', userData);
+        throw new ValidationError('Invalid assignee: user account is inactive')
+      }
+      console.log('✅ [TaskService] Found user directly in users table');
+      return;
+    }
+
+    // Neither employee nor user found - provide detailed debugging info
+    console.log('❌ [TaskService] Assignee not found in employees or users table');
+    console.log('❌ [TaskService] Search details:', {
+      searchedId: assigneeId,
+      searchedIdType: typeof assigneeId,
+      searchedIdLength: assigneeId?.length,
+      employeeError: employeeError?.message,
+      userError: userError?.message
+    });
+    
+    // Let's also check if there are any employees with similar IDs
+    const { data: similarEmployees } = await supabase
+      .from('employees')
+      .select('id, full_name')
+      .ilike('id', `%${assigneeId}%`)
+      .limit(3)
+
+    if (similarEmployees && similarEmployees.length > 0) {
+      console.log('🔍 [TaskService] Found similar employee IDs:');
+      similarEmployees.forEach(emp => {
+        console.log(`  - ${emp.id} (${emp.full_name})`);
+      });
+    }
+    
+    throw new ValidationError('Invalid assignee: user not found')
   }
+
+
 
   private async validateTaskDependencies(dependencies: string[], excludeTaskId?: string): Promise<void> {
     for (const depId of dependencies) {
@@ -727,6 +1155,252 @@ export class TaskService {
     }
   }
 
+  /**
+   * Validates if the assigner has authority to assign tasks to the assignee
+   * based on role hierarchy and organizational structure
+   */
+  private async validateTaskAssignment(assignerId: string, assigneeId: string): Promise<void> {
+    try {
+      console.log(`🔍 [TaskService] Validating task assignment from ${assignerId} to ${assigneeId}`)
+
+      // Get both users' roles and organizational information
+      const [assignerRole, assigneeRole, assignerUser, assigneeUser] = await Promise.all([
+        this.roleService.getActiveRole(assignerId),
+        this.roleService.getActiveRole(assigneeId),
+        this.getUserWithHierarchy(assignerId),
+        this.getUserWithHierarchy(assigneeId)
+      ])
+
+      if (!assignerRole) {
+        throw new AuthorizationError('Assigner has no active role')
+      }
+
+      if (!assigneeRole) {
+        throw new AuthorizationError('Assignee has no active role')
+      }
+
+      // Super-admin can assign to anyone
+      if (assignerRole.roleName === 'super-admin') {
+        console.log(`✅ [TaskService] Super-admin can assign to anyone`)
+        return
+      }
+
+      // Check if assigner has task assignment permissions
+      if (!assignerRole.permissions.includes('tasks.assign') && !assignerRole.permissions.includes('*')) {
+        throw new AuthorizationError('Insufficient permissions to assign tasks')
+      }
+
+      // Get role levels for hierarchy validation
+      const assignerLevel = this.roleService.getRoleLevel(assignerRole.roleName)
+      const assigneeLevel = this.roleService.getRoleLevel(assigneeRole.roleName)
+
+      // Managers and above can assign to lower-level roles
+      if (assignerLevel > assigneeLevel) {
+        console.log(`✅ [TaskService] Role hierarchy allows assignment (${assignerRole.roleName} -> ${assigneeRole.roleName})`)
+        return
+      }
+
+      // Same level roles can assign within same department if they're managers
+      if (assignerLevel === assigneeLevel && assignerLevel >= 3) { // manager level and above
+        if (assignerUser?.department_id && assignerUser.department_id === assigneeUser?.department_id) {
+          console.log(`✅ [TaskService] Same department manager assignment allowed`)
+          return
+        }
+      }
+
+      // Check direct reporting relationship
+      if (assigneeUser?.manager_id === assignerId) {
+        console.log(`✅ [TaskService] Direct reporting relationship allows assignment`)
+        return
+      }
+
+      // HR roles can assign to employees in their scope
+      if (assignerRole.roleName === 'hr-admin' || assignerRole.roleName === 'hr-staff') {
+        if (assigneeRole.roleName === 'employee' || assigneeLevel <= assignerLevel) {
+          console.log(`✅ [TaskService] HR role can assign to employee`)
+          return
+        }
+      }
+
+      throw new AuthorizationError(`Cannot assign task: insufficient authority over assignee`)
+    } catch (error) {
+      console.error(`❌ [TaskService] Task assignment validation failed:`, error)
+      if (error instanceof AuthorizationError) {
+        throw error
+      }
+      throw new AuthorizationError('Task assignment validation failed')
+    }
+  }
+
+  /**
+   * Gets the user ID from an employee ID or returns the ID if it's already a user ID
+   */
+  private async getUserIdFromAssigneeId(assigneeId: string): Promise<string> {
+    console.log('🔍 [TaskService] Getting user ID for assignee:', assigneeId);
+    
+    // First check if this is already a user ID
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', assigneeId)
+      .single()
+
+    if (userData && !userError) {
+      console.log('✅ [TaskService] Assignee ID is already a user ID');
+      return assigneeId;
+    }
+
+    // If not a user ID, try to find the employee and get their user_id
+    const { data: employeeData, error: employeeError } = await supabase
+      .from('employees')
+      .select('user_id, full_name')
+      .eq('id', assigneeId)
+      .single()
+
+    if (employeeError || !employeeData) {
+      console.log('❌ [TaskService] Could not find employee:', assigneeId);
+      throw new ValidationError('Could not find employee record for assignee')
+    }
+
+    if (!employeeData.user_id) {
+      console.log('⚠️ [TaskService] Employee has no linked user account, using employee ID:', {
+        employeeId: assigneeId,
+        fullName: employeeData.full_name
+      });
+      // Return the employee ID when no user_id is available
+      // The task will be assigned to the employee ID, and our retrieval logic will handle it
+      return assigneeId;
+    }
+
+    console.log('✅ [TaskService] Found user_id for employee:', {
+      employeeId: assigneeId,
+      userId: employeeData.user_id,
+      fullName: employeeData.full_name
+    });
+
+    return employeeData.user_id;
+  }
+
+  /**
+   * Gets user information including organizational hierarchy
+   */
+  private async getUserWithHierarchy(userId: string): Promise<any> {
+    try {
+      const { data: user, error } = await supabase
+        .from('users')
+        .select(`
+          id,
+          email,
+          full_name,
+          role,
+          department_id,
+          manager_id,
+          departments:department_id (
+            id,
+            name
+          )
+        `)
+        .eq('id', userId)
+        .single()
+
+      if (error || !user) {
+        console.error(`❌ [TaskService] User not found: ${userId}`)
+        return null
+      }
+
+      return user
+    } catch (error) {
+      console.error(`❌ [TaskService] Error fetching user hierarchy:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Gets all users that the given user can assign tasks to
+   */
+  async getAssignableUsers(assignerId: string): Promise<any[]> {
+    try {
+      const assignerRole = await this.roleService.getActiveRole(assignerId)
+      if (!assignerRole) {
+        return []
+      }
+
+      // Super-admin can assign to anyone
+      if (assignerRole.roleName === 'super-admin') {
+        const { data: allUsers, error } = await supabase
+          .from('users')
+          .select(`
+            id,
+            email,
+            full_name,
+            role,
+            department_id,
+            departments:department_id (name)
+          `)
+          .eq('is_active', true)
+
+        return allUsers || []
+      }
+
+      const assignerUser = await this.getUserWithHierarchy(assignerId)
+      if (!assignerUser) {
+        return []
+      }
+
+      const assignerLevel = this.roleService.getRoleLevel(assignerRole.roleName)
+
+      let query = supabase
+        .from('users')
+        .select(`
+          id,
+          email,
+          full_name,
+          role,
+          department_id,
+          manager_id,
+          departments:department_id (name)
+        `)
+        .eq('is_active', true)
+
+      // Build conditions based on role and hierarchy
+      const conditions = []
+
+      // Can assign to direct reports
+      conditions.push(`manager_id.eq.${assignerId}`)
+
+      // Can assign to lower-level roles in same department
+      if (assignerUser.department_id) {
+        conditions.push(`and(department_id.eq.${assignerUser.department_id},role_level.lt.${assignerLevel})`)
+      }
+
+      // HR can assign to employees
+      if (assignerRole.roleName === 'hr-admin' || assignerRole.roleName === 'hr-staff') {
+        conditions.push(`role.in.(employee,hr-staff)`)
+      }
+
+      // Managers can assign within their scope
+      if (assignerLevel >= 3) { // manager level
+        conditions.push(`role_level.lte.${assignerLevel - 1}`)
+      }
+
+      if (conditions.length > 0) {
+        query = query.or(conditions.join(','))
+      }
+
+      const { data: users, error } = await query
+
+      if (error) {
+        console.error(`❌ [TaskService] Error fetching assignable users:`, error)
+        return []
+      }
+
+      return users || []
+    } catch (error) {
+      console.error(`❌ [TaskService] Error in getAssignableUsers:`, error)
+      return []
+    }
+  }
+
   private mapDatabaseToTask(data: any): Task {
     return {
       id: data.id,
@@ -750,6 +1424,12 @@ export class TaskService {
       updatedAt: data.updated_at,
       createdBy: data.created_by,
       updatedBy: data.updated_by,
+      // Add assignee information for frontend display
+      assigneeName: data.assignee?.full_name || 'Unassigned',
+      assigneeEmail: data.assignee?.email || null,
+      assigneeDepartment: data.assignee?.department?.name || null,
+      assignerName: data.assigner?.full_name || null,
+      creatorName: data.creator?.full_name || null,
       comments: data.comments?.map((comment: any) => ({
         id: comment.id,
         taskId: comment.task_id,

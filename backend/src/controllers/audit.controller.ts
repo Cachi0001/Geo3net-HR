@@ -159,10 +159,7 @@ export class AuditController {
     }
   }
 
-  /**
-   * Get system activity analytics
-   * GET /api/audit/analytics
-   */
+  
   async getSystemAnalytics(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
       const userRole = req.user?.role

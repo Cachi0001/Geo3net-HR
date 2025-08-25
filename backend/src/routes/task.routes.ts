@@ -20,6 +20,22 @@ router.get('/stats',
   taskController.getTaskStats.bind(taskController)
 );
 
+// Get users that current user can assign tasks to
+router.get('/assignable-users',
+  permissionMiddleware.requireMinimumRole('manager'),
+  taskController.getAssignableUsers.bind(taskController)
+);
+
+// Debug endpoint to see request data
+router.post('/debug',
+  taskController.debugTaskData.bind(taskController)
+);
+
+// Check database schema
+router.get('/check-schema',
+  taskController.checkSchema.bind(taskController)
+);
+
 // Get tasks assigned to current user
 router.get('/my-tasks',
   taskController.getMyTasks.bind(taskController)

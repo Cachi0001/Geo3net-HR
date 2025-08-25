@@ -169,7 +169,7 @@ export class TimeTrackingService {
       })
       
       const { data: timeEntry, error } = await supabase
-        .from('check_in_records')
+        .from('time_entries')
         .insert({
           employee_id: employeeId,
           check_in_time: checkInTime,
@@ -196,6 +196,9 @@ export class TimeTrackingService {
       })
 
       const mappedEntry = this.mapDatabaseToTimeEntry(timeEntry)
+
+      // Create or update attendance record immediately on check-in
+      await this.createOrUpdateAttendanceRecord(employeeId, mappedEntry)
 
       console.log(`[TimeTracking] Check-in completed successfully for employee: ${employeeId}`, {
         entryId: mappedEntry.id,
@@ -288,7 +291,7 @@ export class TimeTrackingService {
       })
       
       const { data: updatedEntry, error } = await supabase
-        .from('check_in_records')
+        .from('time_entries')
         .update({
           check_out_time: checkOutTime,
           check_out_location: location,
@@ -320,7 +323,7 @@ export class TimeTrackingService {
       const mappedEntry = this.mapDatabaseToTimeEntry(updatedEntry)
 
       // Create or update attendance record
-      await this.updateAttendanceRecord(employeeId, mappedEntry)
+      await this.createOrUpdateAttendanceRecord(employeeId, mappedEntry)
       
       console.log(`[TimeTracking] Check-out completed successfully for employee: ${employeeId}`, {
         entryId: mappedEntry.id,
@@ -354,7 +357,7 @@ export class TimeTrackingService {
   async getActiveTimeEntry(employeeId: string): Promise<TimeEntry | null> {
     try {
       const { data, error } = await supabase
-        .from('check_in_records')
+        .from('time_entries')
         .select('*')
         .eq('employee_id', employeeId)
         .eq('status', 'checked_in')
@@ -373,7 +376,7 @@ export class TimeTrackingService {
   async getTimeEntries(employeeId: string, startDate?: string, endDate?: string): Promise<TimeEntry[]> {
     try {
       let query = supabase
-        .from('check_in_records')
+        .from('time_entries')
         .select('*')
         .eq('employee_id', employeeId)
         .order('check_in_time', { ascending: false })
@@ -466,7 +469,7 @@ export class TimeTrackingService {
     }
   }
 
-  async updateAttendanceRecord(employeeId: string, timeEntry: TimeEntry): Promise<void> {
+  async createOrUpdateAttendanceRecord(employeeId: string, timeEntry: TimeEntry): Promise<void> {
     try {
       const date = timeEntry.checkInTime.split('T')[0]
       const existingRecord = await this.getAttendanceRecord(employeeId, date)
@@ -499,24 +502,48 @@ export class TimeTrackingService {
         updated_at: new Date().toISOString()
       }
 
+      console.log(`[TimeTracking] Creating/updating attendance record for employee: ${employeeId}`, {
+        date,
+        status,
+        totalHours,
+        lateMinutes,
+        hasCheckOut: !!checkOutTime
+      })
+
       if (existingRecord) {
         // Update existing record
-        await supabase
+        const { error } = await supabase
           .from('attendance_records')
           .update(attendanceData)
           .eq('employee_id', employeeId)
           .eq('date', date)
+
+        if (error) {
+          console.error(`[TimeTracking] Failed to update attendance record for employee: ${employeeId}`, error)
+          throw error
+        }
+
+        console.log(`[TimeTracking] Successfully updated attendance record for employee: ${employeeId}`)
       } else {
         // Create new record
-        await supabase
+        const { error } = await supabase
           .from('attendance_records')
           .insert({
             ...attendanceData,
             created_at: new Date().toISOString()
           })
+
+        if (error) {
+          console.error(`[TimeTracking] Failed to create attendance record for employee: ${employeeId}`, error)
+          throw error
+        }
+
+        console.log(`[TimeTracking] Successfully created attendance record for employee: ${employeeId}`)
       }
     } catch (error) {
-      throw new Error('Failed to update attendance record')
+      console.error(`[TimeTracking] Error creating/updating attendance record for employee: ${employeeId}`, error)
+      // Don't throw error to prevent check-in/check-out from failing
+      // Just log the error and continue
     }
   }
 
@@ -666,7 +693,7 @@ export class TimeTrackingService {
 
       // Create time entry without location
       const { data: timeEntry, error } = await supabase
-        .from('check_in_records')
+        .from('time_entries')
         .insert({
           employee_id: employeeId,
           check_in_time: checkInTime,
@@ -761,7 +788,7 @@ export class TimeTrackingService {
   ): Promise<TimeEntry[]> {
     try {
       let query = supabase
-        .from('check_in_records')
+        .from('time_entries')
         .select('*')
         .order('check_in_time', { ascending: false })
 
@@ -861,6 +888,145 @@ export class TimeTrackingService {
           startDate: startDate || 'N/A',
           endDate: endDate || 'N/A'
         }
+      }
+    }
+  }
+
+  /**
+   * Admin method: Get all attendance records for super-admin dashboard
+   */
+  async getAllAttendanceRecords(
+    startDate?: string,
+    endDate?: string,
+    employeeId?: string,
+    status?: string
+  ): Promise<AttendanceRecord[]> {
+    try {
+      let query = supabase
+        .from('attendance_records')
+        .select(`
+          *,
+          users!attendance_records_employee_id_fkey (
+            id,
+            full_name,
+            email,
+            employee_id
+          )
+        `)
+        .order('date', { ascending: false })
+
+      if (startDate) {
+        query = query.gte('date', startDate)
+      }
+
+      if (endDate) {
+        query = query.lte('date', endDate)
+      }
+
+      if (employeeId) {
+        query = query.eq('employee_id', employeeId)
+      }
+
+      if (status) {
+        query = query.eq('status', status)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('Error getting all attendance records:', error)
+        throw error
+      }
+
+      return data?.map(record => ({
+        ...this.mapDatabaseToAttendanceRecord(record),
+        employeeName: record.users?.full_name,
+        employeeEmail: record.users?.email,
+        employeeNumber: record.users?.employee_id
+      })) || []
+    } catch (error) {
+      console.error('Error getting all attendance records:', error)
+      return []
+    }
+  }
+
+  /**
+   * Admin method: Get attendance summary for dashboard
+   */
+  async getAttendanceSummary(date?: string): Promise<{
+    totalEmployees: number
+    present: number
+    absent: number
+    late: number
+    checkedIn: number
+    checkedOut: number
+    totalHours: number
+    averageHours: number
+  }> {
+    try {
+      const targetDate = date || new Date().toISOString().split('T')[0]
+
+      // Get attendance records for the date
+      const { data: attendanceRecords, error: attendanceError } = await supabase
+        .from('attendance_records')
+        .select('*')
+        .eq('date', targetDate)
+
+      if (attendanceError) {
+        console.error('Error getting attendance summary:', attendanceError)
+        throw attendanceError
+      }
+
+      // Get current check-in status
+      const { data: timeEntries, error: timeError } = await supabase
+        .from('time_entries')
+        .select('employee_id, status')
+        .gte('check_in_time', `${targetDate}T00:00:00`)
+        .lt('check_in_time', `${targetDate}T23:59:59`)
+
+      if (timeError) {
+        console.error('Error getting time entries for summary:', timeError)
+      }
+
+      const records = attendanceRecords || []
+      const entries = timeEntries || []
+
+      const present = records.filter(r => r.status === 'present').length
+      const absent = records.filter(r => r.status === 'absent').length
+      const late = records.filter(r => r.status === 'late').length
+      const checkedIn = entries.filter(e => e.status === 'checked_in').length
+      const checkedOut = entries.filter(e => e.status === 'checked_out').length
+
+      const totalHours = records.reduce((sum, r) => sum + (r.total_hours || 0), 0)
+      const averageHours = records.length > 0 ? totalHours / records.length : 0
+
+      // Get total employees count
+      const { count: totalEmployees } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+
+      return {
+        totalEmployees: totalEmployees || 0,
+        present,
+        absent,
+        late,
+        checkedIn,
+        checkedOut,
+        totalHours: Math.round(totalHours * 100) / 100,
+        averageHours: Math.round(averageHours * 100) / 100
+      }
+    } catch (error) {
+      console.error('Error getting attendance summary:', error)
+      return {
+        totalEmployees: 0,
+        present: 0,
+        absent: 0,
+        late: 0,
+        checkedIn: 0,
+        checkedOut: 0,
+        totalHours: 0,
+        averageHours: 0
       }
     }
   }

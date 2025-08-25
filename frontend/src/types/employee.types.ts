@@ -16,7 +16,7 @@ export interface Employee {
   managerId?: string
   hireDate: string
   salary?: number
-  employmentStatus: 'active' | 'inactive' | 'terminated' | 'on_leave'
+  employmentStatus: 'active' | 'inactive' | 'terminated' | 'on-leave'
   profilePicture?: string
   skills?: string[]
   notes?: string
@@ -82,6 +82,7 @@ export interface EmployeeSearchFilters {
   positionId?: string
   managerId?: string
   employmentStatus?: string
+  status?: string
   search?: string
   limit?: number
   offset?: number

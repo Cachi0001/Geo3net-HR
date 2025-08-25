@@ -89,7 +89,6 @@ router.put('/requests/:id',
   leaveController.updateLeaveRequest.bind(leaveController)
 )
 
-// Leave Request Actions
 router.post('/requests/:id/approve', 
   permissionMiddleware.requireAnyPermission(['leave.manage', 'team.manage']),
   leaveController.approveLeaveRequest.bind(leaveController)
@@ -104,7 +103,6 @@ router.post('/requests/:id/cancel',
   leaveController.cancelLeaveRequest.bind(leaveController)
 )
 
-// Leave Balance Routes
 router.get('/balances/:employeeId', 
   permissionMiddleware.requireAnyPermission(['leave.read', 'leave.manage']),
   leaveController.getLeaveBalances.bind(leaveController)
@@ -120,7 +118,6 @@ router.put('/balances/:id',
   leaveController.updateLeaveBalance.bind(leaveController)
 )
 
-// My Leave Routes (for authenticated user)
 router.get('/my-requests', 
   leaveController.getMyLeaveRequests.bind(leaveController)
 )

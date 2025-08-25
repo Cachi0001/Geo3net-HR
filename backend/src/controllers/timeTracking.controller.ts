@@ -419,4 +419,55 @@ export class TimeTrackingController {
             return ResponseHandler.internalError(res, 'Failed to generate attendance report')
         }
     }
+
+    /**
+     * Admin endpoint: Get all attendance records
+     * GET /api/time-tracking/admin/attendance
+     */
+    async getAllAttendanceRecords(req: Request, res: Response): Promise<Response> {
+        try {
+            const { startDate, endDate, employeeId, status, limit = '100', offset = '0' } = req.query
+
+            // Get all attendance records with filters
+            const allRecords = await this.timeTrackingService.getAllAttendanceRecords(
+                startDate as string,
+                endDate as string,
+                employeeId as string,
+                status as string
+            )
+
+            // Apply pagination
+            const limitNum = parseInt(limit as string)
+            const offsetNum = parseInt(offset as string)
+            const paginatedRecords = allRecords.slice(offsetNum, offsetNum + limitNum)
+
+            return ResponseHandler.success(res, 'Attendance records retrieved successfully', {
+                records: paginatedRecords,
+                total: allRecords.length,
+                limit: limitNum,
+                offset: offsetNum
+            })
+        } catch (error) {
+            console.error('Error getting all attendance records:', error)
+            return ResponseHandler.internalError(res, 'Failed to get all attendance records')
+        }
+    }
+
+    /**
+     * Admin endpoint: Get attendance summary for dashboard
+     * GET /api/time-tracking/admin/summary
+     */
+    async getAttendanceSummary(req: Request, res: Response): Promise<Response> {
+        try {
+            const { date } = req.query
+
+            // Get attendance summary
+            const summary = await this.timeTrackingService.getAttendanceSummary(date as string)
+
+            return ResponseHandler.success(res, 'Attendance summary retrieved successfully', summary)
+        } catch (error) {
+            console.error('Error getting attendance summary:', error)
+            return ResponseHandler.internalError(res, 'Failed to get attendance summary')
+        }
+    }
 }

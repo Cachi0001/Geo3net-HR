@@ -1,12 +1,9 @@
 import multer from 'multer'
 import { Request } from 'express'
 
-// Configure multer for memory storage (we'll upload to Cloudinary)
 const storage = multer.memoryStorage()
 
-// File filter function
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  // Check file type
   if (file.mimetype.startsWith('image/')) {
     cb(null, true)
   } else {
@@ -14,7 +11,6 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
   }
 }
 
-// Configure multer
 export const upload = multer({
   storage,
   fileFilter,
@@ -23,13 +19,10 @@ export const upload = multer({
   },
 })
 
-// Specific configurations for different upload types
 export const uploadSingle = (fieldName: string) => upload.single(fieldName)
 export const uploadMultiple = (fieldName: string, maxCount: number = 5) => 
   upload.array(fieldName, maxCount)
 
-// Profile image upload (single file)
 export const uploadProfileImage = uploadSingle('profileImage')
 
-// Document upload (multiple files)
 export const uploadDocuments = uploadMultiple('documents', 10)

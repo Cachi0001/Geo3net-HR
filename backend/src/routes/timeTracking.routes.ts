@@ -114,4 +114,16 @@ router.get('/admin/report',
   timeTrackingController.getAttendanceReport.bind(timeTrackingController)
 )
 
+// Get all attendance records - requires HR admin permissions
+router.get('/admin/attendance',
+  requireHRAdmin,
+  timeTrackingController.getAllAttendanceRecords.bind(timeTrackingController)
+)
+
+// Get attendance summary for dashboard - requires HR admin permissions
+router.get('/admin/summary',
+  requireHRAdmin,
+  timeTrackingController.getAttendanceSummary.bind(timeTrackingController)
+)
+
 export { router as timeTrackingRoutes }

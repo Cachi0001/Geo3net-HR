@@ -54,7 +54,7 @@ export interface LeavePolicy {
   updatedAt: string
   createdBy?: string
   updatedBy?: string
-  
+
   // Populated fields
   leaveType?: LeaveType
 }
@@ -95,7 +95,7 @@ export interface EmployeeLeavePolicy {
   isActive: boolean
   createdAt: string
   createdBy?: string
-  
+
   // Populated fields
   leavePolicy?: LeavePolicy
 }
@@ -118,7 +118,7 @@ export interface LeaveRequest {
   updatedAt: string
   createdBy?: string
   updatedBy?: string
-  
+
   // Populated fields
   employee?: any
   leaveType?: LeaveType
@@ -157,7 +157,7 @@ export interface LeaveBalance {
   lastAccrualDate?: string
   createdAt: string
   updatedAt: string
-  
+
   // Populated fields
   leaveType?: LeaveType
 }

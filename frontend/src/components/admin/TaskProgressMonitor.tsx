@@ -75,96 +75,203 @@ const TaskProgressMonitor: React.FC = () => {
   const loadTaskProgress = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('🔄 TaskProgressMonitor: Loading task progress data...');
+      
       const response = await apiClient.getTasks();
+      console.log('📡 TaskProgressMonitor: API response received:', response.success);
       
       if (response.success && response.data && response.data.tasks) {
-        // Transform tasks to include progress tracking data
-        const tasksWithProgress = response.data.tasks.map((task: any) => ({
-          ...task,
-          timeSpent: task.actualHours || 0,
-          efficiency: task.estimatedHours > 0 ? 
-            Math.min(100, ((task.estimatedHours - (task.actualHours || 0)) / task.estimatedHours) * 100) : 100,
-          blockers: task.blockers || [],
-          lastUpdate: task.updatedAt || task.createdAt
-        }));
+        console.log('📋 TaskProgressMonitor: Processing', response.data.tasks.length, 'tasks');
         
+        // Transform tasks to include progress tracking data with safe property access
+        const tasksWithProgress = response.data.tasks.map((task: any, index: number) => {
+          try {
+            const estimatedHours = typeof task.estimatedHours === 'number' ? task.estimatedHours : 0;
+            const actualHours = typeof task.actualHours === 'number' ? task.actualHours : 0;
+            
+            const transformedTask = {
+              id: task.id || `task-${index}`,
+              title: task.title || 'Untitled Task',
+              assignee: task.assignee || {
+                name: task.assigneeName || 'Unassigned',
+                avatar: task.assigneeName?.charAt(0) || 'U',
+                department: task.assigneeDepartment || 'Unknown'
+              },
+              department: task.assigneeDepartment || task.department || 'Unknown',
+              priority: task.priority || 'medium',
+              status: task.status || 'todo',
+              progress: typeof task.progress === 'number' ? task.progress : 0,
+              dueDate: task.dueDate || task.due_date || new Date().toISOString(),
+              createdAt: task.createdAt || task.created_at || new Date().toISOString(),
+              estimatedHours: estimatedHours,
+              actualHours: actualHours,
+              timeSpent: actualHours,
+              efficiency: estimatedHours > 0 ? 
+                Math.min(100, Math.max(0, ((estimatedHours - actualHours) / estimatedHours) * 100)) : 100,
+              blockers: Array.isArray(task.blockers) ? task.blockers : [],
+              lastUpdate: task.updatedAt || task.updated_at || task.createdAt || task.created_at || new Date().toISOString()
+            };
+            
+            return transformedTask;
+          } catch (taskError) {
+            console.error('❌ TaskProgressMonitor: Error transforming task at index', index, ':', taskError);
+            // Return a safe default task
+            return {
+              id: `error-task-${index}`,
+              title: 'Error Loading Task',
+              assignee: { name: 'Unknown', avatar: 'U', department: 'Unknown' },
+              department: 'Unknown',
+              priority: 'medium' as const,
+              status: 'todo' as const,
+              progress: 0,
+              dueDate: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              estimatedHours: 0,
+              actualHours: 0,
+              timeSpent: 0,
+              efficiency: 0,
+              blockers: [],
+              lastUpdate: new Date().toISOString()
+            };
+          }
+        });
+        
+        console.log('✅ TaskProgressMonitor: Successfully transformed', tasksWithProgress.length, 'tasks');
         setTasks(tasksWithProgress);
         calculateAnalytics(tasksWithProgress);
       } else {
+        console.log('⚠️ TaskProgressMonitor: No task data received, setting empty state');
         setTasks([]);
         setAnalytics(null);
       }
     } catch (error) {
-      console.warn('API not available:', error);
+      console.error('❌ TaskProgressMonitor: Error loading task progress:', error);
       setTasks([]);
       setAnalytics(null);
+      // Don't show toast error to avoid disrupting the dashboard
     } finally {
       setLoading(false);
     }
   }, []);
 
   const calculateAnalytics = (taskList: TaskProgress[]) => {
-    const totalTasks = taskList.length;
-    const completedTasks = taskList.filter(t => t.status === 'completed').length;
-    const inProgressTasks = taskList.filter(t => t.status === 'in_progress').length;
-    const overdueTasks = taskList.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'completed').length;
-    
-    const averageProgress = taskList.reduce((sum, task) => sum + task.progress, 0) / totalTasks;
-    const averageEfficiency = taskList.reduce((sum, task) => sum + task.efficiency, 0) / totalTasks;
-    
-    // Department progress
-    const departmentProgress: { [key: string]: number } = {};
-    const departmentCounts: { [key: string]: number } = {};
-    
-    taskList.forEach(task => {
-      if (!departmentProgress[task.department]) {
-        departmentProgress[task.department] = 0;
-        departmentCounts[task.department] = 0;
+    try {
+      const totalTasks = taskList.length;
+      
+      // Handle empty task list
+      if (totalTasks === 0) {
+        setAnalytics({
+          totalTasks: 0,
+          completedTasks: 0,
+          inProgressTasks: 0,
+          overdueTasks: 0,
+          averageProgress: 0,
+          averageEfficiency: 0,
+          departmentProgress: {},
+          priorityDistribution: { low: 0, medium: 0, high: 0, urgent: 0 },
+          weeklyProgress: []
+        });
+        return;
       }
-      departmentProgress[task.department] += task.progress;
-      departmentCounts[task.department]++;
-    });
-    
-    Object.keys(departmentProgress).forEach(dept => {
-      departmentProgress[dept] = departmentProgress[dept] / departmentCounts[dept];
-    });
-    
-    // Priority distribution
-    const priorityDistribution: { [key: string]: number } = {
-      low: taskList.filter(t => t.priority === 'low').length,
-      medium: taskList.filter(t => t.priority === 'medium').length,
-      high: taskList.filter(t => t.priority === 'high').length,
-      urgent: taskList.filter(t => t.priority === 'urgent').length
-    };
-    
-    // Weekly progress (mock data)
-    const weeklyProgress = [
-      { week: 'Week 1', completed: 12, created: 15 },
-      { week: 'Week 2', completed: 18, created: 20 },
-      { week: 'Week 3', completed: 15, created: 12 },
-      { week: 'Week 4', completed: 22, created: 18 }
-    ];
-    
-    setAnalytics({
-      totalTasks,
-      completedTasks,
-      inProgressTasks,
-      overdueTasks,
-      averageProgress,
-      averageEfficiency,
-      departmentProgress,
-      priorityDistribution,
-      weeklyProgress
-    });
+      
+      const completedTasks = taskList.filter(t => t.status === 'completed').length;
+      const inProgressTasks = taskList.filter(t => t.status === 'in_progress').length;
+      const overdueTasks = taskList.filter(t => {
+        try {
+          return t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'completed';
+        } catch {
+          return false;
+        }
+      }).length;
+      
+      const averageProgress = taskList.reduce((sum, task) => {
+        const progress = typeof task.progress === 'number' ? task.progress : 0;
+        return sum + progress;
+      }, 0) / totalTasks;
+      
+      const averageEfficiency = taskList.reduce((sum, task) => {
+        const efficiency = typeof task.efficiency === 'number' ? task.efficiency : 0;
+        return sum + efficiency;
+      }, 0) / totalTasks;
+      
+      // Department progress with safe property access
+      const departmentProgress: { [key: string]: number } = {};
+      const departmentCounts: { [key: string]: number } = {};
+      
+      taskList.forEach(task => {
+        const department = task.department || task.assignee?.department || 'Unknown';
+        const progress = typeof task.progress === 'number' ? task.progress : 0;
+        
+        if (!departmentProgress[department]) {
+          departmentProgress[department] = 0;
+          departmentCounts[department] = 0;
+        }
+        departmentProgress[department] += progress;
+        departmentCounts[department]++;
+      });
+      
+      Object.keys(departmentProgress).forEach(dept => {
+        if (departmentCounts[dept] > 0) {
+          departmentProgress[dept] = departmentProgress[dept] / departmentCounts[dept];
+        }
+      });
+      
+      // Priority distribution with safe property access
+      const priorityDistribution: { [key: string]: number } = {
+        low: taskList.filter(t => t.priority === 'low').length,
+        medium: taskList.filter(t => t.priority === 'medium').length,
+        high: taskList.filter(t => t.priority === 'high').length,
+        urgent: taskList.filter(t => t.priority === 'urgent').length
+      };
+      
+      // Weekly progress (mock data)
+      const weeklyProgress = [
+        { week: 'Week 1', completed: 12, created: 15 },
+        { week: 'Week 2', completed: 18, created: 20 },
+        { week: 'Week 3', completed: 15, created: 12 },
+        { week: 'Week 4', completed: 22, created: 18 }
+      ];
+      
+      setAnalytics({
+        totalTasks,
+        completedTasks,
+        inProgressTasks,
+        overdueTasks,
+        averageProgress: isNaN(averageProgress) ? 0 : averageProgress,
+        averageEfficiency: isNaN(averageEfficiency) ? 0 : averageEfficiency,
+        departmentProgress,
+        priorityDistribution,
+        weeklyProgress
+      });
+    } catch (error) {
+      console.error('Error calculating analytics:', error);
+      // Set safe default values
+      setAnalytics({
+        totalTasks: 0,
+        completedTasks: 0,
+        inProgressTasks: 0,
+        overdueTasks: 0,
+        averageProgress: 0,
+        averageEfficiency: 0,
+        departmentProgress: {},
+        priorityDistribution: { low: 0, medium: 0, high: 0, urgent: 0 },
+        weeklyProgress: []
+      });
+    }
   };
 
 
 
   const filteredTasks = tasks.filter(task => {
-    if (departmentFilter !== 'all' && task.department !== departmentFilter) return false;
-    if (statusFilter !== 'all' && task.status !== statusFilter) return false;
-    if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
-    return true;
+    try {
+      if (departmentFilter !== 'all' && task.department !== departmentFilter) return false;
+      if (statusFilter !== 'all' && task.status !== statusFilter) return false;
+      if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
+      return true;
+    } catch (error) {
+      console.error('Error filtering task:', task, error);
+      return false;
+    }
   });
 
   const getStatusColor = (status: string) => {
@@ -233,7 +340,7 @@ const TaskProgressMonitor: React.FC = () => {
       </div>
 
       {/* Analytics Overview */}
-      {analytics && (
+      {analytics && analytics.totalTasks >= 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
             <CardContent className="p-4">

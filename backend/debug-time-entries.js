@@ -9,14 +9,14 @@ const supabase = createClient(
 async function debugTimeEntries() {
   try {
     console.log('🔍 Checking time_entries table...');
-    
+
     // Get all time entries
     const { data: allEntries, error: allError } = await supabase
       .from('time_entries')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(10);
-    
+
     if (allError) {
       console.error('❌ Error fetching all entries:', allError);
     } else {
@@ -34,17 +34,17 @@ async function debugTimeEntries() {
         });
       }
     }
-    
+
     // Check for specific employee
     const employeeId = '6557ba97-11de-478b-96f0-75a4da4db358';
     console.log(`\n🔍 Checking entries for employee: ${employeeId}`);
-    
+
     const { data: employeeEntries, error: empError } = await supabase
       .from('time_entries')
       .select('*')
       .eq('employee_id', employeeId)
       .order('check_in_time', { ascending: false });
-    
+
     if (empError) {
       console.error('❌ Error fetching employee entries:', empError);
     } else {
@@ -57,13 +57,13 @@ async function debugTimeEntries() {
         });
       }
     }
-    
+
     // Check date range (last 30 days)
     const endDate = new Date().toISOString().split('T')[0];
     const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    
+
     console.log(`\n🔍 Checking entries for date range: ${startDate} to ${endDate}`);
-    
+
     const { data: rangeEntries, error: rangeError } = await supabase
       .from('time_entries')
       .select('*')
@@ -71,7 +71,7 @@ async function debugTimeEntries() {
       .gte('check_in_time', startDate)
       .lte('check_in_time', endDate)
       .order('check_in_time', { ascending: false });
-    
+
     if (rangeError) {
       console.error('❌ Error fetching range entries:', rangeError);
     } else {
@@ -82,7 +82,7 @@ async function debugTimeEntries() {
         });
       }
     }
-    
+
   } catch (error) {
     console.error('💥 Unexpected error:', error);
   }

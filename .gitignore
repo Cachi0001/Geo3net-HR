@@ -15,6 +15,7 @@ go3net-pulse
 .env.example
 .trae
 .qodo
+debug_employees.js
 
 # Build outputs
 dist/
