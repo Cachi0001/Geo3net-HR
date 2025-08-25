@@ -56,6 +56,7 @@ const navigationItems: NavigationSection[] = [
   {
     title: 'HR Operations',
     items: [
+      { title: 'Attendance Monitor', url: '/dashboard/attendance-monitor', icon: UserCheck, roles: ['super-admin', 'hr-admin'] },
       { title: 'Recruitment', url: '/dashboard/recruitment', icon: Briefcase, roles: ['super-admin', 'hr-admin', 'hr-staff'] },
       { title: 'Payroll', url: '/dashboard/payroll', icon: FileText, roles: ['super-admin', 'hr-admin'] },
       { title: 'Leave Requests', url: '/dashboard/leave-request', icon: Calendar, roles: ['super-admin', 'hr-admin', 'manager', 'employee'] },

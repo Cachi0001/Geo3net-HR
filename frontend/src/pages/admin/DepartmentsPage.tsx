@@ -24,13 +24,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Building2, 
-  Users, 
-  Target, 
-  TrendingUp, 
-  Search, 
-  Plus, 
+import {
+  Building2,
+  Users,
+  Target,
+  TrendingUp,
+  Search,
+  Plus,
   MoreVertical,
   Mail,
   Phone,
@@ -88,7 +88,7 @@ const DepartmentsPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await apiClient.getDepartments();
-      
+
       if (response.success && response.data) {
         // Transform backend data to frontend format
         const departmentArray = response.data.departments || response.data;
@@ -116,7 +116,7 @@ const DepartmentsPage: React.FC = () => {
           established: dept.created_at,
           color: ['bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-cyan-500', 'bg-pink-500'][index % 5]
         }));
-        
+
         setDepartments(transformedDepartments);
       } else {
         console.warn('No department data received from API');
@@ -166,9 +166,9 @@ const DepartmentsPage: React.FC = () => {
       const response = await apiClient.createDepartment({
         name: newDepartment.name,
         description: newDepartment.description,
-        manager_id: newDepartment.manager_id === 'no-manager' || !newDepartment.manager_id ? null : newDepartment.manager_id
+        managerId: newDepartment.manager_id === 'no-manager' || !newDepartment.manager_id ? undefined : newDepartment.manager_id
       });
-      
+
       if (response.success) {
         toast({
           title: 'Success',
@@ -197,7 +197,7 @@ const DepartmentsPage: React.FC = () => {
     loadEmployees();
   }, [loadDepartments, loadEmployees]);
 
-  const filteredDepartments = departments.filter(dept => 
+  const filteredDepartments = departments.filter(dept =>
     dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     dept.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (dept.manager?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -271,8 +271,8 @@ const DepartmentsPage: React.FC = () => {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="manager">Department Manager (Optional)</Label>
-                <Select 
-                  value={newDepartment.manager_id} 
+                <Select
+                  value={newDepartment.manager_id}
                   onValueChange={(value) => setNewDepartment({ ...newDepartment, manager_id: value })}
                 >
                   <SelectTrigger>
@@ -347,7 +347,7 @@ const DepartmentsPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="metric-card">
           <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
@@ -361,7 +361,7 @@ const DepartmentsPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="metric-card">
           <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
@@ -375,7 +375,7 @@ const DepartmentsPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="metric-card">
           <CardContent className="p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
@@ -411,7 +411,7 @@ const DepartmentsPage: React.FC = () => {
                 </Button>
               </div>
             </CardHeader>
-            
+
             <CardContent className="p-4 pt-0 space-y-4">
               {/* Manager Info */}
               <div className="bg-gradient-to-r from-gray-50 to-white p-3 rounded-lg border">

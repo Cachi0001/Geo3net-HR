@@ -1021,7 +1021,7 @@ export class TaskService {
       console.log('🔍 [TaskService] Verifying linked user account:', employeeData.user_id);
       const { data: linkedUserData, error: linkedUserError } = await supabase
         .from('users')
-        .select('id, email, is_active')
+        .select('id, email, status')
         .eq('id', employeeData.user_id)
         .single()
 
@@ -1039,12 +1039,13 @@ export class TaskService {
           error: linkedUserError?.message
         });
         
-        // If employee exists but linked user doesn't exist, this is a data integrity issue
-        console.log('❌ [TaskService] Data integrity issue: employee exists but linked user account is missing');
-        throw new ValidationError(`Employee ${employeeData.full_name} has a user_id (${employeeData.user_id}) that doesn't exist in the users table. Please contact admin to fix this data integrity issue.`);
+        // If employee exists but linked user doesn't exist, log warning but allow assignment
+        console.log('⚠️ [TaskService] Data integrity issue: employee exists but linked user account is missing - allowing assignment anyway');
+        console.log('⚠️ [TaskService] This should be fixed by admin later');
+        return; // Allow the assignment to proceed
       }
 
-      if (!linkedUserData.is_active) {
+      if (linkedUserData.status !== 'active') {
         console.log('❌ [TaskService] User account is inactive:', linkedUserData);
         throw new ValidationError('Invalid assignee: user account is inactive')
       }
@@ -1057,7 +1058,7 @@ export class TaskService {
     console.log('🔍 [TaskService] Employee not found, trying users table...');
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('id, email, is_active')
+      .select('id, email, status')
       .eq('id', assigneeId)
       .single()
 
@@ -1068,7 +1069,7 @@ export class TaskService {
     });
 
     if (userData && !userError) {
-      if (!userData.is_active) {
+      if (userData.status !== 'active') {
         console.log('❌ [TaskService] User account is inactive:', userData);
         throw new ValidationError('Invalid assignee: user account is inactive')
       }
@@ -1337,7 +1338,7 @@ export class TaskService {
             department_id,
             departments:department_id (name)
           `)
-          .eq('is_active', true)
+          .eq('status', 'active')
 
         return allUsers || []
       }
@@ -1360,7 +1361,7 @@ export class TaskService {
           manager_id,
           departments:department_id (name)
         `)
-        .eq('is_active', true)
+        .eq('status', 'active')
 
       // Build conditions based on role and hierarchy
       const conditions = []

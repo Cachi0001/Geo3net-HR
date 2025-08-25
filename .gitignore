@@ -44,10 +44,11 @@ jspm_packages/
 
 # Optional npm cache directory
 .npm
-
+.trae/rules
 .node_repl_history
 
 *.tgz
+*.trae
 
 .yarn-integrity
 

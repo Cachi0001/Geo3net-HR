@@ -46,18 +46,18 @@ export class TaskController {
   async getTasks(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
       const userId = req.user?.id;
-      const { 
-        status, 
-        priority, 
-        assigned_to, 
-        assigned_by, 
-        page = 1, 
+      const {
+        status,
+        priority,
+        assigned_to,
+        assigned_by,
+        page = 1,
         limit = 20,
-        search 
+        search
       } = req.query;
-      
+
       console.log('📋 Fetching tasks for user:', userId);
-      
+
       // Use TaskService to get enriched task data
       const filters = {
         status: status as string,
@@ -97,9 +97,9 @@ export class TaskController {
     try {
       const userId = req.user?.id;
       const { status } = req.query;
-      
+
       console.log('👤 Fetching tasks for user:', userId);
-      
+
       // Use TaskService to get enriched task data
       const tasks = await this.taskService.getTasksByAssignee(userId!, status as string);
 
@@ -170,7 +170,7 @@ export class TaskController {
         'content-type': req.headers['content-type'],
         'user-agent': req.headers['user-agent']
       }, null, 2));
-      
+
       // Handle different field name formats from frontend with detailed logging
       // Also handle empty strings properly by converting them to null/undefined
       const taskData: CreateTaskRequest = {
@@ -180,14 +180,14 @@ export class TaskController {
         priority: requestBody.priority,
         status: requestBody.status,
         due_date: requestBody.due_date || requestBody.dueDate,
-        estimated_hours: (requestBody.estimated_hours || requestBody.estimatedHours) && 
-          (requestBody.estimated_hours || requestBody.estimatedHours) !== '' ? 
+        estimated_hours: (requestBody.estimated_hours || requestBody.estimatedHours) &&
+          (requestBody.estimated_hours || requestBody.estimatedHours) !== '' ?
           Number(requestBody.estimated_hours || requestBody.estimatedHours) : undefined,
         tags: (requestBody.tags && requestBody.tags !== '') ? requestBody.tags : undefined,
         department_id: (requestBody.department_id || requestBody.departmentId) || undefined,
         project_id: (requestBody.project_id || requestBody.projectId) || undefined
       };
-      
+
       console.log('🔄 [Task Creation] Mapped task data:', JSON.stringify(taskData, null, 2));
       console.log('➕ [Task Creation] Creating task:', taskData.title);
       console.log('👤 [Task Creation] Assigned to:', taskData.assigned_to);
@@ -199,7 +199,7 @@ export class TaskController {
 
       // Enhanced validation with detailed error messages
       const validationErrors = [];
-      
+
       if (!taskData.title || taskData.title.trim() === '') {
         validationErrors.push('Title is required and cannot be empty');
         console.log('❌ [Task Creation] Title validation failed:', {
@@ -208,7 +208,7 @@ export class TaskController {
           titleLength: taskData.title?.length
         });
       }
-      
+
       if (!taskData.assigned_to || taskData.assigned_to.trim() === '') {
         validationErrors.push('Employee assignment is required');
         console.log('❌ [Task Creation] Assigned to validation failed:', {
@@ -240,9 +240,9 @@ export class TaskController {
         departmentId: taskData.department_id,
         projectId: taskData.project_id
       };
-      
+
       console.log('🔄 [Task Creation] Service data prepared:', JSON.stringify(serviceData, null, 2));
-      
+
       console.log('🔄 [Task Creation] Calling TaskService with data:', JSON.stringify(serviceData, null, 2));
       console.log('🔄 [Task Creation] Created by user:', userId);
 
@@ -266,18 +266,18 @@ export class TaskController {
       console.error('❌ [Task Creation] Unexpected error:', error);
       console.error('❌ [Task Creation] Error stack:', error.stack);
       console.error('❌ [Task Creation] Error type:', error.constructor.name);
-      
+
       if (error instanceof AuthorizationError) {
         console.log('🚫 [Task Creation] Authorization error:', error.message);
         return ResponseHandler.forbidden(res, error.message);
       }
-      
+
       // Check for database-related errors
       if (error.message && error.message.includes('column')) {
         console.log('🗃️ [Task Creation] Database schema error detected');
         return ResponseHandler.internalError(res, 'Database schema error: ' + error.message + '. Please run the schema update.');
       }
-      
+
       return ResponseHandler.internalError(res, error.message || 'Failed to create task');
     }
   }
@@ -290,7 +290,7 @@ export class TaskController {
       const { id } = req.params;
       const updateData: Partial<CreateTaskRequest & { actualHours?: number; notes?: string }> = req.body;
       const userId = req.user?.id;
-      
+
       console.log('✏️ Updating task:', id);
 
       // First, get the current task data to compare changes
@@ -443,14 +443,14 @@ export class TaskController {
       const { id } = req.params;
       const { assignedTo } = req.body;
       const assignedBy = req.user?.id;
-      
+
       console.log('🔄 [Task Assignment] Starting task assignment:', {
         taskId: id,
         assignedTo,
         assignedBy,
         requestBody: req.body
       });
-      
+
       if (!assignedBy) {
         console.log('❌ [Task Assignment] Authentication required - no user ID');
         return ResponseHandler.forbidden(res, 'Authentication required');
@@ -462,8 +462,7 @@ export class TaskController {
       }
 
       console.log('🔄 [Task Assignment] Calling TaskService.updateTask...');
-      
-      // Use TaskService for update with role validation
+
       const result = await this.taskService.updateTask(id, {
         assignedTo: assignedTo
       }, assignedBy);
@@ -484,17 +483,17 @@ export class TaskController {
     } catch (error: any) {
       console.error('❌ [Task Assignment] Unexpected error:', error);
       console.error('❌ [Task Assignment] Error stack:', error.stack);
-      
+
       if (error instanceof AuthorizationError) {
         console.log('🚫 [Task Assignment] Authorization error:', error.message);
         return ResponseHandler.forbidden(res, error.message);
       }
-      
+
       if (error.message && error.message.includes('not found')) {
         console.log('🔍 [Task Assignment] Task not found error');
         return ResponseHandler.notFound(res, 'Task not found');
       }
-      
+
       return ResponseHandler.internalError(res, error.message || 'Failed to assign task');
     }
   }
@@ -567,7 +566,7 @@ export class TaskController {
       const { id } = req.params;
       const { comment } = req.body;
       const userId = req.user?.id;
-      
+
       console.log('💬 Adding comment to task:', id);
 
       if (!comment || !comment.trim()) {
@@ -662,7 +661,7 @@ export class TaskController {
       console.log('🐛 [Debug] Request body:', JSON.stringify(req.body, null, 2));
       console.log('🐛 [Debug] Request headers:', JSON.stringify(req.headers, null, 2));
       console.log('🐛 [Debug] User:', req.user);
-      
+
       // Test the same field mapping logic as createTask
       const requestBody = req.body;
       const taskData = {
@@ -677,9 +676,9 @@ export class TaskController {
         department_id: requestBody.department_id || requestBody.departmentId,
         project_id: requestBody.project_id || requestBody.projectId
       };
-      
+
       console.log('🐛 [Debug] Mapped task data:', JSON.stringify(taskData, null, 2));
-      
+
       // Test validation logic
       const validationResults = {
         titleValid: !!(taskData.title && taskData.title.trim()),
@@ -693,9 +692,9 @@ export class TaskController {
           finalValue: taskData.assigned_to
         }
       };
-      
+
       console.log('🐛 [Debug] Validation results:', JSON.stringify(validationResults, null, 2));
-      
+
       return ResponseHandler.success(res, 'Debug data logged', {
         originalBody: req.body,
         mappedData: taskData,
@@ -716,14 +715,14 @@ export class TaskController {
     try {
       console.log('🔍 [Schema Check] Starting database schema check...');
       console.log('🔍 [Schema Check] User:', req.user?.id, req.user?.email);
-      
+
       // Try to get table structure
       console.log('🔍 [Schema Check] Testing table access...');
       const { data: tableInfo, error: tableError } = await supabase
         .from('tasks')
         .select('*')
         .limit(1);
-      
+
       if (tableError) {
         console.error('❌ [Schema Check] Table error:', tableError);
         return ResponseHandler.success(res, 'Schema check completed with table error', {
@@ -732,21 +731,21 @@ export class TaskController {
           suggestion: 'Check if tasks table exists'
         });
       }
-      
+
       console.log('✅ [Schema Check] Table accessible, found', tableInfo?.length || 0, 'records');
-      
+
       // Get table column information
       console.log('🔍 [Schema Check] Checking table structure...');
       const { data: columnInfo, error: columnError } = await supabase
         .rpc('get_table_columns', { table_name: 'tasks' })
         .select();
-      
+
       if (columnError) {
         console.log('⚠️ [Schema Check] Could not get column info:', columnError.message);
       } else {
         console.log('📋 [Schema Check] Table columns:', columnInfo);
       }
-      
+
       // Try to insert a test record to see what columns are missing
       const testTask = {
         title: 'Schema Test',
@@ -757,22 +756,22 @@ export class TaskController {
         priority: 'medium',
         created_by: req.user?.id
       };
-      
+
       console.log('🔍 [Schema Check] Testing insert with data:', JSON.stringify(testTask, null, 2));
-      
+
       const { data: insertTest, error: insertError } = await supabase
         .from('tasks')
         .insert([testTask])
         .select()
         .single();
-      
+
       if (insertError) {
         console.error('❌ [Schema Check] Insert test error:', insertError);
-        
+
         // Analyze the error to provide better feedback
         let missingColumns = [];
         let errorAnalysis = 'Unknown error';
-        
+
         if (insertError.message.includes('column') && insertError.message.includes('does not exist')) {
           const columnMatch = insertError.message.match(/column "([^"]+)" does not exist/);
           if (columnMatch) {
@@ -787,7 +786,7 @@ export class TaskController {
         } else if (insertError.message.includes('violates')) {
           errorAnalysis = `Database constraint violation: ${insertError.message}`;
         }
-        
+
         return ResponseHandler.success(res, 'Schema check completed with insert error', {
           tableAccessible: true,
           insertError: insertError.message,
@@ -798,15 +797,15 @@ export class TaskController {
           suggestion: missingColumns.length > 0 ? 'Run the schema update SQL script to add missing columns' : 'Check database constraints and required fields'
         });
       }
-      
+
       console.log('✅ [Schema Check] Insert test successful:', insertTest?.id);
-      
+
       // Clean up test record
       if (insertTest) {
         await supabase.from('tasks').delete().eq('id', insertTest.id);
         console.log('🧹 [Schema Check] Test record cleaned up');
       }
-      
+
       return ResponseHandler.success(res, 'Schema check passed completely', {
         tableAccessible: true,
         insertWorking: true,
@@ -814,7 +813,7 @@ export class TaskController {
         columnInfo: columnInfo || 'Column info not available',
         message: 'Database schema is working correctly'
       });
-      
+
     } catch (error: any) {
       console.error('❌ [Schema Check] Unexpected error:', error);
       return ResponseHandler.internalError(res, `Schema check failed: ${error.message}`);

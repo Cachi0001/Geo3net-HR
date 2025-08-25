@@ -231,7 +231,7 @@ const TasksPage: React.FC = () => {
     if (!selectedTask) return;
 
     try {
-      const response = await apiClient.updateTask(`/api/tasks/${selectedTask.id}`, updateForm);
+      const response = await apiClient.updateTask(selectedTask.id, updateForm);
       
       if (response.data && typeof response.data === 'object' && 'success' in response.data && response.data.success) {
         toast({

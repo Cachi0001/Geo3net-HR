@@ -41,11 +41,12 @@ export const useAuth = () => {
         const response = await apiClient.getCurrentUser()
         
         if (response.success && response.data) {
+          const userData = response.data.user || response.data;
           console.log('✅ Current user fetched:', {
-            email: response.data.email,
-            role: response.data.role
+            email: userData.email,
+            role: userData.role
           })
-          return response.data
+          return userData
         } else {
           console.warn('⚠️ getCurrentUser returned unsuccessful response:', response.message)
           return null

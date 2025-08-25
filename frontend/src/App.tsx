@@ -26,6 +26,7 @@ import TimeTrackingPage from './pages/dashboard/TimeTrackingPage.tsx'
 import DepartmentsPage from './pages/admin/DepartmentsPage'
 import RolesPage from './pages/admin/RolesPage'
 import AnalyticsPage from './pages/admin/AnalyticsPage'
+import AttendanceMonitorPage from './pages/admin/AttendanceMonitorPage'
 import PayrollPage from './pages/admin/PayrollPage'
 import SettingsPage from './pages/admin/SettingsPage'
 import RecruitmentPage from './pages/dashboard/RecruitmentPage'
@@ -81,6 +82,11 @@ function App() {
               <Route path="task-assignment" element={<TaskAssignmentPage />} />
               <Route path="roles" element={<RolesPage />} />
               <Route path="time-tracking" element={<RoleBasedTimeTracking />} />
+              <Route path="attendance-monitor" element={
+                <ProtectedRoute requiredRoles={['super-admin', 'hr-admin']}>
+                  <AttendanceMonitorPage />
+                </ProtectedRoute>
+              } />
               <Route path="leave-request" element={<LeaveRequestPage />} />
               <Route path="tasks" element={
                 <ProtectedRoute>

@@ -59,7 +59,7 @@ interface Task {
 }
 
 const TaskAssignmentPage: React.FC = () => {
-  const { user, isLoadingUser } = useAuth();
+  const { user, isLoading: isLoadingUser } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
