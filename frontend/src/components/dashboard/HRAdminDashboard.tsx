@@ -56,22 +56,22 @@ export const HRAdminDashboard: React.FC = () => {
       if (metricsResponse.success && metricsResponse.data) {
         const metrics = metricsResponse.data;
         setStats({
-          totalEmployees: metrics.totalEmployees || 150,
-          newHires: Math.floor(metrics.totalEmployees * 0.05) || 8,
-          leaveRequests: metrics.onLeave || 12,
-          openPositions: 6,
-          pendingApprovals: 3,
-          activeRecruitment: 5
+          totalEmployees: metrics.totalEmployees || 0,
+          newHires: Math.floor(metrics.totalEmployees * 0.05) || 0,
+          leaveRequests: metrics.onLeave || 0,
+          openPositions: 0,
+          pendingApprovals: 0,
+          activeRecruitment: metrics.activeRecruitment || 0
         });
       } else {
-        // Fallback data
+        // Default data
         setStats({
-          totalEmployees: 150,
-          newHires: 8,
-          leaveRequests: 12,
-          openPositions: 6,
-          pendingApprovals: 3,
-          activeRecruitment: 5
+          totalEmployees: 0,
+          newHires: 0,
+          leaveRequests: 0,
+          openPositions: 0,
+          pendingApprovals: 0,
+          activeRecruitment: 0
         });
       }
 
@@ -79,37 +79,27 @@ export const HRAdminDashboard: React.FC = () => {
       if (activitiesResponse.success && activitiesResponse.data) {
         setRecentActivities(activitiesResponse.data.slice(0, 4));
       } else {
-        // Fallback activities
-        setRecentActivities([
-          { id: '1', action: 'New employee onboarded', user: 'Sarah Johnson', time: '2 hours ago', type: 'employee' },
-          { id: '2', action: 'Leave request approved', user: 'Mike Chen', time: '4 hours ago', type: 'leave' },
-          { id: '3', action: 'Performance review completed', user: 'Emma Davis', time: '1 day ago', type: 'employee' },
-          { id: '4', action: 'Job posting published', user: 'HR Team', time: '2 days ago', type: 'recruitment' }
-        ]);
+        // Default to empty activities
+        setRecentActivities([]);
       }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load dashboard data. Using fallback data.',
+        description: 'Failed to load dashboard data.',
         variant: 'destructive'
       });
       
-      // Set fallback data on error
+      // Set default data on error
       setStats({
-        totalEmployees: 150,
-        newHires: 8,
-        leaveRequests: 12,
-        openPositions: 6,
-        pendingApprovals: 3,
-        activeRecruitment: 5
+        totalEmployees: 0,
+        newHires: 0,
+        leaveRequests: 0,
+        openPositions: 0,
+        pendingApprovals: 0,
+        activeRecruitment: 0
       });
-      setRecentActivities([
-        { id: '1', action: 'New employee onboarded', user: 'Sarah Johnson', time: '2 hours ago', type: 'employee' },
-        { id: '2', action: 'Leave request approved', user: 'Mike Chen', time: '4 hours ago', type: 'leave' },
-        { id: '3', action: 'Performance review completed', user: 'Emma Davis', time: '1 day ago', type: 'employee' },
-        { id: '4', action: 'Job posting published', user: 'HR Team', time: '2 days ago', type: 'recruitment' }
-      ]);
+      setRecentActivities([]);
     } finally {
       setLoading(false);
     }

@@ -75,16 +75,16 @@ export const ManagerDashboard: React.FC = () => {
       if (metricsResponse.success) {
         setTeamMetrics(metricsResponse.data);
       } else {
-        // Fallback data
+        // Default data
         setTeamMetrics({
-          totalTeamMembers: 12,
-          activeTasks: 28,
-          completedThisWeek: 15,
-          teamPerformance: 87,
-          attendanceRate: 94,
-          productivityScore: 82,
-          overdueTasks: 3,
-          upcomingDeadlines: 8
+          totalTeamMembers: 0,
+          activeTasks: 0,
+          completedThisWeek: 0,
+          teamPerformance: 0,
+          attendanceRate: 0,
+          productivityScore: 0,
+          overdueTasks: 0,
+          upcomingDeadlines: 0
         });
       }
 
@@ -93,15 +93,8 @@ export const ManagerDashboard: React.FC = () => {
       if (teamResponse.success) {
         setTeamMembers(teamResponse.data?.employees?.slice(0, 6) || []);
       } else {
-        // Fallback data
-        setTeamMembers([
-          { id: '1', name: 'John Doe', position: 'Senior Developer', performance: 92, tasksCompleted: 8, tasksActive: 3, attendanceRate: 96, lastActivity: '5 min ago', avatar: 'JD', status: 'online' },
-          { id: '2', name: 'Jane Smith', position: 'UI/UX Designer', performance: 88, tasksCompleted: 6, tasksActive: 2, attendanceRate: 94, lastActivity: '15 min ago', avatar: 'JS', status: 'online' },
-          { id: '3', name: 'Mike Johnson', position: 'Frontend Developer', performance: 85, tasksCompleted: 7, tasksActive: 4, attendanceRate: 90, lastActivity: '2 hours ago', avatar: 'MJ', status: 'away' },
-          { id: '4', name: 'Sarah Wilson', position: 'QA Engineer', performance: 90, tasksCompleted: 9, tasksActive: 2, attendanceRate: 98, lastActivity: '10 min ago', avatar: 'SW', status: 'online' },
-          { id: '5', name: 'Alex Chen', position: 'DevOps Engineer', performance: 91, tasksCompleted: 5, tasksActive: 3, attendanceRate: 92, lastActivity: '1 hour ago', avatar: 'AC', status: 'away' },
-          { id: '6', name: 'Maria Garcia', position: 'Product Manager', performance: 89, tasksCompleted: 11, tasksActive: 5, attendanceRate: 95, lastActivity: '30 min ago', avatar: 'MG', status: 'online' },
-        ]);
+        // Default to empty team members
+        setTeamMembers([]);
       }
 
       // Load active tasks
@@ -109,14 +102,8 @@ export const ManagerDashboard: React.FC = () => {
       if (tasksResponse.success) {
         setActiveTasks(tasksResponse.data?.slice(0, 5) || []);
       } else {
-        // Fallback data
-        setActiveTasks([
-          { id: '1', title: 'Review Q1 Performance Reports', assignee: 'John Doe', status: 'in_progress', priority: 'high', dueDate: '2024-03-25', progress: 65, estimatedHours: 8 },
-          { id: '2', title: 'Update User Interface Components', assignee: 'Jane Smith', status: 'review', priority: 'medium', dueDate: '2024-03-23', progress: 90, estimatedHours: 12 },
-          { id: '3', title: 'Implement Authentication System', assignee: 'Mike Johnson', status: 'in_progress', priority: 'urgent', dueDate: '2024-03-22', progress: 45, estimatedHours: 16 },
-          { id: '4', title: 'Conduct User Testing Session', assignee: 'Sarah Wilson', status: 'pending', priority: 'high', dueDate: '2024-03-28', progress: 20, estimatedHours: 6 },
-          { id: '5', title: 'Setup CI/CD Pipeline', assignee: 'Alex Chen', status: 'overdue', priority: 'high', dueDate: '2024-03-20', progress: 80, estimatedHours: 10 },
-        ]);
+        // Default to empty tasks
+        setActiveTasks([]);
       }
 
       // Load schedule data - using fallback for now

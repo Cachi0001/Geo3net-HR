@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Task } from '@/types/task.types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,15 +10,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/services/api';
 import { 
   CheckSquare, 
-  Clock, 
   AlertCircle, 
   Search, 
   Plus, 
   Calendar,
-  Target,
   Flag,
   Loader2,
-  UserPlus
+  UserPlus,
+  Users,
+  Trash2
 } from 'lucide-react';
 import {
   Dialog,
@@ -37,26 +38,6 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  assignee?: {
-    name: string;
-    avatar: string;
-    department: string;
-  };
-  assignedTo?: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'todo' | 'review';
-  dueDate: string;
-  createdAt: string;
-  progress?: number;
-  estimatedHours?: number;
-  actualHours?: number;
-  tags?: string[];
-}
 
 const TaskAssignmentPage: React.FC = () => {
   const { user, isLoading: isLoadingUser } = useAuth();
@@ -249,6 +230,42 @@ const TaskAssignmentPage: React.FC = () => {
     }
   }
 
+  const handleDeleteTask = async (taskId: string) => {
+    if (!window.confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await apiClient.deleteTask(taskId);
+      
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Task deleted successfully",
+        });
+        
+        // Refresh tasks list
+        await loadTasks();
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to delete task",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -361,7 +378,7 @@ const TaskAssignmentPage: React.FC = () => {
               <div className="grid gap-2">
                 <Label>Current Assignee</Label>
                 <div className="p-2 bg-muted rounded-md text-sm">
-                  {selectedTask?.assignee?.name || 'Unassigned'}
+                  {selectedTask?.assigneeName || selectedTask?.assignee?.name || 'Unassigned'}
                 </div>
               </div>
               <div className="grid gap-2">
@@ -464,7 +481,7 @@ const TaskAssignmentPage: React.FC = () => {
                   {task.assignee?.avatar || 'N/A'}
                 </div>
                 <div>
-                  <p className="font-medium text-sm">{task.assignee?.name || 'Unassigned'}</p>
+                  <p className="font-medium text-sm">{task.assigneeName || task.assignee?.name || 'Unassigned'}</p>
                   <p className="text-xs text-muted-foreground">{task.assignee?.department || 'No Department'}</p>
                 </div>
               </div>
@@ -475,6 +492,34 @@ const TaskAssignmentPage: React.FC = () => {
                 </div>
                 <Progress value={task.progress || 0} className="h-2" />
               </div>
+              
+              {/* Task Actions */}
+              <div className="flex items-center justify-between pt-2 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedTask(task);
+                    setIsAssignModalOpen(true);
+                  }}
+                >
+                  <Users className="h-3 w-3 mr-1" />
+                  Reassign
+                </Button>
+                
+                {(user?.role === 'super-admin' || user?.role === 'hr-admin' || user?.role === 'manager') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteTask(task.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Delete
+                  </Button>
+                )}
+              </div>
+              
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-3 w-3" />

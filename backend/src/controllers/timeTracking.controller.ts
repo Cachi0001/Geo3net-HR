@@ -148,24 +148,42 @@ export class TimeTrackingController {
     async getTimeEntries(req: AuthenticatedRequest, res: Response): Promise<Response> {
         try {
             const employeeId = req.user?.id!
-            const { startDate, endDate, limit = '50', offset = '0' } = req.query
+            const { startDate, endDate, limit = '50', offset = '0', recent } = req.query
 
-            const entries = await this.timeTrackingService.getTimeEntries(
-                employeeId,
-                startDate as string,
-                endDate as string
-            )
+            let entries: any[]
+
+            // If recent parameter is provided, use the enhanced recent entries method
+            if (recent === 'true') {
+                const days = parseInt(req.query.days as string) || 30
+                entries = await this.timeTrackingService.getRecentTimeEntriesWithDetails(employeeId, days)
+            } else {
+                entries = await this.timeTrackingService.getTimeEntries(
+                    employeeId,
+                    startDate as string,
+                    endDate as string
+                )
+            }
 
             // Apply pagination
             const limitNum = parseInt(limit as string)
             const offsetNum = parseInt(offset as string)
             const paginatedEntries = entries.slice(offsetNum, offsetNum + limitNum)
 
+            // Calculate summary for recent entries
+            const summary = recent === 'true' ? {
+                totalEntries: entries.length,
+                totalHours: entries.reduce((sum, entry) => sum + (entry.totalHours || 0), 0),
+                totalDays: new Set(entries.map(entry => entry.checkInTime.split('T')[0])).size,
+                locationTrackedDays: new Set(entries.filter(entry => entry.locationTracked).map(entry => entry.checkInTime.split('T')[0])).size,
+                avgHoursPerDay: entries.length > 0 ? entries.reduce((sum, entry) => sum + (entry.totalHours || 0), 0) / new Set(entries.map(entry => entry.checkInTime.split('T')[0])).size : 0
+            } : undefined
+
             return ResponseHandler.success(res, 'Time entries retrieved successfully', {
                 entries: paginatedEntries,
                 total: entries.length,
                 limit: limitNum,
-                offset: offsetNum
+                offset: offsetNum,
+                summary
             })
         } catch (error) {
             return ResponseHandler.internalError(res, 'Failed to get time entries')

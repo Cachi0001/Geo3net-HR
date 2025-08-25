@@ -87,6 +87,8 @@ export const SuperAdminDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
       
+      console.log('🔍 Loading SuperAdmin dashboard data...');
+      
       // Load dashboard analytics
       const [dashboardResponse, departmentsResponse, attendanceResponse, locationsResponse] = await Promise.all([
         apiClient.getSuperAdminDashboard(),
@@ -101,10 +103,38 @@ export const SuperAdminDashboard: React.FC = () => {
         apiClient.getLocations?.() || Promise.resolve({ success: false })
       ]);
 
+      console.log('📊 Dashboard API Response:', dashboardResponse);
+      
       if (dashboardResponse.success && dashboardResponse.data) {
+        console.log('✅ Dashboard data loaded successfully:', dashboardResponse.data);
         setDashboardData(dashboardResponse.data);
       } else {
-        throw new Error('Failed to load dashboard data');
+        console.error('❌ Dashboard API failed:', dashboardResponse);
+        // Set default data with proper types matching backend
+        const defaultData = {
+          totalEmployees: 0,
+          totalDepartments: 0,
+          activeRecruitment: 0,
+          monthlyPayroll: '$0.0M',
+          employeeGrowth: 0,
+          departmentGrowth: 0,
+          recruitmentFilled: 0,
+          payrollGrowth: 0,
+          todayAttendance: {
+            present: 0,
+            absent: 0,
+            late: 0,
+            earlyCheckouts: 0
+          },
+          activeLocations: 0,
+          systemHealth: {
+            uptime: '0%',
+            activeSessions: 0,
+            lastBackup: 'Never'
+          }
+        };
+        console.log('🔄 Using default data:', defaultData);
+        setDashboardData(defaultData);
       }
 
       if (departmentsResponse.success && departmentsResponse.data) {
@@ -129,13 +159,8 @@ export const SuperAdminDashboard: React.FC = () => {
         setLocationStats(locationsResponse.data.locations || []);
       }
 
-      // Enhanced system alerts
-      setSystemAlerts([
-        { id: 1, type: 'critical', message: 'Attendance policy update required', time: '2 hours ago', priority: 'high' },
-        { id: 2, type: 'warning', message: '8 employees with location discrepancies', time: '4 hours ago', priority: 'medium' },
-        { id: 3, type: 'info', message: 'Weekly attendance report generated', time: '1 day ago', priority: 'low' },
-        { id: 4, type: 'warning', message: 'Location geofencing needs review', time: '6 hours ago', priority: 'medium' },
-      ]);
+      // System alerts - default to empty array
+      setSystemAlerts([]);
     } catch (err: any) {
       console.error('Error loading dashboard data:', err);
       setError(err.message || 'Failed to load dashboard data');
@@ -266,24 +291,6 @@ export const SuperAdminDashboard: React.FC = () => {
         <p className="text-muted-foreground mobile-text-sm">Complete system overview and administrative controls</p>
       </div>
 
-      {/* System Metrics - Mobile First: 2x4 grid, Desktop: 4x2 */}
-      <div className="mobile-responsive-grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4">
-        {systemMetrics.map((metric, index) => {
-          const variants = ['primary', 'secondary', 'accent', 'success', 'warning', 'info', 'destructive', 'outline'] as const;
-          return (
-            <MetricCard
-              key={index}
-              title={metric.title}
-              value={metric.value}
-              change={metric.change}
-              icon={metric.icon}
-              variant={(['primary', 'secondary', 'accent', 'success', 'warning', 'info'] as const)[index % 6]}
-              className="animate-fade-in mobile-card"
-            />
-          );
-        })}
-      </div>
-
       {/* Quick Actions */}
       <Card className="mobile-card bg-gradient-card shadow-xl border-0">
         <CardHeader className="pb-3">
@@ -308,7 +315,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   </div>
                   <div className="text-center">
                     <div className="font-medium mobile-text-xs leading-tight">{action.title}</div>
-                    <div className="mobile-text-xs text-muted-foreground mt-1 hide-on-mobile">{action.description}</div>
+                    <div className="mobile-text-xs text-muted-foreground mt-1 hidden sm:block">{action.description}</div>
                   </div>
                 </div>
               );

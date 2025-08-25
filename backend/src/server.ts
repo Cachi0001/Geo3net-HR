@@ -10,6 +10,7 @@ import morgan from 'morgan'
 import { createServer } from 'http'
 import { testConnection } from './config/database'
 import { websocketService } from './services/websocket.service'
+import { taskSchedulerService } from './services/taskScheduler.service'
 import authRoutes from './routes/auth.routes'
 import roleRoutes from './routes/role.routes'
 import { userRoutes } from './routes/user.routes'
@@ -91,6 +92,9 @@ app.use(errorHandler)
 // Initialize WebSocket service
 websocketService.initialize(server)
 
+// Initialize task scheduler service
+taskSchedulerService.initialize()
+
 server.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`)
   console.log(`🔌 WebSocket server available at ws://localhost:${PORT}/ws`)
@@ -104,6 +108,7 @@ server.listen(PORT, async () => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('🛑 SIGTERM received, shutting down gracefully')
+  taskSchedulerService.shutdown()
   websocketService.shutdown()
   server.close(() => {
     console.log('✅ Server closed')
@@ -113,6 +118,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   console.log('🛑 SIGINT received, shutting down gracefully')
+  taskSchedulerService.shutdown()
   websocketService.shutdown()
   server.close(() => {
     console.log('✅ Server closed')

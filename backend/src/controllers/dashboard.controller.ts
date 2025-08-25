@@ -290,10 +290,10 @@ export class DashboardController {
         totalDepartments: metrics.departments,
         activeRecruitment: metrics.activeRecruitment,
         monthlyPayroll: `$${(metrics.monthlyPayroll / 1000000).toFixed(1)}M`,
-        employeeGrowth: 12, // Mock data - can be calculated from historical data
-        departmentGrowth: 2,
-        recruitmentFilled: 8,
-        payrollGrowth: 5.2
+        employeeGrowth: 0, // Default to 0 - can be calculated from historical data
+        departmentGrowth: 0,
+        recruitmentFilled: 0,
+        payrollGrowth: 0
       };
 
       // Add missing fields that frontend expects
@@ -301,15 +301,15 @@ export class DashboardController {
         present: metrics.presentToday,
         absent: metrics.absentToday,
         late: metrics.lateArrivals,
-        earlyCheckouts: Math.floor(metrics.presentToday * 0.05)
+        earlyCheckouts: 0 // Default to 0
       };
       
-      superAdminData.activeLocations = 4; // Default fallback
+      superAdminData.activeLocations = 0; // Default to 0
       
       superAdminData.systemHealth = {
-        uptime: "99.8%",
-        activeSessions: Math.floor(Math.random() * 50) + 50,
-        lastBackup: "2 hours ago"
+        uptime: "0%",
+        activeSessions: 0,
+        lastBackup: "Never"
       };
       
       console.log('✅ Super admin data prepared:', superAdminData);

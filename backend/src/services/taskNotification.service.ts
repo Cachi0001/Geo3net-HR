@@ -1,14 +1,15 @@
 import { notificationService } from './notification.service'
+import { websocketService } from './websocket.service'
 import { supabase } from '../config/database'
 
 interface Task {
   id: string
   title: string
   description?: string
-  assignedTo: string
+  assignedTo?: string
   assignedBy: string
   priority: 'low' | 'medium' | 'high' | 'urgent'
-  status: 'todo' | 'in_progress' | 'completed' | 'cancelled'
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'on_hold'
   dueDate?: string
   createdAt: string
   updatedAt: string
@@ -168,6 +169,11 @@ class TaskNotificationService {
   // Task Assignment Notifications
   async notifyTaskAssignment(task: Task, assignedByUser: User, assignedToUser: User): Promise<void> {
     try {
+      if (!task.assignedTo) {
+        console.log('No assignee for task, skipping notification')
+        return
+      }
+
       // Check if user wants to receive this type of notification
       const shouldSend = await this.shouldSendNotification(task.assignedTo, 'task_assignment')
       if (!shouldSend) {
@@ -175,6 +181,7 @@ class TaskNotificationService {
         return
       }
 
+      // Send push notification
       await notificationService.sendNotification(
         task.assignedTo,
         'task_assignment',
@@ -205,6 +212,28 @@ class TaskNotificationService {
         }
       )
 
+      // Send real-time WebSocket notification
+      websocketService.sendTaskNotificationToUser(task.assignedTo!, {
+        type: 'task_assignment',
+        taskId: task.id,
+        title: task.title,
+        assignedBy: {
+          id: assignedByUser.id,
+          fullName: assignedByUser.fullName
+        },
+        assignedTo: {
+          id: assignedToUser.id,
+          fullName: assignedToUser.fullName
+        },
+        priority: task.priority,
+        dueDate: task.dueDate,
+        message: `New task assigned: ${task.title}`,
+        timestamp: new Date().toISOString()
+      })
+
+      // Notify managers and stakeholders via WebSocket
+      await this.notifyTaskStakeholders(task, 'assigned', assignedByUser)
+
       console.log(`Task assignment notification sent to ${assignedToUser.fullName} for task: ${task.title}`)
     } catch (error) {
       console.error('Failed to send task assignment notification:', error)
@@ -219,8 +248,19 @@ class TaskNotificationService {
     updatedByUser: User
   ): Promise<void> {
     try {
+      // Send real-time WebSocket notification for status change
+      websocketService.sendTaskStatusChangeNotification(
+        task.id, 
+        oldStatus, 
+        newStatus, 
+        {
+          id: updatedByUser.id,
+          fullName: updatedByUser.fullName
+        }
+      )
+
       // Notify the assignee if someone else updated the status
-      if (updatedByUser.id !== task.assignedTo) {
+      if (task.assignedTo && updatedByUser.id !== task.assignedTo) {
         const shouldSend = await this.shouldSendNotification(task.assignedTo, 'task_status_change')
         if (shouldSend) {
           await notificationService.sendNotification(
@@ -247,6 +287,21 @@ class TaskNotificationService {
               ]
             }
           )
+
+          // Send real-time notification to assignee
+          websocketService.sendTaskNotificationToUser(task.assignedTo!, {
+            type: 'task_status_change',
+            taskId: task.id,
+            title: task.title,
+            oldStatus,
+            newStatus,
+            updatedBy: {
+              id: updatedByUser.id,
+              fullName: updatedByUser.fullName
+            },
+            message: `Task status updated to ${this.formatStatus(newStatus)}`,
+            timestamp: new Date().toISOString()
+          })
         }
       }
 
@@ -272,8 +327,25 @@ class TaskNotificationService {
               }
             }
           )
+
+          // Send real-time notification to assigner
+          websocketService.sendTaskNotificationToUser(task.assignedBy, {
+            type: 'task_completion',
+            taskId: task.id,
+            title: task.title,
+            status: newStatus,
+            completedBy: {
+              id: updatedByUser.id,
+              fullName: updatedByUser.fullName
+            },
+            message: `Task ${newStatus}: ${task.title}`,
+            timestamp: new Date().toISOString()
+          })
         }
       }
+
+      // Notify stakeholders about task progress
+      await this.notifyTaskStakeholders(task, newStatus, updatedByUser)
 
       console.log(`Task status change notification sent for task: ${task.title} (${oldStatus} → ${newStatus})`)
     } catch (error) {
@@ -291,7 +363,7 @@ class TaskNotificationService {
       const recipientIds: string[] = []
 
       // Notify assignee if they didn't make the comment
-      if (commenterUser.id !== task.assignedTo) {
+      if (task.assignedTo && commenterUser.id !== task.assignedTo) {
         const shouldSend = await this.shouldSendNotification(task.assignedTo, 'task_comment')
         if (shouldSend) {
           recipientIds.push(task.assignedTo)
@@ -348,6 +420,11 @@ class TaskNotificationService {
   async notifyTaskDueReminder(task: Task): Promise<void> {
     try {
       if (!task.dueDate || task.status === 'completed' || task.status === 'cancelled') {
+        return
+      }
+
+      if (!task.assignedTo) {
+        console.log('No assignee for task, skipping due date reminder')
         return
       }
 
@@ -421,6 +498,223 @@ class TaskNotificationService {
       case 'completed': return 'Completed'
       case 'cancelled': return 'Cancelled'
       default: return status
+    }
+  }
+
+  // Notify task stakeholders (managers, department heads, etc.)
+  async notifyTaskStakeholders(task: Task, action: string, actionBy: User): Promise<void> {
+    try {
+      // Get managers and department heads who should be notified
+      const { data: stakeholders, error } = await supabase
+        .from('users')
+        .select('id, full_name, role')
+        .in('role', ['manager', 'hr_admin', 'super_admin'])
+        .eq('is_active', true)
+
+      if (error || !stakeholders) {
+        console.log('No stakeholders found for task notifications')
+        return
+      }
+
+      // Send WebSocket notifications to all stakeholders
+      for (const stakeholder of stakeholders) {
+        websocketService.sendTaskNotificationToUser(stakeholder.id, {
+          type: 'task_update',
+          taskId: task.id,
+          title: task.title,
+          action: action,
+          actionBy: {
+            id: actionBy.id,
+            fullName: actionBy.fullName
+          },
+          assignedTo: task.assignedTo,
+          priority: task.priority,
+          message: `Task ${action}: ${task.title}`,
+          timestamp: new Date().toISOString()
+        })
+      }
+
+      console.log(`Notified ${stakeholders.length} stakeholders about task ${action}`)
+    } catch (error) {
+      console.error('Error notifying task stakeholders:', error)
+    }
+  }
+
+  // Process overdue tasks and send escalation alerts
+  async processOverdueTasks(): Promise<void> {
+    try {
+      console.log('Processing overdue tasks...')
+      
+      const now = new Date()
+      
+      const { data: overdueTasks, error } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          assignedToUser:users!tasks_assigned_to_fkey(id, full_name, email, manager_id),
+          assignedByUser:users!tasks_assigned_by_fkey(id, full_name, email)
+        `)
+        .in('status', ['todo', 'in_progress'])
+        .not('due_date', 'is', null)
+        .lt('due_date', now.toISOString())
+      
+      if (error) {
+        console.error('Error fetching overdue tasks:', error)
+        return
+      }
+      
+      if (overdueTasks && overdueTasks.length > 0) {
+        console.log(`Found ${overdueTasks.length} overdue tasks`)
+        
+        for (const task of overdueTasks) {
+          await this.sendOverdueTaskAlert(task)
+          
+          // Add small delay to avoid overwhelming the notification service
+          await new Promise(resolve => setTimeout(resolve, 200))
+        }
+      }
+      
+      console.log('Overdue tasks processing complete')
+    } catch (error) {
+      console.error('Error processing overdue tasks:', error)
+    }
+  }
+
+  // Send overdue task alert with escalation
+  private async sendOverdueTaskAlert(task: any): Promise<void> {
+    try {
+      const dueDate = new Date(task.due_date)
+      const now = new Date()
+      const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 3600 * 24))
+      
+      // Send alert to assigned employee
+      await notificationService.sendNotification(
+        task.assigned_to,
+        'system_announcement',
+        {
+          title: 'Overdue Task Alert',
+          message: `Task "${task.title}" is ${daysOverdue} day(s) overdue!`,
+          priority: 'high'
+        },
+        {
+          data: {
+            taskId: task.id,
+            type: 'overdue_task',
+            daysOverdue: daysOverdue,
+            url: `/tasks?taskId=${task.id}`
+          },
+          requireInteraction: true,
+          actions: [
+            {
+              action: 'view',
+              title: 'View Task'
+            },
+            {
+              action: 'update_status',
+              title: 'Update Status'
+            }
+          ]
+        }
+      )
+
+      // Send WebSocket notification to employee
+      websocketService.sendTaskNotificationToUser(task.assigned_to, {
+        type: 'overdue_task',
+        taskId: task.id,
+        title: task.title,
+        daysOverdue: daysOverdue,
+        priority: 'urgent',
+        message: `OVERDUE: ${task.title} (${daysOverdue} days)`,
+        timestamp: new Date().toISOString()
+      })
+
+      // Escalate to manager if task is more than 1 day overdue
+      if (daysOverdue > 1 && task.assignedToUser?.manager_id) {
+        await notificationService.sendNotification(
+          task.assignedToUser.manager_id,
+          'system_announcement',
+          {
+            title: 'Employee Overdue Task',
+            message: `${task.assignedToUser.full_name}'s task "${task.title}" is ${daysOverdue} days overdue`,
+            priority: 'high'
+          },
+          {
+            data: {
+              taskId: task.id,
+              employeeId: task.assigned_to,
+              type: 'overdue_escalation',
+              daysOverdue: daysOverdue,
+              url: `/tasks?taskId=${task.id}`
+            }
+          }
+        )
+
+        // Send WebSocket notification to manager
+        websocketService.sendTaskNotificationToUser(task.assignedToUser.manager_id, {
+          type: 'overdue_escalation',
+          taskId: task.id,
+          title: task.title,
+          employee: {
+            id: task.assigned_to,
+            fullName: task.assignedToUser.full_name
+          },
+          daysOverdue: daysOverdue,
+          message: `Employee overdue task: ${task.title}`,
+          timestamp: new Date().toISOString()
+        })
+      }
+
+      // Escalate to HR/Admin if task is more than 3 days overdue
+      if (daysOverdue > 3) {
+        const { data: admins } = await supabase
+          .from('users')
+          .select('id')
+          .in('role', ['hr_admin', 'super_admin'])
+          .eq('is_active', true)
+
+        if (admins && admins.length > 0) {
+          const adminIds = admins.map(admin => admin.id)
+          
+          await notificationService.sendNotification(
+            adminIds,
+            'system_announcement',
+            {
+              title: 'Critical Overdue Task',
+              message: `Task "${task.title}" assigned to ${task.assignedToUser?.full_name} is ${daysOverdue} days overdue`,
+              priority: 'urgent'
+            },
+            {
+              data: {
+                taskId: task.id,
+                employeeId: task.assigned_to,
+                type: 'critical_overdue',
+                daysOverdue: daysOverdue,
+                url: `/tasks?taskId=${task.id}`
+              }
+            }
+          )
+
+          // Send WebSocket notifications to all admins
+          for (const adminId of adminIds) {
+            websocketService.sendTaskNotificationToUser(adminId, {
+              type: 'critical_overdue',
+              taskId: task.id,
+              title: task.title,
+              employee: {
+                id: task.assigned_to,
+                fullName: task.assignedToUser?.full_name
+              },
+              daysOverdue: daysOverdue,
+              message: `CRITICAL: Task overdue ${daysOverdue} days`,
+              timestamp: new Date().toISOString()
+            })
+          }
+        }
+      }
+
+      console.log(`Sent overdue alert for task: ${task.title} (${daysOverdue} days overdue)`)
+    } catch (error) {
+      console.error('Error sending overdue task alert:', error)
     }
   }
 

@@ -1,6 +1,7 @@
 import { supabase } from '../config/database'
 import { NotFoundError, ConflictError, ValidationError, AuthorizationError } from '../utils/errors'
 import { RoleService } from './role.service'
+import { taskNotificationService } from './taskNotification.service'
 
 export interface Task {
   id: string
@@ -202,7 +203,87 @@ export class TaskService {
       }
 
       console.log('✅ [TaskService] Task created successfully in database:', newTask.id);
-      const task = this.mapDatabaseToTask(newTask)
+      
+      // Enrich the task with assignee information like searchTasks does
+      let enrichedTaskData = { ...newTask };
+      if (newTask.assigned_to) {
+        // Try users table first
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id, full_name, email')
+          .eq('id', newTask.assigned_to)
+          .single()
+
+        if (userData) {
+          enrichedTaskData.assignee = userData;
+        } else {
+          // Try employees table
+          const { data: employeeData } = await supabase
+            .from('employees')
+            .select('id, full_name, email, user_id')
+            .or(`user_id.eq.${newTask.assigned_to},id.eq.${newTask.assigned_to}`)
+            .single()
+
+          if (employeeData) {
+            enrichedTaskData.assignee = {
+              id: employeeData.user_id || employeeData.id,
+              full_name: employeeData.full_name,
+              email: employeeData.email
+            };
+          }
+        }
+      }
+
+      const task = this.mapDatabaseToTask(enrichedTaskData)
+
+      // Send notifications if task is assigned to someone
+      if (task.assignedTo && task.assignedTo !== createdBy) {
+        try {
+          // Get assignee and assigner user details for notifications
+          const { data: assigneeUser } = await supabase
+            .from('users')
+            .select('id, full_name, email')
+            .eq('id', task.assignedTo)
+            .single()
+
+          const { data: assignerUser } = await supabase
+            .from('users')
+            .select('id, full_name, email')
+            .eq('id', createdBy)
+            .single()
+
+          if (assigneeUser && assignerUser) {
+            await taskNotificationService.notifyTaskAssignment(
+              {
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                assignedTo: task.assignedTo,
+                assignedBy: task.assignedBy,
+                priority: task.priority,
+                status: task.status,
+                dueDate: task.dueDate,
+                createdAt: task.createdAt,
+                updatedAt: task.updatedAt
+              },
+              {
+                id: assignerUser.id,
+                fullName: assignerUser.full_name,
+                email: assignerUser.email
+              },
+              {
+                id: assigneeUser.id,
+                fullName: assigneeUser.full_name,
+                email: assigneeUser.email
+              }
+            )
+            console.log('✅ [TaskService] Task assignment notification sent')
+          }
+        } catch (notificationError) {
+          console.error('⚠️ [TaskService] Failed to send task assignment notification:', notificationError)
+          // Don't fail task creation if notification fails
+        }
+      }
 
       return {
         success: true,
@@ -388,6 +469,45 @@ export class TaskService {
       if (error) throw error
 
       const task = this.mapDatabaseToTask(updatedTask)
+
+      // Send status change notifications if status was updated
+      if (data.status && data.status !== existingTask.status) {
+        try {
+          const { data: updaterUser } = await supabase
+            .from('users')
+            .select('id, full_name, email')
+            .eq('id', updatedBy)
+            .single()
+
+          if (updaterUser) {
+            await taskNotificationService.notifyTaskStatusChange(
+              {
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                assignedTo: task.assignedTo,
+                assignedBy: task.assignedBy,
+                priority: task.priority,
+                status: task.status,
+                dueDate: task.dueDate,
+                createdAt: task.createdAt,
+                updatedAt: task.updatedAt
+              },
+              existingTask.status,
+              data.status,
+              {
+                id: updaterUser.id,
+                fullName: updaterUser.full_name,
+                email: updaterUser.email
+              }
+            )
+            console.log('✅ [TaskService] Task status change notification sent')
+          }
+        } catch (notificationError) {
+          console.error('⚠️ [TaskService] Failed to send status change notification:', notificationError)
+          // Don't fail task update if notification fails
+        }
+      }
 
       return {
         success: true,

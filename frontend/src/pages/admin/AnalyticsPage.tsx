@@ -97,23 +97,8 @@ const AnalyticsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {metrics.map((metric, index) => {
-          const variants = ['primary', 'secondary', 'accent', 'success'] as const;
-          return (
-            <MetricCard
-              key={index}
-              title={metric.title}
-              value={metric.value}
-              change={metric.change}
-              icon={metric.icon}
-              variant={variants[index % variants.length]}
-              className="animate-fade-in"
-            />
-          );
-        })}
-      </div>
+      {/* Key Metrics have been removed */}
+      <p className="text-muted-foreground">Key metrics have been removed.</p>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

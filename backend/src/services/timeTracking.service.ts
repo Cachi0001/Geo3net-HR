@@ -26,6 +26,9 @@ export interface CheckOutData {
 export interface TimeEntry {
   id: string
   employeeId: string
+  employeeName?: string
+  employeeNumber?: string
+  department?: string
   checkInTime: string
   checkOutTime?: string
   checkInLocation?: Location
@@ -37,10 +40,16 @@ export interface TimeEntry {
   deviceInfo?: string
   createdAt: string
   updatedAt: string
+  locationTracked?: boolean
+  gpsAccuracy?: number
 }
 
 export interface AttendanceRecord {
+  id?: string
   employeeId: string
+  employeeName?: string
+  employeeNumber?: string
+  department?: string
   date: string
   checkInTime?: string
   checkOutTime?: string
@@ -48,9 +57,13 @@ export interface AttendanceRecord {
   regularHours: number
   overtimeHours: number
   breakTime: number
-  status: 'present' | 'absent' | 'partial' | 'late' | 'early_leave'
+  status: 'present' | 'absent' | 'partial' | 'late' | 'early_leave' | 'checked_in' | 'checked_out'
   lateMinutes: number
   earlyLeaveMinutes: number
+  checkInLocation?: Location
+  checkOutLocation?: Location
+  location?: Location // For backward compatibility
+  notes?: string
 }
 
 export interface WorkHoursSummary {
@@ -83,11 +96,15 @@ export class TimeTrackingService {
   private readonly MAX_LOCATION_DISTANCE_METERS = 100 // Maximum distance from office location
   
 
-  // Office location (configurable)
+  // Default office location (Go3net HQ)
   private readonly OFFICE_LOCATION: Location = {
-    latitude: parseFloat(process.env.OFFICE_LATITUDE || '0'),
-    longitude: parseFloat(process.env.OFFICE_LONGITUDE || '0')
+    latitude: parseFloat(process.env.OFFICE_LATITUDE || '6.5244'),
+    longitude: parseFloat(process.env.OFFICE_LONGITUDE || '3.3792'),
+    address: '5, Francis Aghedo Close, Beside Rain-Oil Fuel Station, Berger, Lagos State'
   }
+
+  // Office radius in meters
+  private readonly OFFICE_RADIUS = parseInt(process.env.OFFICE_RADIUS || '100')
 
   async checkIn(data: CheckInData): Promise<TimeTrackingResult> {
     try {
@@ -375,9 +392,16 @@ export class TimeTrackingService {
 
   async getTimeEntries(employeeId: string, startDate?: string, endDate?: string): Promise<TimeEntry[]> {
     try {
+      console.log(`[TimeTracking] Getting time entries for employee: ${employeeId}, period: ${startDate} to ${endDate}`)
+      
       let query = supabase
         .from('time_entries')
-        .select('*')
+        .select(`
+          *,
+          users!inner(id, full_name, email),
+          employees!inner(employee_number, user_id, department_id),
+          departments(name)
+        `)
         .eq('employee_id', employeeId)
         .order('check_in_time', { ascending: false })
 
@@ -391,10 +415,68 @@ export class TimeTrackingService {
 
       const { data, error } = await query
 
-      if (error) throw error
+      if (error) {
+        console.error('[TimeTracking] Error fetching time entries:', error)
+        throw error
+      }
+
+      console.log(`[TimeTracking] Found ${data?.length || 0} time entries`)
 
       return data?.map(entry => this.mapDatabaseToTimeEntry(entry)) || []
     } catch (error) {
+      console.error('[TimeTracking] Error getting time entries:', error)
+      return []
+    }
+  }
+
+  /**
+   * Get recent time entries with enhanced details (last 30 days by default)
+   */
+  async getRecentTimeEntriesWithDetails(employeeId: string, days: number = 30): Promise<TimeEntry[]> {
+    try {
+      console.log(`[TimeTracking] Getting recent ${days} days of time entries for employee: ${employeeId}`)
+      
+      const endDate = new Date()
+      const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+      
+      const query = supabase
+        .from('time_entries')
+        .select(`
+          *,
+          users!inner(id, full_name, email),
+          employees!inner(employee_number, user_id, department_id),
+          departments(name)
+        `)
+        .eq('employee_id', employeeId)
+        .gte('check_in_time', startDate.toISOString())
+        .lte('check_in_time', endDate.toISOString())
+        .order('check_in_time', { ascending: false })
+        .limit(50) // Limit to last 50 entries
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('[TimeTracking] Error fetching recent time entries:', error)
+        throw error
+      }
+
+      console.log(`[TimeTracking] Found ${data?.length || 0} recent time entries`)
+
+      return data?.map(entry => {
+        const mappedEntry = this.mapDatabaseToTimeEntry(entry)
+        
+        // Add location tracking information
+        const hasLocationData = !!(entry.check_in_location || entry.check_out_location)
+        const gpsAccuracy = entry.check_in_location?.accuracy || entry.check_out_location?.accuracy || null
+        
+        return {
+          ...mappedEntry,
+          locationTracked: hasLocationData,
+          gpsAccuracy: gpsAccuracy
+        }
+      }) || []
+    } catch (error) {
+      console.error('[TimeTracking] Error getting recent time entries:', error)
       return []
     }
   }
@@ -580,7 +662,12 @@ export class TimeTrackingService {
     }
 
     // Calculate distance from office
-    const distance = this.calculateDistance(location, this.OFFICE_LOCATION)
+    const distance = this.calculateDistance(
+      location.latitude,
+      location.longitude,
+      this.OFFICE_LOCATION.latitude,
+      this.OFFICE_LOCATION.longitude
+    )
     
     if (distance <= this.MAX_LOCATION_DISTANCE_METERS) {
       return {
@@ -610,25 +697,7 @@ export class TimeTrackingService {
     )
   }
 
-  private isLocationWithinOffice(location: Location): boolean {
-    const validation = this.validateLocationData(location)
-    return validation.status === 'valid' || validation.status === 'near_office'
-  }
 
-  private calculateDistance(loc1: Location, loc2: Location): number {
-    const R = 6371e3 // Earth's radius in meters
-    const φ1 = (loc1.latitude * Math.PI) / 180
-    const φ2 = (loc2.latitude * Math.PI) / 180
-    const Δφ = ((loc2.latitude - loc1.latitude) * Math.PI) / 180
-    const Δλ = ((loc2.longitude - loc1.longitude) * Math.PI) / 180
-
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-
-    return R * c
-  }
 
   private determineAttendanceStatus(
     checkInTime: string, 
@@ -765,7 +834,12 @@ export class TimeTrackingService {
 
     let distance: number | undefined
     if (this.OFFICE_LOCATION.latitude && this.OFFICE_LOCATION.longitude) {
-      distance = this.calculateDistance(location, this.OFFICE_LOCATION)
+      distance = this.calculateDistance(
+        location.latitude,
+        location.longitude,
+        this.OFFICE_LOCATION.latitude,
+        this.OFFICE_LOCATION.longitude
+      )
     }
 
     return {
@@ -828,10 +902,17 @@ export class TimeTrackingService {
     departmentId?: string
   ): Promise<any> {
     try {
-      // Get attendance records for the period
+      console.log(`[TimeTracking] Generating attendance report for period: ${startDate} to ${endDate}`)
+      
+      // Get enriched attendance records with employee details and location data
       let query = supabase
         .from('attendance_records')
-        .select('*')
+        .select(`
+          *,
+          users!inner(id, full_name, email),
+          employees!inner(employee_number, user_id, department_id),
+          departments(name)
+        `)
         .order('date', { ascending: false })
 
       if (startDate) {
@@ -842,20 +923,36 @@ export class TimeTrackingService {
         query = query.lte('date', endDate)
       }
 
+      if (departmentId) {
+        query = query.eq('employees.department_id', departmentId)
+      }
+
       const { data: attendanceRecords, error } = await query
 
-      if (error) throw error
+      if (error) {
+        console.error('[TimeTracking] Error fetching attendance records:', error)
+        throw error
+      }
+
+      console.log(`[TimeTracking] Found ${attendanceRecords?.length || 0} attendance records`)
+
+      // Get location data for check-ins and check-outs
+      const enrichedRecords = await this.enrichAttendanceRecordsWithLocationData(attendanceRecords || [])
 
       // Calculate summary statistics
-      const totalEmployees = new Set(attendanceRecords?.map(r => r.employee_id) || []).size
-      const totalRecords = attendanceRecords?.length || 0
-      const present = attendanceRecords?.filter(r => r.status === 'present').length || 0
-      const late = attendanceRecords?.filter(r => r.status === 'late').length || 0
-      const absent = attendanceRecords?.filter(r => r.status === 'absent').length || 0
-      const working = attendanceRecords?.filter(r => r.status === 'checked_in').length || 0
+      const totalEmployees = new Set(enrichedRecords.map(r => r.employee_id) || []).size
+      const totalRecords = enrichedRecords.length
+      const present = enrichedRecords.filter(r => ['present', 'checked_in', 'late'].includes(r.status)).length
+      const late = enrichedRecords.filter(r => r.status === 'late').length
+      const absent = enrichedRecords.filter(r => r.status === 'absent').length
+      const working = enrichedRecords.filter(r => r.status === 'checked_in').length
+      const inOffice = enrichedRecords.filter(r => this.isLocationWithinOffice(r.checkInLocation)).length
+      const remote = enrichedRecords.filter(r => r.checkInLocation && !this.isLocationWithinOffice(r.checkInLocation)).length
 
-      const totalHours = attendanceRecords?.reduce((sum, r) => sum + (r.total_hours || 0), 0) || 0
+      const totalHours = enrichedRecords.reduce((sum, r) => sum + (r.total_hours || 0), 0)
       const avgHours = totalRecords > 0 ? totalHours / totalRecords : 0
+
+      console.log(`[TimeTracking] Report summary - Total: ${totalEmployees}, Present: ${present}, Late: ${late}, In Office: ${inOffice}, Remote: ${remote}`)
 
       return {
         summary: {
@@ -864,16 +961,18 @@ export class TimeTrackingService {
           late,
           absent,
           working,
+          inOffice,
+          remote,
           avgHours: Math.round(avgHours * 100) / 100
         },
-        records: attendanceRecords?.map(record => this.mapDatabaseToAttendanceRecord(record)) || [],
+        records: enrichedRecords.map(record => this.mapDatabaseToAttendanceRecord(record)),
         period: {
           startDate: startDate || 'N/A',
           endDate: endDate || 'N/A'
         }
       }
     } catch (error) {
-      console.error('Error generating attendance report:', error)
+      console.error('[TimeTracking] Error generating attendance report:', error)
       return {
         summary: {
           totalEmployees: 0,
@@ -881,6 +980,8 @@ export class TimeTrackingService {
           late: 0,
           absent: 0,
           working: 0,
+          inOffice: 0,
+          remote: 0,
           avgHours: 0
         },
         records: [],
@@ -902,16 +1003,15 @@ export class TimeTrackingService {
     status?: string
   ): Promise<AttendanceRecord[]> {
     try {
+      console.log(`[TimeTracking] Getting all attendance records with filters - Start: ${startDate}, End: ${endDate}, Employee: ${employeeId}, Status: ${status}`)
+      
       let query = supabase
         .from('attendance_records')
         .select(`
           *,
-          users!attendance_records_employee_id_fkey (
-            id,
-            full_name,
-            email,
-            employee_id
-          )
+          users!inner(id, full_name, email),
+          employees!inner(employee_number, user_id, department_id),
+          departments(name)
         `)
         .order('date', { ascending: false })
 
@@ -931,21 +1031,21 @@ export class TimeTrackingService {
         query = query.eq('status', status)
       }
 
-      const { data, error } = await query
+      const { data: attendanceRecords, error } = await query
 
       if (error) {
-        console.error('Error getting all attendance records:', error)
+        console.error('[TimeTracking] Error getting all attendance records:', error)
         throw error
       }
 
-      return data?.map(record => ({
-        ...this.mapDatabaseToAttendanceRecord(record),
-        employeeName: record.users?.full_name,
-        employeeEmail: record.users?.email,
-        employeeNumber: record.users?.employee_id
-      })) || []
+      console.log(`[TimeTracking] Found ${attendanceRecords?.length || 0} attendance records`)
+
+      // Enrich with location data
+      const enrichedRecords = await this.enrichAttendanceRecordsWithLocationData(attendanceRecords || [])
+
+      return enrichedRecords.map(record => this.mapDatabaseToAttendanceRecord(record))
     } catch (error) {
-      console.error('Error getting all attendance records:', error)
+      console.error('[TimeTracking] Error getting all attendance records:', error)
       return []
     }
   }
@@ -1040,48 +1140,62 @@ export class TimeTrackingService {
     endDate?: string
   ): Promise<any[]> {
     try {
-      // For now, return mock data since we don't have employee-manager relationships set up
+      // Return empty array since employee-manager relationships are not set up yet
       // In a real implementation, you would:
       // 1. Get team members under this manager
       // 2. Get their attendance records for the period
       // 3. Calculate statistics for each team member
       
-      const mockStats = [
-        {
-          employeeId: 'emp001',
-          employeeName: 'John Doe',
-          department: 'Engineering',
-          totalHours: 40,
-          expectedHours: 40,
-          daysPresent: 5,
-          daysLate: 1,
-          daysAbsent: 0,
-          productivity: 95
-        },
-        {
-          employeeId: 'emp002',
-          employeeName: 'Jane Smith',
-          department: 'Engineering',
-          totalHours: 38,
-          expectedHours: 40,
-          daysPresent: 5,
-          daysLate: 0,
-          daysAbsent: 0,
-          productivity: 98
-        }
-      ]
-
-      return mockStats
+      return []
     } catch (error) {
       console.error('Error getting team statistics:', error)
       return []
     }
   }
 
+  /**
+   * Check if a location is within the office radius
+   */
+  private isLocationWithinOffice(location?: Location): boolean {
+    if (!location || !location.latitude || !location.longitude) {
+      return false
+    }
+
+    const distance = this.calculateDistance(
+      location.latitude,
+      location.longitude,
+      this.OFFICE_LOCATION.latitude,
+      this.OFFICE_LOCATION.longitude
+    )
+
+    return distance <= this.OFFICE_RADIUS
+  }
+
+  /**
+   * Calculate distance between two coordinates in meters
+   */
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371e3 // Earth's radius in meters
+    const φ1 = lat1 * Math.PI/180
+    const φ2 = lat2 * Math.PI/180
+    const Δφ = (lat2-lat1) * Math.PI/180
+    const Δλ = (lon2-lon1) * Math.PI/180
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+
+    return R * c // Distance in meters
+  }
+
   private mapDatabaseToTimeEntry(data: any): TimeEntry {
     return {
       id: data.id,
       employeeId: data.employee_id,
+      employeeName: data.users?.full_name || 'Unknown Employee',
+      employeeNumber: data.employees?.employee_number || 'N/A',
+      department: data.departments?.name || 'Unknown Department',
       checkInTime: data.check_in_time,
       checkOutTime: data.check_out_time,
       checkInLocation: data.check_in_location,
@@ -1096,19 +1210,128 @@ export class TimeTrackingService {
     }
   }
 
+  /**
+   * Enrich attendance records with location data from time entries
+   */
+  private async enrichAttendanceRecordsWithLocationData(attendanceRecords: any[]): Promise<any[]> {
+    if (!attendanceRecords || attendanceRecords.length === 0) {
+      return []
+    }
+
+    try {
+      // Get all employee IDs and dates for location lookup
+      const employeeIds = attendanceRecords.map(r => r.employee_id)
+      const dates = attendanceRecords.map(r => r.date)
+
+      // Get time entries with location data for these employees and dates
+      const { data: timeEntries, error } = await supabase
+        .from('time_entries')
+        .select('employee_id, check_in_time, check_out_time, check_in_location, check_out_location, status')
+        .in('employee_id', employeeIds)
+        .gte('check_in_time', `${Math.min(...dates.map(d => new Date(d).getTime()))}`)
+        .lte('check_in_time', `${Math.max(...dates.map(d => new Date(d).getTime()))} 23:59:59`)
+
+      if (error) {
+        console.warn('[TimeTracking] Could not fetch location data from time entries:', error)
+        return attendanceRecords
+      }
+
+      // Create a map of employee_id + date -> location data
+      const locationMap = new Map()
+      timeEntries?.forEach(entry => {
+        const entryDate = new Date(entry.check_in_time).toISOString().split('T')[0]
+        const key = `${entry.employee_id}_${entryDate}`
+        
+        if (!locationMap.has(key)) {
+          locationMap.set(key, {
+            checkInLocation: null,
+            checkOutLocation: null
+          })
+        }
+
+        const locationData = locationMap.get(key)
+        
+        // Use check_in_location and check_out_location from time_entries
+        if (entry.check_in_location) {
+          locationData.checkInLocation = entry.check_in_location
+        }
+        
+        if (entry.check_out_location) {
+          locationData.checkOutLocation = entry.check_out_location
+        }
+      })
+
+      // Enrich attendance records with location data
+      return attendanceRecords.map(record => {
+        const key = `${record.employee_id}_${record.date}`
+        const locationData = locationMap.get(key)
+        
+        return {
+          ...record,
+          checkInLocation: locationData?.checkInLocation || null,
+          checkOutLocation: locationData?.checkOutLocation || null,
+          location: locationData?.checkInLocation || null // For backward compatibility
+        }
+      })
+    } catch (error) {
+      console.warn('[TimeTracking] Error enriching with location data:', error)
+      return attendanceRecords
+    }
+  }
+
   private mapDatabaseToAttendanceRecord(data: any): AttendanceRecord {
+    // Calculate distance and compliance for check-in location
+    let checkInLocationEnriched = null
+    if (data.checkInLocation) {
+      const distance = this.calculateDistance(
+        data.checkInLocation.latitude,
+        data.checkInLocation.longitude,
+        this.OFFICE_LOCATION.latitude,
+        this.OFFICE_LOCATION.longitude
+      )
+      checkInLocationEnriched = {
+        ...data.checkInLocation,
+        distanceFromOffice: Math.round(distance),
+        isWithinOfficeRadius: distance <= this.OFFICE_RADIUS
+      }
+    }
+
+    // Calculate distance and compliance for check-out location
+    let checkOutLocationEnriched = null
+    if (data.checkOutLocation) {
+      const distance = this.calculateDistance(
+        data.checkOutLocation.latitude,
+        data.checkOutLocation.longitude,
+        this.OFFICE_LOCATION.latitude,
+        this.OFFICE_LOCATION.longitude
+      )
+      checkOutLocationEnriched = {
+        ...data.checkOutLocation,
+        distanceFromOffice: Math.round(distance),
+        isWithinOfficeRadius: distance <= this.OFFICE_RADIUS
+      }
+    }
+
     return {
+      id: data.id,
       employeeId: data.employee_id,
+      employeeName: data.users?.full_name || 'Unknown Employee',
+      employeeNumber: data.employees?.employee_number || 'N/A',
+      department: data.departments?.name || 'Unknown Department',
       date: data.date,
       checkInTime: data.check_in_time,
       checkOutTime: data.check_out_time,
-      totalHours: data.total_hours,
-      regularHours: data.regular_hours,
-      overtimeHours: data.overtime_hours,
-      breakTime: data.break_time,
+      totalHours: data.total_hours || 0,
+      regularHours: data.regular_hours || 0,
+      overtimeHours: data.overtime_hours || 0,
+      breakTime: data.break_time || 0,
       status: data.status,
-      lateMinutes: data.late_minutes,
-      earlyLeaveMinutes: data.early_leave_minutes
+      lateMinutes: data.late_minutes || 0,
+      earlyLeaveMinutes: data.early_leave_minutes || 0,
+      checkInLocation: checkInLocationEnriched,
+      checkOutLocation: checkOutLocationEnriched,
+      location: checkInLocationEnriched || data.checkInLocation, // For backward compatibility
+      notes: data.notes
     }
   }
 }

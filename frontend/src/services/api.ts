@@ -715,7 +715,7 @@ class ApiClient {
   async resetPassword(token: string, newPassword: string): Promise<ApiResponse> {
     return this.request('/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ token, newPassword }),
+      body: { token, newPassword },
     })
   }
 
@@ -991,7 +991,7 @@ class ApiClient {
   async assignTask(id: string, assignedTo: string): Promise<ApiResponse> {
     return this.request(`/tasks/${id}/assign`, {
       method: 'PATCH',
-      body: JSON.stringify({ assignedTo }),
+      body: { assignedTo },
     })
   }
 

@@ -52,8 +52,14 @@ const EmployeesPage: React.FC = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showActivationModal, setShowActivationModal] = useState(false);
   const [activationLoading, setActivationLoading] = useState(false);
+  
+  // CRUD state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const loadEmployees = async () => {
+  const loadEmployees = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -83,11 +89,11 @@ const EmployeesPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.limit, pagination.page, searchTerm, filterStatus, toast]);
 
   useEffect(() => {
     loadEmployees();
-  }, [pagination.limit, pagination.page, searchTerm, filterStatus]);
+  }, [loadEmployees]);
 
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -237,6 +243,80 @@ const EmployeesPage: React.FC = () => {
         description: 'Failed to send invitation. Please try again.',
         variant: 'destructive'
       });
+    }
+  };
+
+  // CRUD Handlers
+  const handleEditEmployee = (employee: Employee) => {
+    setEditingEmployee(employee);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateEmployee = async (updatedData: Partial<Employee>) => {
+    if (!editingEmployee) return;
+    
+    try {
+      const response = await apiClient.updateEmployee(editingEmployee.id, updatedData);
+      if (response.success) {
+        toast({
+          title: 'Success',
+          description: 'Employee updated successfully',
+        });
+        setShowEditModal(false);
+        setEditingEmployee(null);
+        loadEmployees(); // Refresh the list
+      } else {
+        toast({
+          title: 'Error',
+          description: response.message || 'Failed to update employee',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update employee. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDeleteEmployee = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteEmployee = async () => {
+    if (!selectedEmployee) return;
+    
+    try {
+      setDeleteLoading(true);
+      const response = await apiClient.deleteEmployee(selectedEmployee.id);
+      if (response.success) {
+        toast({
+          title: 'Success',
+          description: 'Employee deleted successfully',
+        });
+        setShowDeleteModal(false);
+        setSelectedEmployee(null);
+        loadEmployees(); // Refresh the list
+      } else {
+        toast({
+          title: 'Error',
+          description: response.message || 'Failed to delete employee',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete employee. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -422,8 +502,19 @@ const EmployeesPage: React.FC = () => {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem onClick={() => navigate(`/dashboard/employees/${employee.id}`)}>
-                            <Users className="h-4 w-4 mr-2" />
+                            <Eye className="h-4 w-4 mr-2" />
                             View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditEmployee(employee)}>
+                            <Users className="h-4 w-4 mr-2" />
+                            Edit Employee
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteEmployee(employee)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            Delete Employee
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
