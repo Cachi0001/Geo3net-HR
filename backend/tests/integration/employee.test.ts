@@ -549,4 +549,294 @@ describe('Employee Management API', () => {
       expect(response.body.data.employees).toBeDefined()
     })
   })
+
+  describe('Skills Management', () => {
+    const mockEmployeeWithSkills = {
+      ...mockEmployee,
+      skills: ['JavaScript', 'TypeScript', 'React']
+    }
+
+    describe('GET /api/employees/:id/skills', () => {
+      it('should get employee skills with proper permissions', async () => {
+        mockSupabase.from.mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({
+                  data: mockEmployeeWithSkills,
+                  error: null
+                })
+              })
+            })
+          })
+        } as any)
+
+        const response = await request(app)
+          .get('/api/employees/emp-123/skills')
+          .set('Authorization', `Bearer ${authToken}`)
+
+        expect(response.status).toBe(200)
+        expect(response.body.success).toBe(true)
+        expect(response.body.data).toEqual(['JavaScript', 'TypeScript', 'React'])
+      })
+    })
+
+    describe('POST /api/employees/:id/skills', () => {
+      it('should add skill to employee with proper permissions', async () => {
+        // Mock get current skills
+        mockSupabase.from.mockReturnValueOnce({
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({
+                  data: mockEmployeeWithSkills,
+                  error: null
+                })
+              })
+            })
+          })
+        } as any)
+
+        // Mock update employee
+        mockSupabase.from.mockReturnValueOnce({
+          update: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              select: jest.fn().mockResolvedValue({
+                data: [{ ...mockEmployeeWithSkills, skills: [...mockEmployeeWithSkills.skills, 'Node.js'] }],
+                error: null
+              })
+            })
+          })
+        } as any)
+
+        const response = await request(app)
+          .post('/api/employees/emp-123/skills')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ skill: 'Node.js', reason: 'Added new skill' })
+
+        expect(response.status).toBe(200)
+        expect(response.body.success).toBe(true)
+      })
+
+      it('should reject duplicate skill', async () => {
+        mockSupabase.from.mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({
+                  data: mockEmployeeWithSkills,
+                  error: null
+                })
+              })
+            })
+          })
+        } as any)
+
+        const response = await request(app)
+          .post('/api/employees/emp-123/skills')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ skill: 'JavaScript', reason: 'Duplicate skill test' })
+
+        expect(response.status).toBe(409)
+        expect(response.body.success).toBe(false)
+      })
+    })
+
+    describe('DELETE /api/employees/:id/skills/:skill', () => {
+      it('should remove skill from employee with proper permissions', async () => {
+        // Mock get current skills
+        mockSupabase.from.mockReturnValueOnce({
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({
+                  data: mockEmployeeWithSkills,
+                  error: null
+                })
+              })
+            })
+          })
+        } as any)
+
+        // Mock update employee
+        mockSupabase.from.mockReturnValueOnce({
+          update: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              select: jest.fn().mockResolvedValue({
+                data: [{ ...mockEmployeeWithSkills, skills: ['TypeScript', 'React'] }],
+                error: null
+              })
+            })
+          })
+        } as any)
+
+        const response = await request(app)
+          .delete('/api/employees/emp-123/skills/JavaScript')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ reason: 'Skill no longer needed' })
+
+        expect(response.status).toBe(200)
+        expect(response.body.success).toBe(true)
+      })
+    })
+  })
+
+  describe('Certifications Management', () => {
+    const mockCertifications = [
+      {
+        name: 'AWS Certified Developer',
+        issuer: 'Amazon Web Services',
+        issueDate: '2023-01-01',
+        expiryDate: '2026-01-01',
+        credentialId: 'AWS-123456'
+      },
+      {
+        name: 'Certified Scrum Master',
+        issuer: 'Scrum Alliance',
+        issueDate: '2022-06-01',
+        expiryDate: '2024-06-01',
+        credentialId: 'CSM-789012'
+      }
+    ]
+
+    const mockEmployeeWithCerts = {
+      ...mockEmployee,
+      certifications: mockCertifications
+    }
+
+    describe('GET /api/employees/:id/certifications', () => {
+      it('should get employee certifications with proper permissions', async () => {
+        mockSupabase.from.mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({
+                  data: mockEmployeeWithCerts,
+                  error: null
+                })
+              })
+            })
+          })
+        } as any)
+
+        const response = await request(app)
+          .get('/api/employees/emp-123/certifications')
+          .set('Authorization', `Bearer ${authToken}`)
+
+        expect(response.status).toBe(200)
+        expect(response.body.success).toBe(true)
+        expect(response.body.data).toEqual(mockCertifications)
+      })
+    })
+
+    describe('POST /api/employees/:id/certifications', () => {
+      it('should add certification to employee with proper permissions', async () => {
+        const newCertification = {
+          name: 'Google Cloud Professional',
+          issuer: 'Google Cloud',
+          issueDate: '2023-12-01',
+          expiryDate: '2025-12-01',
+          credentialId: 'GCP-345678'
+        }
+
+        // Mock get current certifications
+        mockSupabase.from.mockReturnValueOnce({
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({
+                  data: mockEmployeeWithCerts,
+                  error: null
+                })
+              })
+            })
+          })
+        } as any)
+
+        // Mock update employee
+        mockSupabase.from.mockReturnValueOnce({
+          update: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              select: jest.fn().mockResolvedValue({
+                data: [{ ...mockEmployeeWithCerts, certifications: [...mockCertifications, newCertification] }],
+                error: null
+              })
+            })
+          })
+        } as any)
+
+        const response = await request(app)
+          .post('/api/employees/emp-123/certifications')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ certification: newCertification, reason: 'Added new certification' })
+
+        expect(response.status).toBe(200)
+        expect(response.body.success).toBe(true)
+      })
+
+      it('should reject duplicate certification', async () => {
+        mockSupabase.from.mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({
+                  data: mockEmployeeWithCerts,
+                  error: null
+                })
+              })
+            })
+          })
+        } as any)
+
+        const response = await request(app)
+          .post('/api/employees/emp-123/certifications')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ 
+            certification: { name: 'AWS Certified Developer' }, 
+            reason: 'Duplicate certification test' 
+          })
+
+        expect(response.status).toBe(409)
+        expect(response.body.success).toBe(false)
+      })
+    })
+
+    describe('DELETE /api/employees/:id/certifications/:certificationName', () => {
+      it('should remove certification from employee with proper permissions', async () => {
+        // Mock get current certifications
+        mockSupabase.from.mockReturnValueOnce({
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              is: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({
+                  data: mockEmployeeWithCerts,
+                  error: null
+                })
+              })
+            })
+          })
+        } as any)
+
+        // Mock update employee
+        mockSupabase.from.mockReturnValueOnce({
+          update: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              select: jest.fn().mockResolvedValue({
+                data: [{ ...mockEmployeeWithCerts, certifications: [mockCertifications[1]] }],
+                error: null
+              })
+            })
+          })
+        } as any)
+
+        const response = await request(app)
+          .delete('/api/employees/emp-123/certifications/AWS Certified Developer')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ reason: 'Certification expired' })
+
+        expect(response.status).toBe(200)
+        expect(response.body.success).toBe(true)
+      })
+    })
+  })
 })

@@ -22,7 +22,7 @@ interface TaskProgressUpdate {
 }
 
 interface NotificationMessage {
-  type: 'task_progress' | 'task_assignment' | 'task_status_change' | 'notification'
+  type: 'task_progress' | 'task_assignment' | 'task_status_change' | 'notification' | 'attendance_update' | 'attendance_violation' | 'attendance_notification'
   data: any
   timestamp: string
   userId?: string
@@ -68,7 +68,7 @@ class WebSocketService {
       // Get user details from database
       const { data: user, error } = await supabase
         .from('users')
-        .select('id, fullName, role')
+        .select('id, full_name')
         .eq('id', decoded.userId)
         .single()
 
@@ -80,7 +80,7 @@ class WebSocketService {
 
       // Authenticate the WebSocket
       ws.userId = user.id
-      ws.userRole = user.role
+      ws.userRole = 'authenticated' // We'll get roles separately if needed
       ws.isAlive = true
 
       // Add to clients map
@@ -89,7 +89,7 @@ class WebSocketService {
       }
       this.clients.get(user.id)!.push(ws)
 
-      console.log(`✅ WebSocket authenticated for user: ${user.fullName} (${user.role})`)
+      console.log(`✅ WebSocket authenticated for user: ${user.full_name}`)
 
       // Send welcome message
       this.sendToClient(ws, {
@@ -114,7 +114,7 @@ class WebSocketService {
       // Handle connection close
       ws.on('close', () => {
         this.removeClient(user.id, ws)
-        console.log(`🔌 WebSocket disconnected for user: ${user.fullName}`)
+        console.log(`🔌 WebSocket disconnected for user: ${user.full_name}`)
       })
 
       // Handle pong responses for heartbeat
@@ -255,6 +255,71 @@ class WebSocketService {
     })
 
     console.log(`📊 Broadcasted task status change: ${taskId} (${oldStatus} → ${newStatus})`)
+  }
+
+  // Attendance-related WebSocket methods
+  public broadcastAttendanceUpdate(employeeId: string, eventType: string, sessionData: any): void {
+    const message: NotificationMessage = {
+      type: 'attendance_update',
+      data: {
+        employeeId,
+        eventType,
+        sessionData,
+        timestamp: new Date().toISOString()
+      },
+      timestamp: new Date().toISOString()
+    }
+
+    // Send to managers and admins for real-time monitoring
+    this.clients.forEach((userClients, userId) => {
+      userClients.forEach(ws => {
+        if (ws.userRole && ['super_admin', 'hr_admin', 'manager'].includes(ws.userRole)) {
+          this.sendToClient(ws, message)
+        }
+      })
+    })
+
+    console.log(`📍 Broadcasted attendance update: ${employeeId} - ${eventType}`)
+  }
+
+  public sendAttendanceViolationAlert(violation: any): void {
+    const message: NotificationMessage = {
+      type: 'attendance_violation',
+      data: {
+        violation,
+        timestamp: new Date().toISOString()
+      },
+      timestamp: new Date().toISOString()
+    }
+
+    // Send to managers and HR for immediate attention
+    this.clients.forEach((userClients, userId) => {
+      userClients.forEach(ws => {
+        if (ws.userRole && ['super_admin', 'hr_admin', 'manager'].includes(ws.userRole)) {
+          this.sendToClient(ws, message)
+        }
+      })
+    })
+
+    console.log(`🚨 Sent attendance violation alert: ${violation.violationType}`)
+  }
+
+  public sendAttendanceNotificationToUser(userId: string, notification: any): void {
+    const userClients = this.clients.get(userId)
+    if (userClients && userClients.length > 0) {
+      const message: NotificationMessage = {
+        type: 'attendance_notification',
+        data: notification,
+        timestamp: new Date().toISOString(),
+        userId
+      }
+
+      userClients.forEach(ws => {
+        this.sendToClient(ws, message)
+      })
+
+      console.log(`📱 Sent attendance notification to user: ${userId}`)
+    }
   }
 
   public getConnectedUsers(): string[] {

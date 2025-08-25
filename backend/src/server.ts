@@ -28,7 +28,9 @@ import auditRoutes from './routes/audit.routes'
 import { settingsRoutes } from './routes/settings.routes'
 import dashboardRoutes from './routes/dashboard.routes'
 import { departmentRoutes } from './routes/department.routes'
+import positionRoutes from './routes/position.routes'
 import attendancePolicyRoutes from './routes/attendancePolicy.routes'
+import { attendanceRoutes } from './routes/attendance.routes'
 import authLogsRoutes from './routes/authLogs.routes'
 import scheduleRoutes from './routes/schedule.routes'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
@@ -81,7 +83,9 @@ app.use('/api/audit', auditRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/departments', departmentRoutes)
+app.use('/api/positions', positionRoutes)
 app.use('/api/attendance-policies', attendancePolicyRoutes)
+app.use('/api/attendance', attendanceRoutes)
 app.use('/api/auth-logs', authLogsRoutes)
 app.use('/api/schedule', scheduleRoutes)
 app.use('/api/debug', debugRoutes)

@@ -175,16 +175,26 @@ const AddEmployeeForm: React.FC = () => {
           toast.error('Failed to load departments: ' + (deptResponse.message || 'Unknown error'))
         }
         
-        // Load positions - using mock data until positions API is implemented
-        const mockPositions: Position[] = [
-          { id: '1', title: 'Software Engineer', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-          { id: '2', title: 'Senior Software Engineer', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-          { id: '3', title: 'Project Manager', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-          { id: '4', title: 'Team Lead', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-          { id: '5', title: 'HR Manager', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-          { id: '6', title: 'Finance Manager', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-        ]
-        setPositions(mockPositions)
+        // Load positions from API
+        try {
+          const positionsResponse = await fetch('/api/positions', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (positionsResponse.ok) {
+            const positionsData = await positionsResponse.json()
+            setPositions(positionsData.data || [])
+          } else {
+            console.error('Failed to load positions:', positionsResponse.status)
+            setPositions([])
+          }
+        } catch (error) {
+          console.error('Error loading positions:', error)
+          setPositions([])
+        }
         
         // Load managers (employees with manager role)
         const empResponse = await apiClient.getEmployees()

@@ -507,8 +507,13 @@ class TaskNotificationService {
       // Get managers and department heads who should be notified
       const { data: stakeholders, error } = await supabase
         .from('users')
-        .select('id, full_name, role')
-        .in('role', ['manager', 'hr_admin', 'super_admin'])
+        .select(`
+          id, 
+          full_name,
+          user_roles!inner(role_name)
+        `)
+        .eq('user_roles.role_name', 'manager')
+        .eq('user_roles.is_active', true)
         .eq('is_active', true)
 
       if (error || !stakeholders) {

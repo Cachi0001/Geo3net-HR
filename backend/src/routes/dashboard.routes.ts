@@ -56,7 +56,7 @@ router.get('/employees',
   permissionMiddleware.requireAnyPermission(['employee.read', 'profile.read']),
   (req, res) => {
     console.log('🔄 [Dashboard] Proxying /dashboard/employees to employee controller')
-    return employeeController.getEmployees(req, res)
+    return employeeController.searchEmployees(req, res)
   }
 );
 

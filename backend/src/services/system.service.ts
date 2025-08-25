@@ -32,13 +32,10 @@ export class SystemService {
     async initializeSystem(): Promise<SystemInitResult> {
         // Check if super admin already exists
         const { data: existingSuperAdmin } = await supabase
-            .from('users')
-            .select(`
-                id,
-                user_roles!inner(role_name, is_active)
-            `)
-            .eq('user_roles.role_name', 'super-admin')
-            .eq('user_roles.is_active', true)
+            .from('user_roles')
+            .select('user_id')
+            .eq('role_name', 'super-admin')
+            .eq('is_active', true)
             .single()
 
         if (existingSuperAdmin) {
@@ -99,13 +96,10 @@ export class SystemService {
      */
     async needsInitialization(): Promise<boolean> {
         const { data: superAdmin } = await supabase
-            .from('users')
-            .select(`
-                id,
-                user_roles!inner(role_name, is_active)
-            `)
-            .eq('user_roles.role_name', 'super-admin')
-            .eq('user_roles.is_active', true)
+            .from('user_roles')
+            .select('user_id')
+            .eq('role_name', 'super-admin')
+            .eq('is_active', true)
             .single()
 
         return !superAdmin

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Search, Plus, Filter, Mail, Phone, MapPin, Loader2, Shield, CheckCircle, AlertTriangle, MoreVertical } from 'lucide-react';
+import { Users, Search, Plus, Filter, Mail, Phone, MapPin, Loader2, Shield, CheckCircle, AlertTriangle, MoreVertical, Eye } from 'lucide-react';
 import { apiClient } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';

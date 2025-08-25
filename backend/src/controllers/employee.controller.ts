@@ -1,518 +1,882 @@
 import { Request, Response } from 'express'
-import { EmployeeService, CreateEmployeeData, UpdateEmployeeData, EmployeeSearchFilters, Employee, EmployeeAccessContext } from '../services/employee.service'
+import { employeeService, CreateEmployeeData, UpdateEmployeeData, EmployeeSearchFilters } from '../services/employee.service'
 import { ResponseHandler } from '../utils/response'
-import { ValidationError, NotFoundError, ConflictError } from '../utils/errors'
 import { AuthenticatedRequest } from '../middleware/permission'
-import { RoleService } from '../services/role.service'
+import { ValidationError, ConflictError, AuthorizationError, NotFoundError } from '../utils/errors'
 
 export class EmployeeController {
-  private employeeService: EmployeeService
-  private roleService: RoleService
-
-  constructor() {
-    this.employeeService = new EmployeeService()
-    this.roleService = new RoleService()
-  }
-
   /**
-   * Create a new employee
-   * POST /api/employees
+   * Create new employee
    */
   async createEmployee(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
-      console.log('🔍 [EmployeeController] createEmployee called with data:', {
-        userId: req.user?.id,
-        role: req.user?.role,
-        bodyKeys: Object.keys(req.body),
-        hasRequiredFields: {
-          fullName: !!req.body.fullName,
-          email: !!req.body.email,
-          hireDate: !!req.body.hireDate,
-          departmentId: !!req.body.departmentId,
-          positionId: !!req.body.positionId
-        }
-      })
-      
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
       const employeeData: CreateEmployeeData = req.body
-      const createdBy = req.user?.id!
 
-      const result = await this.employeeService.createEmployee(employeeData, createdBy)
+      console.log('📥 [EmployeeController] Creating employee:', employeeData.fullName)
 
-      if (result.success) {
-        console.log('✅ [EmployeeController] Employee created successfully:', result.employee?.id)
-        return ResponseHandler.created(res, result.message, {
-          employee: result.employee,
-          temporaryPassword: result.temporaryPassword
-        })
+      const result = await employeeService.createEmployee(employeeData, userId)
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
       }
 
-      console.log('❌ [EmployeeController] Employee creation failed:', result.message)
-      return ResponseHandler.badRequest(res, result.message)
-    } catch (error) {
-      console.error('❌ [EmployeeController] createEmployee error:', {
-        error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
-        type: error?.constructor?.name
-      })
-      
+      return ResponseHandler.created(res, result.message, result.employee)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Create employee error:', error)
+
       if (error instanceof ValidationError) {
-        return ResponseHandler.validationError(res, error.errors || [error.message])
+        return ResponseHandler.badRequest(res, error.message)
       }
+
       if (error instanceof ConflictError) {
         return ResponseHandler.conflict(res, error.message)
       }
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
       return ResponseHandler.internalError(res, 'Failed to create employee')
     }
   }
 
   /**
-   * Get all employees with optional filtering
-   * GET /api/employees
+   * Get employee by ID
    */
-  async getEmployees(req: AuthenticatedRequest, res: Response): Promise<Response> {
+  async getEmployee(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
-      console.log('🔍 [EmployeeController] getEmployees called by user:', {
-        userId: req.user?.id,
-        role: req.user?.role,
-        query: req.query
-      })
-      
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id } = req.params
+
+      console.log('📥 [EmployeeController] Getting employee:', id)
+
+      const employee = await employeeService.getEmployeeById(id, userId)
+
+      if (!employee) {
+        return ResponseHandler.notFound(res, 'Employee not found')
+      }
+
+      return ResponseHandler.success(res, 'Employee retrieved successfully', employee)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Get employee error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to get employee')
+    }
+  }
+
+  /**
+   * Search and filter employees
+   */
+  async searchEmployees(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
       const filters: EmployeeSearchFilters = {
+        search: req.query.search as string,
         departmentId: req.query.departmentId as string,
         positionId: req.query.positionId as string,
-        managerId: req.query.managerId as string,
         employmentStatus: req.query.employmentStatus as string,
-        search: req.query.search as string,
-        limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
-        offset: req.query.offset ? parseInt(req.query.offset as string) : 0
+        employmentType: req.query.employmentType as string,
+        managerId: req.query.managerId as string,
+        page: req.query.page ? parseInt(req.query.page as string) : undefined,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
+        sortBy: req.query.sortBy as string,
+        sortOrder: req.query.sortOrder as 'asc' | 'desc'
       }
-      
-      console.log('📋 [EmployeeController] Filters applied:', filters)
 
-      // Create access context for role-based filtering
-      const accessContext: EmployeeAccessContext = await this.createAccessContext(req)
-      console.log('🔐 [EmployeeController] Access context created:', accessContext)
-      
-      const result = await this.employeeService.searchEmployees(filters, accessContext)
+      // Handle date range filters
+      if (req.query.hireDateFrom || req.query.hireDateTo) {
+        filters.hireDate = {
+          from: req.query.hireDateFrom as string,
+          to: req.query.hireDateTo as string
+        }
+      }
 
-      console.log('✅ [EmployeeController] Search result:', {
-        success: result.success,
-        employeeCount: result.employees?.length || 0,
-        total: result.total,
-        message: result.message
-      })
+      console.log('📥 [EmployeeController] Searching employees with filters:', filters)
 
-      if (result.success) {
-        return ResponseHandler.success(res, result.message, {
-          employees: result.employees,
+      const result = await employeeService.searchEmployees(filters, userId)
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
+      }
+
+      return ResponseHandler.success(res, result.message, {
+        employees: result.employees,
+        pagination: {
           total: result.total,
-          limit: filters.limit,
-          offset: filters.offset
-        })
+          page: result.page,
+          limit: result.limit,
+          totalPages: Math.ceil((result.total || 0) / (result.limit || 20))
+        }
+      })
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Search employees error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
       }
 
-      console.error('❌ [EmployeeController] Search failed:', result.message)
-      return ResponseHandler.internalError(res, result.message)
-    } catch (error) {
-      console.error('❌ [EmployeeController] getEmployees error:', error)
-      return ResponseHandler.internalError(res, 'Failed to retrieve employees')
-    }
-  }
-
-  /**
-   * Get employee by ID
-   * GET /api/employees/:id
-   */
-  async getEmployeeById(req: AuthenticatedRequest, res: Response): Promise<Response> {
-    try {
-      const { id } = req.params
-      
-      // Create access context for role-based filtering
-      const accessContext: EmployeeAccessContext = await this.createAccessContext(req, id)
-      
-      const employee = await this.employeeService.getEmployeeById(id, accessContext)
-
-      if (!employee) {
-        return ResponseHandler.notFound(res, 'Employee not found')
-      }
-
-      return ResponseHandler.success(res, 'Employee retrieved successfully', { employee })
-    } catch (error) {
-      return ResponseHandler.internalError(res, 'Failed to retrieve employee')
-    }
-  }
-
-  /**
-   * Get employee by employee ID
-   * GET /api/employees/employee-id/:employeeId
-   */
-  async getEmployeeByEmployeeId(req: AuthenticatedRequest, res: Response): Promise<Response> {
-    try {
-      const { employeeId } = req.params
-      
-      // Create access context for role-based filtering
-      const accessContext: EmployeeAccessContext = await this.createAccessContext(req)
-      
-      const employee = await this.employeeService.getEmployeeByEmployeeId(employeeId, accessContext)
-
-      if (!employee) {
-        return ResponseHandler.notFound(res, 'Employee not found')
-      }
-
-      return ResponseHandler.success(res, 'Employee retrieved successfully', { employee })
-    } catch (error) {
-      return ResponseHandler.internalError(res, 'Failed to retrieve employee')
+      return ResponseHandler.internalError(res, 'Failed to search employees')
     }
   }
 
   /**
    * Update employee
-   * PUT /api/employees/:id
    */
   async updateEmployee(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
-      const { id } = req.params
-      const updateData: UpdateEmployeeData = req.body
-      const updatedBy = req.user?.id!
-
-      const result = await this.employeeService.updateEmployee(id, updateData, updatedBy)
-
-      if (result.success) {
-        return ResponseHandler.success(res, result.message, { employee: result.employee })
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
       }
 
-      return ResponseHandler.badRequest(res, result.message)
-    } catch (error) {
+      const { id } = req.params
+      const updateData: UpdateEmployeeData = req.body
+      const reason = req.body.reason as string
+
+      console.log('📥 [EmployeeController] Updating employee:', id)
+
+      const result = await employeeService.updateEmployee(id, updateData, userId, reason)
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
+      }
+
+      return ResponseHandler.success(res, result.message, result.employee)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Update employee error:', error)
+
+      if (error instanceof ValidationError) {
+        return ResponseHandler.badRequest(res, error.message)
+      }
+
+      if (error instanceof ConflictError) {
+        return ResponseHandler.conflict(res, error.message)
+      }
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
       if (error instanceof NotFoundError) {
         return ResponseHandler.notFound(res, error.message)
       }
-      if (error instanceof ValidationError) {
-        return ResponseHandler.validationError(res, error.errors || [error.message])
-      }
+
       return ResponseHandler.internalError(res, 'Failed to update employee')
     }
   }
 
   /**
    * Delete employee (soft delete)
-   * DELETE /api/employees/:id
    */
   async deleteEmployee(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
-      const { id } = req.params
-      const deletedBy = req.user?.id!
-
-      const result = await this.employeeService.deleteEmployee(id, deletedBy)
-
-      if (result.success) {
-        return ResponseHandler.success(res, result.message)
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
       }
 
-      return ResponseHandler.badRequest(res, result.message)
-    } catch (error) {
+      const { id } = req.params
+      const reason = req.body.reason as string
+
+      console.log('📥 [EmployeeController] Deleting employee:', id)
+
+      const result = await employeeService.deleteEmployee(id, userId, reason)
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
+      }
+
+      return ResponseHandler.success(res, result.message)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Delete employee error:', error)
+
+      if (error instanceof ConflictError) {
+        return ResponseHandler.conflict(res, error.message)
+      }
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
       if (error instanceof NotFoundError) {
         return ResponseHandler.notFound(res, error.message)
       }
+
       return ResponseHandler.internalError(res, 'Failed to delete employee')
     }
   }
 
-  async sendInvitation(req: AuthenticatedRequest, res: Response): Promise<Response> {
+  /**
+   * Restore deleted employee
+   */
+  async restoreEmployee(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
       const { id } = req.params
-      const invitedBy = req.user?.id!
 
-      // Get employee details
-      const employee = await this.employeeService.getEmployeeById(id)
-      if (!employee) {
-        return ResponseHandler.notFound(res, 'Employee not found')
+      console.log('📥 [EmployeeController] Restoring employee:', id)
+
+      const result = await employeeService.restoreEmployee(id, userId)
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
       }
 
-      if (employee.userId) {
-        return ResponseHandler.conflict(res, 'Employee already has an active account')
+      return ResponseHandler.success(res, result.message, result.employee)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Restore employee error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
       }
 
-      const employeeData: CreateEmployeeData = {
-        fullName: employee.fullName,
-        email: employee.email,
-        phoneNumber: employee.phoneNumber,
-        dateOfBirth: employee.dateOfBirth,
-        address: employee.address,
-        emergencyContact: employee.emergencyContact,
-        emergencyPhone: employee.emergencyPhone,
-        departmentId: employee.departmentId,
-        positionId: employee.positionId,
-        managerId: employee.managerId,
-        hireDate: employee.hireDate,
-        salary: employee.salary,
-        skills: employee.skills,
-        notes: employee.notes,
-        sendInvitation: true
-      }
-
-      const result = await this.employeeService.createEmployee(employeeData, invitedBy)
-      
-      if (result.success) {
-        return ResponseHandler.success(res, 'Invitation sent successfully', {
-          temporaryPassword: result.temporaryPassword
-        })
-      }
-
-      return ResponseHandler.badRequest(res, result.message)
-    } catch (error) {
       if (error instanceof NotFoundError) {
         return ResponseHandler.notFound(res, error.message)
       }
+
+      return ResponseHandler.internalError(res, 'Failed to restore employee')
+    }
+  }
+
+  /**
+   * Get employee hierarchy
+   */
+  async getEmployeeHierarchy(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id } = req.params
+
+      console.log('📥 [EmployeeController] Getting employee hierarchy:', id)
+
+      const hierarchy = await employeeService.getEmployeeHierarchy(id, userId)
+
+      return ResponseHandler.success(res, 'Employee hierarchy retrieved successfully', hierarchy)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Get employee hierarchy error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to get employee hierarchy')
+    }
+  }
+
+  /**
+   * Get employee audit logs
+   */
+  async getEmployeeAuditLogs(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id } = req.params
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50
+
+      console.log('📥 [EmployeeController] Getting employee audit logs:', id)
+
+      const auditLogs = await employeeService.getEmployeeAuditLogs(id, userId, limit)
+
+      return ResponseHandler.success(res, 'Employee audit logs retrieved successfully', auditLogs)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Get employee audit logs error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to get employee audit logs')
+    }
+  }
+
+  /**
+   * Update employee manager
+   */
+  async updateEmployeeManager(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id } = req.params
+      const { managerId, reason } = req.body
+
+      console.log('📥 [EmployeeController] Updating employee manager:', id, 'to', managerId)
+
+      const result = await employeeService.updateEmployee(
+        id,
+        { managerId },
+        userId,
+        reason || 'Manager assignment updated'
+      )
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
+      }
+
+      return ResponseHandler.success(res, 'Employee manager updated successfully', result.employee)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Update employee manager error:', error)
+
+      if (error instanceof ValidationError) {
+        return ResponseHandler.badRequest(res, error.message)
+      }
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      if (error instanceof NotFoundError) {
+        return ResponseHandler.notFound(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to update employee manager')
+    }
+  }
+
+  /**
+   * Get employee subordinates
+   */
+  async getEmployeeSubordinates(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id } = req.params
+
+      console.log('📥 [EmployeeController] Getting employee subordinates:', id)
+
+      const hierarchy = await employeeService.getEmployeeHierarchy(id, userId)
+
+      return ResponseHandler.success(res, 'Employee subordinates retrieved successfully', {
+        subordinates: hierarchy.directReports
+      })
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Get employee subordinates error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to get employee subordinates')
+    }
+  }
+
+  /**
+   * Get employee statistics
+   */
+  async getEmployeeStatistics(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      console.log('📥 [EmployeeController] Getting employee statistics')
+
+      // Get basic statistics
+      const result = await employeeService.searchEmployees({ limit: 1 }, userId)
+      
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
+      }
+
+      // Get statistics by status
+      const statusStats = await Promise.all([
+        employeeService.searchEmployees({ employmentStatus: 'active', limit: 1 }, userId),
+        employeeService.searchEmployees({ employmentStatus: 'inactive', limit: 1 }, userId),
+        employeeService.searchEmployees({ employmentStatus: 'on_leave', limit: 1 }, userId),
+        employeeService.searchEmployees({ employmentStatus: 'terminated', limit: 1 }, userId)
+      ])
+
+      const statistics = {
+        total: result.total || 0,
+        active: statusStats[0].total || 0,
+        inactive: statusStats[1].total || 0,
+        onLeave: statusStats[2].total || 0,
+        terminated: statusStats[3].total || 0
+      }
+
+      return ResponseHandler.success(res, 'Employee statistics retrieved successfully', statistics)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Get employee statistics error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to get employee statistics')
+    }
+  }
+
+  /**
+   * Bulk update employees
+   */
+  async bulkUpdateEmployees(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { employeeIds, updateData, reason } = req.body
+
+      if (!employeeIds || !Array.isArray(employeeIds) || employeeIds.length === 0) {
+        return ResponseHandler.badRequest(res, 'Employee IDs array is required')
+      }
+
+      if (!updateData || Object.keys(updateData).length === 0) {
+        return ResponseHandler.badRequest(res, 'Update data is required')
+      }
+
+      console.log('📥 [EmployeeController] Bulk updating employees:', employeeIds.length)
+
+      const result = await employeeService.bulkUpdateEmployees(employeeIds, updateData, userId, reason)
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
+      }
+
+      return ResponseHandler.success(res, result.message, {
+        updatedEmployees: result.employees,
+        errors: result.errors
+      })
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Bulk update employees error:', error)
+
+      if (error instanceof ValidationError) {
+        return ResponseHandler.badRequest(res, error.message)
+      }
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to bulk update employees')
+    }
+  }
+
+  /**
+   * Get comprehensive employee statistics
+   */
+  async getComprehensiveStatistics(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      console.log('📥 [EmployeeController] Getting comprehensive employee statistics')
+
+      const statistics = await employeeService.getComprehensiveEmployeeStatistics(userId)
+
+      return ResponseHandler.success(res, 'Comprehensive employee statistics retrieved successfully', statistics)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Get comprehensive statistics error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to get comprehensive employee statistics')
+    }
+  }
+
+  /**
+   * Get employees by skills
+   */
+  async getEmployeesBySkills(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { skills } = req.query
+
+      if (!skills) {
+        return ResponseHandler.badRequest(res, 'Skills parameter is required')
+      }
+
+      const skillsArray = Array.isArray(skills) ? skills : [skills]
+
+      console.log('📥 [EmployeeController] Getting employees by skills:', skillsArray)
+
+      const employees = await employeeService.getEmployeesBySkills(skillsArray as string[], userId)
+
+      return ResponseHandler.success(res, 'Employees retrieved successfully', employees)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Get employees by skills error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to get employees by skills')
+    }
+  }
+
+  /**
+   * Get employee performance summary
+   */
+  async getEmployeePerformanceSummary(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id } = req.params
+
+      console.log('📥 [EmployeeController] Getting employee performance summary:', id)
+
+      const summary = await employeeService.getEmployeePerformanceSummary(id, userId)
+
+      return ResponseHandler.success(res, 'Employee performance summary retrieved successfully', summary)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Get employee performance summary error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      if (error instanceof NotFoundError) {
+        return ResponseHandler.notFound(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to get employee performance summary')
+    }
+  }
+
+  /**
+   * Get employee skills
+   */
+  async getEmployeeSkills(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id } = req.params
+
+      console.log('📥 [EmployeeController] Getting employee skills:', id)
+
+      const skills = await employeeService.getEmployeeSkills(id, userId)
+
+      return ResponseHandler.success(res, 'Employee skills retrieved successfully', skills)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Get employee skills error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      if (error instanceof NotFoundError) {
+        return ResponseHandler.notFound(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to get employee skills')
+    }
+  }
+
+  /**
+   * Add skill to employee
+   */
+  async addEmployeeSkill(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id } = req.params
+      const { skill, reason } = req.body
+
+      console.log('📥 [EmployeeController] Adding skill to employee:', id, skill)
+
+      const result = await employeeService.addEmployeeSkill(id, skill, userId, reason)
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
+      }
+
+      return ResponseHandler.success(res, result.message, result.employee)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Add employee skill error:', error)
+
+      if (error instanceof ValidationError) {
+        return ResponseHandler.badRequest(res, error.message)
+      }
+
       if (error instanceof ConflictError) {
         return ResponseHandler.conflict(res, error.message)
       }
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to add employee skill')
+    }
+  }
+
+  /**
+   * Remove skill from employee
+   */
+  async removeEmployeeSkill(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id, skill } = req.params
+      const { reason } = req.body
+
+      console.log('📥 [EmployeeController] Removing skill from employee:', id, skill)
+
+      const result = await employeeService.removeEmployeeSkill(id, skill, userId, reason)
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
+      }
+
+      return ResponseHandler.success(res, result.message, result.employee)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Remove employee skill error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      if (error instanceof NotFoundError) {
+        return ResponseHandler.notFound(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to remove employee skill')
+    }
+  }
+
+  /**
+   * Get employee certifications
+   */
+  async getEmployeeCertifications(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id } = req.params
+
+      console.log('📥 [EmployeeController] Getting employee certifications:', id)
+
+      const certifications = await employeeService.getEmployeeCertifications(id, userId)
+
+      return ResponseHandler.success(res, 'Employee certifications retrieved successfully', certifications)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Get employee certifications error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      if (error instanceof NotFoundError) {
+        return ResponseHandler.notFound(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to get employee certifications')
+    }
+  }
+
+  /**
+   * Add certification to employee
+   */
+  async addEmployeeCertification(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id } = req.params
+      const { certification, reason } = req.body
+
+      console.log('📥 [EmployeeController] Adding certification to employee:', id, certification?.name)
+
+      const result = await employeeService.addEmployeeCertification(id, certification, userId, reason)
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
+      }
+
+      return ResponseHandler.success(res, result.message, result.employee)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Add employee certification error:', error)
+
+      if (error instanceof ValidationError) {
+        return ResponseHandler.badRequest(res, error.message)
+      }
+
+      if (error instanceof ConflictError) {
+        return ResponseHandler.conflict(res, error.message)
+      }
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to add employee certification')
+    }
+  }
+
+  /**
+   * Remove certification from employee
+   */
+  async removeEmployeeCertification(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id, certificationName } = req.params
+      const { reason } = req.body
+
+      console.log('📥 [EmployeeController] Removing certification from employee:', id, certificationName)
+
+      const result = await employeeService.removeEmployeeCertification(id, certificationName, userId, reason)
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
+      }
+
+      return ResponseHandler.success(res, result.message, result.employee)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Remove employee certification error:', error)
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      if (error instanceof NotFoundError) {
+        return ResponseHandler.notFound(res, error.message)
+      }
+
+      return ResponseHandler.internalError(res, 'Failed to remove employee certification')
+    }
+  }
+
+  /**
+   * Send invitation to employee
+   */
+  async sendInvitation(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
+      }
+
+      const { id } = req.params
+
+      console.log('📥 [EmployeeController] Sending invitation to employee:', id)
+
+      const result = await employeeService.sendEmployeeInvitation(id, userId)
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
+      }
+
+      return ResponseHandler.success(res, result.message)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Send invitation error:', error)
+
+      if (error instanceof ValidationError) {
+        return ResponseHandler.badRequest(res, error.message)
+      }
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
+      if (error instanceof NotFoundError) {
+        return ResponseHandler.notFound(res, error.message)
+      }
+
       return ResponseHandler.internalError(res, 'Failed to send invitation')
     }
   }
 
   /**
-   * Manually activate employee account
-   * POST /api/employees/:id/activate-account
+   * Activate employee account
    */
   async activateAccount(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
-      const { id } = req.params
-      const activatedBy = req.user?.id!
-
-      const result = await this.employeeService.activateEmployeeAccount(id, activatedBy)
-      
-      if (result.success) {
-        return ResponseHandler.success(res, result.message, { employee: result.employee })
+      const userId = req.user?.id
+      if (!userId) {
+        return ResponseHandler.forbidden(res, 'Authentication required')
       }
 
-      return ResponseHandler.badRequest(res, result.message)
-    } catch (error) {
+      const { id } = req.params
+
+      console.log('📥 [EmployeeController] Activating employee account:', id)
+
+      const result = await employeeService.activateEmployeeAccount(id, userId)
+
+      if (!result.success) {
+        return ResponseHandler.badRequest(res, result.message)
+      }
+
+      return ResponseHandler.success(res, result.message)
+    } catch (error: any) {
+      console.error('❌ [EmployeeController] Activate account error:', error)
+
+      if (error instanceof ValidationError) {
+        return ResponseHandler.badRequest(res, error.message)
+      }
+
+      if (error instanceof AuthorizationError) {
+        return ResponseHandler.forbidden(res, error.message)
+      }
+
       if (error instanceof NotFoundError) {
         return ResponseHandler.notFound(res, error.message)
       }
-      if (error instanceof ConflictError) {
-        return ResponseHandler.conflict(res, error.message)
-      }
+
       return ResponseHandler.internalError(res, 'Failed to activate account')
     }
   }
-  /**
-   * Link existing user to employee
-   * POST /api/employees/:id/link-user
-   */
-  async linkUserToEmployee(req: AuthenticatedRequest, res: Response): Promise<Response> {
-    try {
-      const { id } = req.params
-      const { userId } = req.body
-
-      if (!userId) {
-        return ResponseHandler.badRequest(res, 'User ID is required')
-      }
-
-      const result = await this.employeeService.linkUserToEmployee(id, userId)
-
-      if (result.success) {
-        return ResponseHandler.success(res, result.message, { employee: result.employee })
-      }
-
-      return ResponseHandler.badRequest(res, result.message)
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        return ResponseHandler.notFound(res, error.message)
-      }
-      if (error instanceof ConflictError) {
-        return ResponseHandler.conflict(res, error.message)
-      }
-      return ResponseHandler.internalError(res, 'Failed to link user to employee')
-    }
-  }
-
-
-  async getEmployeesByManager(req: Request, res: Response): Promise<Response> {
-    try {
-      const { managerId } = req.params
-      const employees = await this.employeeService.getEmployeesByManager(managerId)
-
-      return ResponseHandler.success(res, 'Employees retrieved successfully', { employees })
-    } catch (error) {
-      return ResponseHandler.internalError(res, 'Failed to retrieve employees by manager')
-    }
-  }
-
-  async getEmployeesByDepartment(req: Request, res: Response): Promise<Response> {
-    try {
-      const { departmentId } = req.params
-      const employees = await this.employeeService.getEmployeesByDepartment(departmentId)
-
-      return ResponseHandler.success(res, 'Employees retrieved successfully', { employees })
-    } catch (error) {
-      return ResponseHandler.internalError(res, 'Failed to retrieve employees by department')
-    }
-  }
-
-  async getOrganizationalStructure(req: Request, res: Response): Promise<Response> {
-    try {
-      const departmentId = req.query.departmentId as string
-
-      const filters: EmployeeSearchFilters = {
-        employmentStatus: 'active',
-        departmentId: departmentId || undefined
-      }
-
-      const result = await this.employeeService.searchEmployees(filters)
-
-      if (!result.success || !result.employees) {
-        return ResponseHandler.internalError(res, 'Failed to retrieve organizational structure')
-      }
-
-      const orgStructure = this.buildOrganizationalHierarchy(result.employees)
-
-      return ResponseHandler.success(res, 'Organizational structure retrieved successfully', {
-        structure: orgStructure,
-        totalEmployees: result.total
-      })
-    } catch (error) {
-      return ResponseHandler.internalError(res, 'Failed to retrieve organizational structure')
-    }
-  }
-
-  async getEmployeeStatistics(req: Request, res: Response): Promise<Response> {
-    try {
-      const allEmployeesResult = await this.employeeService.searchEmployees({})
-      
-      if (!allEmployeesResult.success || !allEmployeesResult.employees) {
-        return ResponseHandler.internalError(res, 'Failed to retrieve employee statistics')
-      }
-
-      const employees = (allEmployeesResult.employees || []) as Employee[]
-
-      const statistics = {
-        total: employees.length,
-        active: employees.filter((emp: Employee) => emp.employmentStatus === 'active').length,
-        inactive: employees.filter((emp: Employee) => emp.employmentStatus === 'inactive').length,
-        onLeave: employees.filter((emp: Employee) => emp.employmentStatus === 'on_leave').length,
-        terminated: employees.filter((emp: Employee) => emp.employmentStatus === 'terminated').length,
-        byDepartment: this.groupByDepartment(employees),
-        byPosition: this.groupByPosition(employees),
-        recentHires: employees
-          .filter((emp: Employee) => {
-            const hireDate = new Date(emp.hireDate)
-            const thirtyDaysAgo = new Date()
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-            return hireDate >= thirtyDaysAgo
-          })
-          .length
-      }
-
-      return ResponseHandler.success(res, 'Employee statistics retrieved successfully', { statistics })
-    } catch (error) {
-      return ResponseHandler.internalError(res, 'Failed to retrieve employee statistics')
-    }
-  }
-
-  private buildOrganizationalHierarchy(employees: Employee[]): any[] {
-    const employeeMap = new Map()
-    const rootEmployees: any[] = []
-
-    employees.forEach((emp: Employee) => {
-      employeeMap.set(emp.id, {
-        ...emp,
-        subordinates: []
-      })
-    })
-
-    employees.forEach((emp: Employee) => {
-      if (emp.managerId && employeeMap.has(emp.managerId)) {
-        const manager = employeeMap.get(emp.managerId)
-        manager.subordinates.push(employeeMap.get(emp.id))
-      } else {
-        rootEmployees.push(employeeMap.get(emp.id))
-      }
-    })
-
-    return rootEmployees
-  }
-
-  
-  private groupByDepartment(employees: Employee[]): Record<string, number> {
-    const departmentCounts: Record<string, number> = {}
-
-    employees.forEach((emp: Employee) => {
-      const deptId = emp.departmentId || 'unassigned'
-      departmentCounts[deptId] = (departmentCounts[deptId] || 0) + 1
-    })
-
-    return departmentCounts
-  }
-
-  private groupByPosition(employees: Employee[]): Record<string, number> {
-    const positionCounts: Record<string, number> = {}
-
-    employees.forEach((emp: Employee) => {
-      const posId = emp.positionId || 'unassigned'
-      positionCounts[posId] = (positionCounts[posId] || 0) + 1
-    })
-
-    return positionCounts
-  }
-
-  /**
-   * Create access context for role-based data filtering
-   */
-  private async createAccessContext(req: AuthenticatedRequest, targetEmployeeId?: string): Promise<EmployeeAccessContext> {
-    const userId = req.user?.id!
-    const userRole = req.user?.role || 'employee'
-    
-    console.log('🔐 [EmployeeController] Creating access context for user:', {
-      userId,
-      userRole,
-      targetEmployeeId
-    })
-    
-    // Get user's permissions from role service
-    const permissions: string[] = []
-    
-    // Check if user has specific permissions based on their role
-    switch (userRole) {
-      case 'super-admin':
-        permissions.push('employees:read:all', 'employees:read:salary', 'employees:read:emergency', 'employees:read:notes')
-        console.log('📦 [EmployeeController] Super-admin permissions granted')
-        break
-      case 'hr-admin':
-        permissions.push('employees:read:hr', 'employees:read:salary', 'employees:read:emergency', 'employees:read:notes')
-        console.log('📦 [EmployeeController] HR-admin permissions granted')
-        break
-      case 'manager':
-        permissions.push('employees:read:team', 'employees:read:salary')
-        console.log('📦 [EmployeeController] Manager permissions granted')
-        break
-      case 'hr-staff':
-        permissions.push('employees:read:hr', 'employees:read:emergency')
-        console.log('📦 [EmployeeController] HR-staff permissions granted')
-        break
-      default:
-        console.log('📦 [EmployeeController] Default employee permissions (limited)')
-        // Regular employee permissions
-        break
-    }
-    
-    // Check if user is accessing their own data
-    let isOwner = false
-    if (targetEmployeeId) {
-      // Get the employee record to check if it belongs to the current user
-      const employee = await this.employeeService.getEmployeeById(targetEmployeeId)
-      isOwner = employee?.userId === userId
-      console.log('🔍 [EmployeeController] Ownership check:', { isOwner, employeeUserId: employee?.userId })
-    }
-    
-    const accessContext = {
-      userId,
-      role: userRole,
-      permissions,
-      isOwner
-    }
-    
-    console.log('✅ [EmployeeController] Access context created:', accessContext)
-    return accessContext
-  }
 }
+
+export const employeeController = new EmployeeController()

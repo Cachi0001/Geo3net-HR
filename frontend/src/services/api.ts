@@ -824,6 +824,44 @@ class ApiClient {
     })
   }
 
+  // Employee Skills Management
+  async getEmployeeSkills(employeeId: string): Promise<ApiResponse<string[]>> {
+    return this.request(`/employees/${employeeId}/skills`)
+  }
+
+  async addEmployeeSkill(employeeId: string, skill: string, reason?: string): Promise<ApiResponse<Employee>> {
+    return this.request(`/employees/${employeeId}/skills`, {
+      method: 'POST',
+      body: JSON.stringify({ skill, reason }),
+    })
+  }
+
+  async removeEmployeeSkill(employeeId: string, skill: string, reason?: string): Promise<ApiResponse<Employee>> {
+    return this.request(`/employees/${employeeId}/skills/${encodeURIComponent(skill)}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ reason }),
+    })
+  }
+
+  // Employee Certifications Management
+  async getEmployeeCertifications(employeeId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/employees/${employeeId}/certifications`)
+  }
+
+  async addEmployeeCertification(employeeId: string, certification: any, reason?: string): Promise<ApiResponse<Employee>> {
+    return this.request(`/employees/${employeeId}/certifications`, {
+      method: 'POST',
+      body: JSON.stringify({ certification, reason }),
+    })
+  }
+
+  async removeEmployeeCertification(employeeId: string, certificationName: string, reason?: string): Promise<ApiResponse<Employee>> {
+    return this.request(`/employees/${employeeId}/certifications/${encodeURIComponent(certificationName)}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ reason }),
+    })
+  }
+
   // Time tracking endpoints
   async getTimeTrackingHistory(params?: any): Promise<ApiResponse> {
     const queryString = params ? '?' + new URLSearchParams(params).toString() : ''

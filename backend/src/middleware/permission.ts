@@ -279,6 +279,9 @@ export const canDeleteEmployees = permissionMiddleware.requirePermission('employ
 export const canManageRoles = permissionMiddleware.requirePermission('roles.manage')
 export const canAssignRoles = permissionMiddleware.requirePermission('roles.assign')
 
+export const canReadAttendance = permissionMiddleware.requirePermission('attendance.read')
+export const canUpdateAttendance = permissionMiddleware.requirePermission('attendance.update')
+
 export const canManageRecruitment = permissionMiddleware.requirePermission('recruitment.manage')
 export const canManagePayroll = permissionMiddleware.requirePermission('payroll.manage')
 export const canGenerateReports = permissionMiddleware.requirePermission('reports.generate')

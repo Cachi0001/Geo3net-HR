@@ -19,6 +19,7 @@ import { AdminLayout } from './components/layout/AdminLayout'
 import { RoleBasedDashboard } from './components/dashboard/RoleBasedDashboard'
 import EmployeesPage from './pages/admin/EmployeesPage'
 import AddEmployeeForm from './components/forms/AddEmployeeForm'
+import { EmployeeDetailView, EmployeeEditForm } from './components/employee'
 import RoleBasedTimeTracking from './components/RoleBasedTimeTracking'
 import TasksPage from './pages/employee/TasksPage'
 import TaskAssignmentPage from './pages/admin/TaskAssignmentPage.tsx'
@@ -76,6 +77,16 @@ function App() {
               <Route path="employees/add" element={
                 <ProtectedRoute requiredRoles={['super-admin', 'hr-admin']}>
                   <AddEmployeeForm />
+                </ProtectedRoute>
+              } />
+              <Route path="employees/:id" element={
+                <ProtectedRoute>
+                  <EmployeeDetailView />
+                </ProtectedRoute>
+              } />
+              <Route path="employees/:id/edit" element={
+                <ProtectedRoute requiredRoles={['super-admin', 'hr-admin']}>
+                  <EmployeeEditForm />
                 </ProtectedRoute>
               } />
               <Route path="departments" element={<DepartmentsPage />} />

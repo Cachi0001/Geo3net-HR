@@ -1,97 +1,128 @@
 import { Router } from 'express'
-import { EmployeeController } from '../controllers/employee.controller'
+import { employeeController } from '../controllers/employee.controller'
 import { authenticateToken } from '../middleware/auth'
 import { 
   permissionMiddleware,
   canReadEmployees,
   canCreateEmployees,
   canUpdateEmployees,
-  canDeleteEmployees,
-  requireHRStaff,
-  requireManager
+  canDeleteEmployees
 } from '../middleware/permission'
 
 const router = Router()
-const employeeController = new EmployeeController()
 
+// Apply authentication to all routes
 router.use(authenticateToken)
+
+// Employee CRUD operations
 router.post('/', 
   canCreateEmployees,
   employeeController.createEmployee.bind(employeeController)
 )
 
 router.get('/', 
-  permissionMiddleware.requireAnyPermission(['employee.read', 'profile.read']),
-  employeeController.getEmployees.bind(employeeController)
+  canReadEmployees,
+  employeeController.searchEmployees.bind(employeeController)
 )
 
 router.get('/statistics',
-  permissionMiddleware.requireAnyPermission(['reports.generate', 'employee.read']),
+  canReadEmployees,
   employeeController.getEmployeeStatistics.bind(employeeController)
 )
 
-router.get('/org-structure',
-  permissionMiddleware.requireAnyPermission(['employee.read', 'profile.read']),
-  employeeController.getOrganizationalStructure.bind(employeeController)
+router.get('/:id', 
+  canReadEmployees,
+  employeeController.getEmployee.bind(employeeController)
 )
 
-router.get('/manager/:managerId',
-  permissionMiddleware.requireAnyPermission(['team.manage', 'employee.read']),
-  employeeController.getEmployeesByManager.bind(employeeController)
-)
-
-router.get('/department/:departmentId',
-  permissionMiddleware.requireAnyPermission(['employee.read', 'profile.read']),
-  employeeController.getEmployeesByDepartment.bind(employeeController)
-)
-
-router.get('/employee-id/:employeeId',
-  permissionMiddleware.requireAnyPermission(['employee.read', 'profile.read']),
-  employeeController.getEmployeeByEmployeeId.bind(employeeController)
-)
-
-router.get('/:id',
-  permissionMiddleware.requireResourcePermission({
-    resource: 'employee',
-    action: 'read',
-    allowSelf: true
-  }),
-  employeeController.getEmployeeById.bind(employeeController)
-)
-
-router.put('/:id',
-  permissionMiddleware.requireResourcePermission({
-    resource: 'employee',
-    action: 'update',
-    allowSelf: true
-  }),
+router.put('/:id', 
+  canUpdateEmployees,
   employeeController.updateEmployee.bind(employeeController)
 )
 
-router.delete('/:id',
+router.delete('/:id', 
   canDeleteEmployees,
   employeeController.deleteEmployee.bind(employeeController)
 )
 
-
-router.post('/:id/invite',
-  requireHRStaff,
-  employeeController.sendInvitation.bind(employeeController)
+router.post('/:id/restore', 
+  canCreateEmployees,
+  employeeController.restoreEmployee.bind(employeeController)
 )
 
-router.post('/:id/send-invitation',
-  requireHRStaff,
-  employeeController.sendInvitation.bind(employeeController)
+// Employee hierarchy management
+router.get('/:id/hierarchy', 
+  canReadEmployees,
+  employeeController.getEmployeeHierarchy.bind(employeeController)
 )
 
-router.post('/:id/activate-account',
-  requireHRStaff,
-  employeeController.activateAccount.bind(employeeController)
+router.put('/:id/manager', 
+  canUpdateEmployees,
+  employeeController.updateEmployeeManager.bind(employeeController)
 )
 
-router.post('/:id/link-user',
-  requireHRStaff,
-  employeeController.linkUserToEmployee.bind(employeeController)
+router.get('/:id/subordinates', 
+  canReadEmployees,
+  employeeController.getEmployeeSubordinates.bind(employeeController)
+)
+
+// Employee audit and history
+router.get('/:id/audit-logs', 
+  canReadEmployees,
+  employeeController.getEmployeeAuditLogs.bind(employeeController)
+)
+
+// Enhanced employee operations
+router.put('/bulk-update', 
+  canUpdateEmployees,
+  employeeController.bulkUpdateEmployees.bind(employeeController)
+)
+
+router.get('/comprehensive-statistics',
+  canReadEmployees,
+  employeeController.getComprehensiveStatistics.bind(employeeController)
+)
+
+router.get('/by-skills',
+  canReadEmployees,
+  employeeController.getEmployeesBySkills.bind(employeeController)
+)
+
+router.get('/:id/performance-summary',
+  canReadEmployees,
+  employeeController.getEmployeePerformanceSummary.bind(employeeController)
+)
+
+// Skills management
+router.get('/:id/skills',
+  canReadEmployees,
+  employeeController.getEmployeeSkills.bind(employeeController)
+)
+
+router.post('/:id/skills',
+  canUpdateEmployees,
+  employeeController.addEmployeeSkill.bind(employeeController)
+)
+
+router.delete('/:id/skills/:skill',
+  canUpdateEmployees,
+  employeeController.removeEmployeeSkill.bind(employeeController)
+)
+
+// Certifications management
+router.get('/:id/certifications',
+  canReadEmployees,
+  employeeController.getEmployeeCertifications.bind(employeeController)
+)
+
+router.post('/:id/certifications',
+  canUpdateEmployees,
+  employeeController.addEmployeeCertification.bind(employeeController)
+)
+
+router.delete('/:id/certifications/:certificationName',
+  canUpdateEmployees,
+  employeeController.removeEmployeeCertification.bind(employeeController)
 )
 
 export { router as employeeRoutes }
